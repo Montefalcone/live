@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Webcam Montefalcone</title>
+    
+    <style>
+       body {
+            background-image: url("1a.webp");
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .video-wrapper {
+            width: 70%; /* Larghezza del contenitore regolata per essere responsive */
+            aspect-ratio: 16/9; /* Mantiene l'aspect ratio corretto */
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        iframe {
+            width: 100%; /* L'iframe riempie completamente il contenitore */
+            height: 100%; /* Mantenere l'altezza proporzionale */
+            border: none; /* Nessun bordo intorno all'iframe */
+        }
+    </style>
+</head>
+<body>
+    <div class="video-wrapper" id="videoWrapper">
+        <iframe 
+            id="videoPlayer"
+            src="https://www.youtube.com/embed/-_xgn_qvNmM" 
+            title="🔴LIVE - RAINBOW SIX SIEGE" 
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+            referrerpolicy="strict-origin-when-cross-origin" 
+            allowfullscreen>
+        </iframe>
+    </div>
+    
+    <script>
+        // Funzione per determinare se l'utente usa un dispositivo mobile
+        function isMobile() {
+            const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+            return /android|ipad|iphone|ipod|iemobile|blackberry|kindle|silk|opera mini/i.test(userAgent);
+        }
+
+        var videoWrapper = document.getElementById('videoWrapper');
+        var videoPlayer = document.getElementById('videoPlayer');
+
+        if (isMobile()) {
+            videoWrapper.style.width = '100%';
+            console.log("È un dispositivo mobile");
+            document.body.style.height = 'auto';
+
+            // Funzione per attivare la modalità a schermo intero
+            function requestFullScreen() {
+                if (videoPlayer.requestFullscreen) {
+                    videoPlayer.requestFullscreen();
+                } else if (videoPlayer.mozRequestFullScreen) { // Firefox
+                    videoPlayer.mozRequestFullScreen();
+                } else if (videoPlayer.webkitRequestFullScreen) { // Chrome, Safari, Opera
+                    videoPlayer.webkitRequestFullScreen();
+                } else if (videoPlayer.msRequestFullscreen) { // IE/Edge
+                    videoPlayer.msRequestFullscreen();
+                }
+            }
+
+            // Ascolta i cambiamenti di orientamento
+            window.addEventListener('orientationchange', function() {
+                if (window.orientation === 90 || -90) { // Modalità landscape
+                    console.log("Modalità orizzontale, attivare a schermo intero");
+                    requestFullScreen();
+                }
+            });
+        }
+    </script>
+</body>
+</html>
