@@ -51,7 +51,7 @@
         }
 
         var videoWrapper = document.getElementById('videoWrapper');
-        var videoPlayer = document.getElementById('videoPlayer');
+        var iframe = document.querySelector('iframe');
 
         if (isMobile()) {
             videoWrapper.style.width = '100%';
@@ -60,14 +60,14 @@
 
             // Funzione per attivare la modalità a schermo intero
             function requestFullScreen() {
-                if (videoPlayer.requestFullscreen) {
-                    videoPlayer.requestFullscreen();
-                } else if (videoPlayer.mozRequestFullScreen) { // Firefox
-                    videoPlayer.mozRequestFullScreen();
-                } else if (videoPlayer.webkitRequestFullScreen) { // Chrome, Safari, Opera
-                    videoPlayer.webkitRequestFullScreen();
-                } else if (videoPlayer.msRequestFullscreen) { // IE/Edge
-                    videoPlayer.msRequestFullscreen();
+                if (iframe.requestFullscreen) {
+                    iframe.requestFullscreen();
+                } else if (iframe.mozRequestFullScreen) { // Firefox
+                    iframe.mozRequestFullScreen();
+                } else if (iframe.webkitRequestFullScreen) { // Chrome, Safari, Opera
+                    iframe.webkitRequestFullScreen();
+                } else if (iframe.msRequestFullscreen) { // IE/Edge
+                    iframe.msRequestFullscreen();
                 }
             }
 
