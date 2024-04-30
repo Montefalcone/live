@@ -64,8 +64,8 @@
                     iframe.requestFullscreen();
                 } else if (iframe.mozRequestFullScreen) { // Firefox
                     iframe.mozRequestFullScreen();
-                } else if (iframe.webkitRequestFullScreen) { // Chrome, Safari, Opera
-                    iframe.webkitRequestFullScreen();
+                } else if (iframe.webkitRequestFullscreen) { // Chrome, Safari, Opera
+                    iframe.webkitRequestFullscreen();
                 } else if (iframe.msRequestFullscreen) { // IE/Edge
                     iframe.msRequestFullscreen();
                 } else if (iframe.webkitEnterFullscreen) { // iOS Fullscreen API
@@ -75,7 +75,7 @@
 
             // Ascolta i cambiamenti di orientamento
             window.addEventListener('orientationchange', function() {
-                if (window.orientation === 90 || -90) { // Modalità landscape
+                if (window.orientation === 90 || window.orientation === -90) { // Modalità landscape
                     console.log("Modalità orizzontale, attivare a schermo intero");
                     requestFullScreen();
                 }
