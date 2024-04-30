@@ -68,6 +68,8 @@
                     iframe.webkitRequestFullScreen();
                 } else if (iframe.msRequestFullscreen) { // IE/Edge
                     iframe.msRequestFullscreen();
+                } else if (iframe.webkitEnterFullscreen) { // iOS Fullscreen API
+                    iframe.webkitEnterFullscreen();
                 }
             }
 
