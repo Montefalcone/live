@@ -5,7 +5,7 @@
     <title>Webcam Montefalcone</title>
     
     <style>
-       body {
+        body {
             background-image: url("1a.webp");
             background-size: cover;
             background-position: center;
@@ -18,10 +18,12 @@
         }
 
         .video-wrapper {
-            width: 70%; /* Larghezza del contenitore regolata per essere responsive */
+            width: 70%; /* Larghezza predefinita del contenitore */
             aspect-ratio: 16/9; /* Mantiene l'aspect ratio corretto */
             border-radius: 15px;
             overflow: hidden;
+            max-width: 100vw; /* Non superare mai la larghezza dello schermo */
+            max-height: 100vh; /* Non superare mai l'altezza dello schermo */
         }
 
         iframe {
@@ -33,54 +35,35 @@
 </head>
 <body>
     <div class="video-wrapper" id="videoWrapper">
-        <iframe width="424" 
-        height="240" 
-        src="https://youtube.com/embed/live_stream?channel=UCsjOOTpNAZZYxzkEj9gpNEw" 
-        title="Live streaming di Montefalcone Di Val Fortore" 
-        frameborder="0" 
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-        referrerpolicy="strict-origin-when-cross-origin" 
-        allowfullscreen></iframe>
+        <iframe 
+            src="https://youtube.com/embed/live_stream?channel=UCsjOOTpNAZZYxzkEj9gpNEw" 
+            title="Live streaming di Montefalcone Di Val Fortore" 
+            frameborder="0" 
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+            referrerpolicy="strict-origin-when-cross-origin" 
+            allowfullscreen></iframe>
     </div>
     
     <script>
-        // Funzione per determinare se l'utente usa un dispositivo mobile
-        function isMobile() {
-            const userAgent = navigator.userAgent || navigator.vendor || window.opera;
-            return /android|ipad|iphone|ipod|iemobile|blackberry|kindle|silk|opera mini/i.test(userAgent);
-        }
-
         var videoWrapper = document.getElementById('videoWrapper');
-        var iframe = document.querySelector('iframe');
 
-        if (isMobile()) {
-            videoWrapper.style.width = '100%';
-            console.log("È un dispositivo mobile");
-            document.body.style.height = 'auto';
-
-            // Funzione per attivare la modalità a schermo intero
-            function requestFullScreen() {
-                if (iframe.requestFullscreen) {
-                    iframe.requestFullscreen();
-                } else if (iframe.mozRequestFullScreen) { // Firefox
-                    iframe.mozRequestFullScreen();
-                } else if (iframe.webkitRequestFullscreen) { // Chrome, Safari, Opera
-                    iframe.webkitRequestFullscreen();
-                } else if (iframe.msRequestFullscreen) { // IE/Edge
-                    iframe.msRequestFullscreen();
-                } else if (iframe.webkitEnterFullscreen) { // iOS Fullscreen API
-                    iframe.webkitEnterFullscreen();
-                }
+        function adjustLayout() {
+            if (window.orientation === 90 || -90 || window.innerWidth > window.innerHeight) { // Modalità landscape
+                videoWrapper.style.width = '100%';
+            } else { // Modalità verticale
+                videoWrapper.style.width = '90%'; // Aumentare la larghezza in verticale
             }
-
-            // Ascolta i cambiamenti di orientamento
-            window.addEventListener('orientationchange', function() {
-                if (window.orientation === 90 || window.orientation === -90) { // Modalità landscape
-                    console.log("Modalità orizzontale, attivare a schermo intero");
-                    requestFullScreen();
-                }
-            });
         }
+
+        // Ascolta sia i cambiamenti di orientamento che i cambiamenti delle dimensioni della finestra
+        window.addEventListener('orientationchange', adjustLayout);
+        window.addEventListener('resize', adjustLayout); // Aggiunto l'ascolto degli eventi di ridimensionamento
+
+        // Chiamare immediatamente la funzione per assicurarsi che il layout sia corretto all'inizio
+        adjustLayout();
+
+        // Esegui il codice ogni 500 ms per assicurarti che la regolazione sia rapida
+        setInterval(adjustLayout, 500);
     </script>
 </body>
 </html>
