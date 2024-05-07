@@ -122,30 +122,20 @@
 			document.body.style.overflow = 'auto';
 		}		
 		
-		function isiPhone15Pro() {
-			// Get the screen width and height
-			var screenWidth = window.screen.width;
-			var screenHeight = window.screen.height;
-
-			// Calculate the aspect ratio for both landscape and portrait orientations
-			var landscapeAspectRatio = screenWidth / screenHeight;
-			var portraitAspectRatio = screenHeight / screenWidth;
-
-			// Accurate aspect ratio of iPhone 15 Pro series
-			var iphone15ProAspectRatio = 428 / 906; // Hypothetical aspect ratio for iPhone 15 Pro series
-
-			// Check if the aspect ratio matches the iPhone 15 Pro series in both landscape and portrait orientations
-			if (
-				(Math.abs(landscapeAspectRatio - iphone15ProAspectRatio) < 0.01 ||
-				Math.abs(portraitAspectRatio - iphone15ProAspectRatio) < 0.01)
-			) {
-				return true;
-			} else {
-				return false;
-			}
+		function iOS() {
+		  return [
+			'iPad Simulator',
+			'iPhone Simulator',
+			'iPod Simulator',
+			'iPad',
+			'iPhone',
+			'iPod'
+		  ].includes(navigator.platform)
+		  // iPad on iOS 13 detection
+		  || (navigator.userAgent.includes("Mac") && "ontouchend" in document)
 		}
 
-		if(isiPhone15Pro()){ //In this case we use the current layout with the background abs and bigger
+		if(iOS() && screen.availHeight < screen.availWidth){ //In this case we use the current layout with the background abs and bigger
 			disableScroll();
 		}
 		else //Otherwise we give the background properties to html and remove backgroundElement
