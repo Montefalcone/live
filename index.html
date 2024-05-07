@@ -135,7 +135,7 @@
 		  || (navigator.userAgent.includes("Mac") && "ontouchend" in document)
 		}
 
-		if(iOS() && screen.availHeight < screen.availWidth){ //In this case we use the current layout with the background abs and bigger
+		if(iOS()){ //In this case we use the current layout with the background abs and bigger
 			disableScroll();
 		}
 		else //Otherwise we give the background properties to html and remove backgroundElement
