@@ -122,20 +122,20 @@
 			document.body.style.overflow = 'auto';
 		}		
 		
-		function iOS() {
-		  return [
-			'iPad Simulator',
-			'iPhone Simulator',
-			'iPod Simulator',
-			'iPad',
-			'iPhone',
-			'iPod'
-		  ].includes(navigator.platform)
-		  // iPad on iOS 13 detection
-		  || (navigator.userAgent.includes("Mac") && "ontouchend" in document)
+		function isiOSInLandscape() {
+			// Check if the user agent string indicates iOS
+			var isiOS = /iPhone/.test(navigator.platform);
+
+			// Check if the device is in landscape mode based on width-to-height ratio
+			var screenWidth = window.screen.width;
+			var screenHeight = window.screen.height;
+			var landscapeRatio = screenWidth > screenHeight;
+
+			// Return true if it's iOS and in landscape mode, false otherwise
+			return isiOS && landscapeRatio;
 		}
 
-		if(iOS()){ //In this case we use the current layout with the background abs and bigger
+		if(isiOSInLandscape()){ //In this case we use the current layout with the background abs and bigger
 			disableScroll();
 		}
 		else //Otherwise we give the background properties to html and remove backgroundElement
