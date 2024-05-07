@@ -1,70 +1,131 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-    <meta charset="UTF-8">
+	<meta charset="UTF-8" name="viewport" content="width=device-width, height=device-height, initial-scale=1, viewport-fit=cover">
     <title>Webcam Montefalcone</title>
     
-    <style>
-        body {
-            background-image: url("1a.webp");
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            background-attachment: fixed;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            overflow: hidden;
-        }
+    <style>		
+		html {
+			margin: 0px 0px 0px 0px;
+			padding: env(safe-area-inset);
+			height: 100%;
+			width: 100%;
+		}
+
+		body {
+			position: relative;
+		
+			margin: 0px;
+			padding: 0px;
+			height: 100%;
+			min-height: 100%;
+			width: 100%;
+		}
+		
+		#main-container{
+			width: 100%;
+			height: 100%;
+			
+			display: flex;
+			justify-content: center;
+			align-items: center;
+		}
+		
+		#background{		   
+			background-image: url("1a.webp");
+			background-size: cover;
+			background-position: center;
+			background-repeat: no-repeat;
+			overflow: hidden;
+
+			position: absolute;
+			top: -7.5%;
+			left: 0;
+			width: 100%;
+			height: 115%;
+			z-index: -1;		
+		}
 
         .video-wrapper {
-            width: 70%; /* Larghezza predefinita del contenitore */
-            aspect-ratio: 16/9; /* Mantiene l'aspect ratio corretto */
+            aspect-ratio: 16/9;
             border-radius: 15px;
             overflow: hidden;
-            max-width: 100vw; /* Non superare mai la larghezza dello schermo */
-            max-height: 100vh; /* Non superare mai l'altezza dello schermo */
+            width: 80%;
+			height: auto;
         }
 
         iframe {
-            width: 100%; /* L'iframe riempie completamente il contenitore */
-            height: 100%; /* Mantenere l'altezza proporzionale */
-            border: none; /* Nessun bordo intorno all'iframe */
+            width: 100%;
+            height: 100%;
+            border: none;
         }
     </style>
 </head>
 <body>
-    <div class="video-wrapper" id="videoWrapper">
-        <iframe 
-            src="https://youtube.com/embed/live_stream?channel=UCsjOOTpNAZZYxzkEj9gpNEw" 
-            title="Live streaming di Montefalcone Di Val Fortore" 
-            frameborder="0" 
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-            referrerpolicy="strict-origin-when-cross-origin" 
-            allowfullscreen></iframe>
-    </div>
+	<div id="background">
+	</div>
+	<div id="main-container">
+		<div class="video-wrapper" id="videoWrapper">
+			<iframe 
+				src="https://youtube.com/embed/live_stream?channel=UCsjOOTpNAZZYxzkEj9gpNEw" 
+				title="Live streaming di Montefalcone Di Val Fortore" 
+				frameborder="0" 
+				allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+				referrerpolicy="strict-origin-when-cross-origin" 
+				allowfullscreen></iframe>
+		</div>
+	</div>
     
     <script>
         var videoWrapper = document.getElementById('videoWrapper');
 
         function adjustLayout() {
-            if (window.orientation === 90 || -90 || window.innerWidth > window.innerHeight) { // Modalità landscape
-                videoWrapper.style.width = '100%';
-            } else { // Modalità verticale
-                videoWrapper.style.width = '90%'; // Aumentare la larghezza in verticale
+			var screenAspectRatio = window.innerWidth / window.innerHeight;
+			var videoAspectRatio = 16 / 9;
+		
+            if (screenAspectRatio > videoAspectRatio) 
+			{ 
+				//We scale by screen height
+                videoWrapper.style.width = 'auto';
+                videoWrapper.style.height = '80%';			
+            } 
+			else 
+			{			
+				//We scale by screen width
+                videoWrapper.style.width = '80%';
+                videoWrapper.style.height = 'auto';
             }
         }
-
-        // Ascolta sia i cambiamenti di orientamento che i cambiamenti delle dimensioni della finestra
+		
+        // Ascolta i cambiamenti di dimensioni della finestra e orientamento
+        window.addEventListener('resize', adjustLayout);
         window.addEventListener('orientationchange', adjustLayout);
-        window.addEventListener('resize', adjustLayout); // Aggiunto l'ascolto degli eventi di ridimensionamento
 
-        // Chiamare immediatamente la funzione per assicurarsi che il layout sia corretto all'inizio
+        // Assicura che il layout sia corretto sin dall'inizio
         adjustLayout();
+		
+		
+		//SCROLLING
+		// Disable scrolling function
+		function disableScroll() {
+			// Get the current scroll position
+			var scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+			var scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
 
-        // Esegui il codice ogni 500 ms per assicurarti che la regolazione sia rapida
-        setInterval(adjustLayout, 500);
+			// Disable scroll by setting overflow style to hidden
+			document.body.style.overflow = 'hidden';
+
+			// Set the scroll position back to where it was
+			window.scrollTo(scrollLeft, scrollTop);
+		}
+
+		// Enable scrolling function
+		function enableScroll() {
+			// Enable scroll by setting overflow style to auto
+			document.body.style.overflow = 'auto';
+		}
+		
+		disableScroll();
     </script>
 </body>
 </html>
