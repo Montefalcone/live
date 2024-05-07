@@ -122,20 +122,7 @@
 			document.body.style.overflow = 'auto';
 		}		
 		
-		function isiOSInLandscape() {
-			// Check if the user agent string indicates iOS
-			var isiOS = /iPhone/.test(navigator.platform);
-
-			// Check if the device is in landscape mode based on width-to-height ratio
-			var screenWidth = window.screen.width;
-			var screenHeight = window.screen.height;
-			var landscapeRatio = screenWidth > screenHeight;
-
-			// Return true if it's iOS and in landscape mode, false otherwise
-			return isiOS && landscapeRatio;
-		}
-
-		if(isiOSInLandscape()){ //In this case we use the current layout with the background abs and bigger
+		if(/iPhone/.test(navigator.platform)){ //In this case we use the current layout with the background abs and bigger
 			disableScroll();
 		}
 		else //Otherwise we give the background properties to html and remove backgroundElement
