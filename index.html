@@ -1,161 +1,167 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-	<meta charset="UTF-8" name="viewport" content="width=device-width, height=device-height, initial-scale=1, viewport-fit=cover">
+    <meta charset="UTF-8" name="viewport" content="width=device-width, height=device-height, initial-scale=1, viewport-fit=cover">
     <title>Webcam Montefalcone</title>
     
-    <style>		
-		html {
-			margin: 0px 0px 0px 0px;
-			padding: env(safe-area-inset);
-			height: 100%;
-			width: 100%;
-		}
-
-		body {
-			position: relative;
-		
-			margin: 0px;
-			padding: 0px;
-			height: 100%;
-			min-height: 100%;
-			width: 100%;
-		}
-		
-		#main-container{
-			width: 100%;
-			height: 100%;
-			
-			display: flex;
-			justify-content: center;
-			align-items: center;
-		}
-		
-		#background{		   
-			background-image: url("1a.webp");
-			background-size: cover;
-			background-position: center;
-			background-repeat: no-repeat;
-			overflow: hidden;
-
-			position: absolute;
-			top: -7.5%;
-			left: 0;
-			width: 100%;
-			height: 115%;
-			z-index: -1;		
-		}
+    <style>        
+        html { margin: 0; padding: env(safe-area-inset); height: 100%; width: 100%; }
+        body { position: relative; margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; }
+        
+        #main-container {
+            width: 100%; height: 100%;
+            display: flex; justify-content: center; align-items: center;
+        }
+        
+        #background {               
+            background-image: url("1a.webp");
+            background-size: cover; background-position: center; background-repeat: no-repeat;
+            position: absolute; top: -7.5%; left: 0; width: 100%; height: 115%; z-index: -1;        
+        }
 
         .video-wrapper {
             aspect-ratio: 16/9;
             border-radius: 15px;
             overflow: hidden;
             width: 80%;
-			height: auto;
-        }
-.video-wrapper {
-            aspect-ratio: 16/9;
-            border-radius: 15px;
-            overflow: hidden; /* Questo taglia le parti in eccesso */
-            width: 80%;
             height: auto;
-            position: relative;
+            position: relative; /* Necessario per posizionare il bottone */
+            background: #000;
         }
 
-        /* TRUCCO: Ingrandiamo l'iframe per nascondere le barre di YouTube */
+        /* STILE IFRAME: Zommato per nascondere i controlli nativi */
         iframe {
             width: 100%;
-            height: 140%; /* Altezza maggiorata per spingere fuori le barre */
+            height: 140%; /* Zoom per tagliare barre sopra/sotto */
             border: none;
             position: absolute;
-            top: -20%; /* Sposta il video in su per centrarlo e tagliare sopra/sotto */
+            top: -20%; 
             left: 0;
-            pointer-events: auto; /* Lascia cliccabile per l'audio */
+            pointer-events: auto;
+            transition: all 0.5s ease; /* Animazione fluida */
         }
+
+        /* CLASSE SPECIALE: Quando è a tutto schermo, annulla lo zoom */
+        .video-wrapper.is-fullscreen iframe {
+            height: 100% !important;
+            top: 0 !important;
+        }
+
+        /* STILE DEL NUOVO PULSANTE FULLSCREEN */
+        #custom-fs-btn {
+            position: absolute;
+            bottom: 15px;
+            right: 15px;
+            background-color: rgba(0, 0, 0, 0.6);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+            width: 40px;
+            height: 30px;
+            font-size: 20px;
+            line-height: 20px;
+            cursor: pointer;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+        }
+        #custom-fs-btn:hover { background-color: rgba(0, 0, 0, 0.8); }
+
     </style>
 </head>
 <body>
-	<div id="background">
-	</div>
-	<div id="main-container">
-		<div class="video-wrapper" id="videoWrapper">
-			<iframe 
-    			src="https://www.youtube.com/embed/live_stream?channel=UCsjOOTpNAZZYxzkEj9gpNEw&autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&showinfo=0" 
-   			 	title="Live streaming di Montefalcone Di Val Fortore" 
-    			frameborder="0" 
-    			allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-    			referrerpolicy="strict-origin-when-cross-origin" 
-    			allowfullscreen>
-			</iframe>
-		</div>
-	</div>
+
+    <div id="background"></div>
+
+    <div id="main-container">
+        <div class="video-wrapper" id="videoWrapper">
+            <iframe 
+                src="https://www.youtube.com/embed/live_stream?channel=UCsjOOTpNAZZYxzkEj9gpNEw&autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&playsinline=1" 
+                title="Live streaming" 
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                referrerpolicy="strict-origin-when-cross-origin" 
+                allowfullscreen>
+            </iframe>
+
+            <div id="custom-fs-btn" onclick="toggleFullScreen()">⛶</div>
+        </div>
+    </div>
     
     <script>
         var videoWrapper = document.getElementById('videoWrapper');
 
+        // --- FUNZIONE PER GESTIRE IL FULLSCREEN ---
+        function toggleFullScreen() {
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                // ENTRA IN FULLSCREEN
+                if (videoWrapper.requestFullscreen) {
+                    videoWrapper.requestFullscreen();
+                } else if (videoWrapper.webkitRequestFullscreen) { /* Safari */
+                    videoWrapper.webkitRequestFullscreen();
+                } else if (videoWrapper.msRequestFullscreen) { /* IE11 */
+                    videoWrapper.msRequestFullscreen();
+                }
+            } else {
+                // ESCI DA FULLSCREEN
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                }
+            }
+        }
+
+        // --- GESTIONE DEL CAMBIO DI STATO (ZOOM IN/OUT) ---
+        // Quando entriamo in fullscreen, rimuoviamo lo zoom (il "taglio")
+        function handleFullscreenChange() {
+            if (document.fullscreenElement || document.webkitFullscreenElement) {
+                videoWrapper.classList.add("is-fullscreen");
+            } else {
+                videoWrapper.classList.remove("is-fullscreen");
+            }
+        }
+
+        document.addEventListener("fullscreenchange", handleFullscreenChange);
+        document.addEventListener("webkitfullscreenchange", handleFullscreenChange); // Per Safari
+
+        // --- LOGICA DI LAYOUT ESISTENTE (MANTENUTA) ---
         function adjustLayout() {
-			var screenAspectRatio = window.innerWidth / window.innerHeight;
-			var videoAspectRatio = 16 / 9;
-		
-            if (screenAspectRatio > videoAspectRatio) 
-			{ 
-				//We scale by screen height
+            var screenAspectRatio = window.innerWidth / window.innerHeight;
+            var videoAspectRatio = 16 / 9;
+        
+            if (screenAspectRatio > videoAspectRatio) { 
                 videoWrapper.style.width = 'auto';
-                videoWrapper.style.height = '80%';			
-            } 
-			else 
-			{			
-				//We scale by screen width
+                videoWrapper.style.height = '80%';            
+            } else {            
                 videoWrapper.style.width = '80%';
                 videoWrapper.style.height = 'auto';
             }
         }
-		
-        // Ascolta i cambiamenti di dimensioni della finestra e orientamento
+        
         window.addEventListener('resize', adjustLayout);
         window.addEventListener('orientationchange', adjustLayout);
-
-        // Assicura che il layout sia corretto sin dall'inizio
         adjustLayout();
-		
-		
-		
-		function disableScroll() {
-			// Get the current scroll position
-			var scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-			var scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
-
-			// Disable scroll by setting overflow style to hidden
-			document.body.style.overflow = 'hidden';
-
-			// Set the scroll position back to where it was
-			window.scrollTo(scrollLeft, scrollTop);
-		}
-		function enableScroll() {
-			// Enable scroll by setting overflow style to auto
-			document.body.style.overflow = 'auto';
-		}		
-		
-		if(/iPhone/.test(navigator.platform)){ //In this case we use the current layout with the background abs and bigger
-			disableScroll();
-		}
-		else //Otherwise we give the background properties to html and remove backgroundElement
-		{
-			// Get the element with ID "background" and remove it
-			var backgroundElement = document.getElementById("background");
-			if (backgroundElement) {
-				backgroundElement.parentNode.removeChild(backgroundElement);
-			}
-
-			// Apply CSS properties to the HTML element
-			document.documentElement.style.backgroundImage = 'url("1a.webp")';
-			document.documentElement.style.backgroundSize = 'cover';
-			document.documentElement.style.backgroundPosition = 'center';
-			document.documentElement.style.backgroundRepeat = 'no-repeat';
-			document.documentElement.style.overflow = 'hidden';			
-		}
+        
+        // Gestione scroll iPhone (mantenuta dal tuo codice originale)
+        function disableScroll() {
+            document.body.style.overflow = 'hidden';
+        }
+        
+        if(/iPhone/.test(navigator.platform)){ 
+            disableScroll();
+        } else {
+            var backgroundElement = document.getElementById("background");
+            if (backgroundElement) {
+                backgroundElement.parentNode.removeChild(backgroundElement);
+            }
+            document.documentElement.style.backgroundImage = 'url("1a.webp")';
+            document.documentElement.style.backgroundSize = 'cover';
+            document.documentElement.style.backgroundPosition = 'center';
+            document.documentElement.style.backgroundRepeat = 'no-repeat';
+            document.documentElement.style.overflow = 'hidden';            
+        }
     </script>
 </body>
 </html>
-
-
