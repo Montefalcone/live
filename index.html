@@ -23,77 +23,103 @@
             background-color: #000; 
         }
         
+        /* --- CARICAMENTO FONT SCARICATO DA DAFONT --- */
+        @font-face {
+            font-family: 'MerryChristmasFont';
+            src: url('font.ttf') format('truetype');
+        }
+
         #main-container {
             width: 100%; height: 100%;
-            display: flex; justify-content: center; align-items: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center; align-items: center;
             position: relative; z-index: 20;
         }
 
-        /* --- SFONDO CON MOVIMENTO MONGOLFIERA MIGLIORATO --- */
-        #bg-video-container {
+        /* --- SFONDO FLUTTUANTE --- */
+        #bg-static {
             position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            overflow: hidden; /* Fondamentale per nascondere i bordi */
+            top: -10%; left: -10%; width: 120%; height: 120%;
+            background-image: url("1a.webp"); /* Aggiornato con il nome file corretto */
+            background-size: cover; background-position: center;
             z-index: 0;
+            filter: brightness(0.6) contrast(1.2) saturate(1.1);
+            animation: driftingWorld 80s ease-in-out infinite alternate;
+        }
+        @keyframes driftingWorld {
+            0% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(2%, 1.5%) scale(1.02); }
+            50% { transform: translate(0%, 3%) scale(1.04); }
+            75% { transform: translate(-2%, 1.5%) scale(1.02); }
+            100% { transform: translate(0, 0) scale(1); }
         }
 
-        #bg-video {
-            position: absolute;
-            /* Centro iniziale */
-            top: 50%; left: 50%;
-            /* DIMENSIONE MAGGIORATA: Deve essere più grande dello schermo per muoversi */
-            min-width: 115%; min-height: 115%;
-            width: auto; height: auto;
-            
-            object-fit: cover; 
-            filter: brightness(0.7) contrast(1.1);
-
-            /* ANIMAZIONE MONGOLFIERA LENTISSIMA E FLUIDA */
-            /* transform-origin: center center; */
-            animation: balloonDrift 120s ease-in-out infinite alternate;
-            will-change: transform; /* Ottimizza le prestazioni */
+        /* --- MESSAGGIO CON IL TUO FONT --- */
+        .festive-message {
+            font-family: 'MerryChristmasFont', serif;
+            color: #ffffff; /* Testo bianco come richiesto */
+            text-align: center;
+            font-size: 3.5rem;
+            line-height: 1.2;
+            margin-bottom: 20px;
+            /* Ombra bianca per un effetto luminoso */
+            text-shadow: 2px 2px 4px #000, 0 0 25px rgba(255, 255, 255, 0.8);
+            z-index: 30;
+            padding: 0 20px;
+            white-space: nowrap; /* Forza il testo su una sola riga */
         }
 
-        /* Definizione del percorso organico (parte dal centro -50%, -50%) */
-        @keyframes balloonDrift {
-            0% { 
-                transform: translate(-50%, -50%) scale(1); 
-            }
-            25% { 
-                /* Si sposta leggermente a destra e in alto, zoom minimo */
-                transform: translate(-48%, -49%) scale(1.02); 
-            }
-            50% { 
-                /* Si sposta in basso, zoom massimo */
-                transform: translate(-50%, -52%) scale(1.04); 
-            }
-            75% { 
-                /* Si sposta a sinistra, zoom medio */
-                transform: translate(-52%, -50%) scale(1.03); 
-            }
-            100% { 
-                /* Torna verso il centro ma leggermente spostato */
-                transform: translate(-51%, -51%) scale(1.01); 
+        /* Mobile adjustment */
+        @media (max-width: 768px) {
+            .festive-message {
+                font-size: 2.2rem;
+                margin-bottom: 15px;
+                white-space: normal; /* Su mobile permette di andare a capo se necessario */
             }
         }
 
-        /* --- VIGNETTATURA --- */
+        /* --- EFFETTI (Luce, Neve, Vignetta) --- */
+        .warm-flicker {
+            position: absolute; inset: 0;
+            background: radial-gradient(circle, rgba(255, 180, 50, 0.15), transparent 80%);
+            z-index: 2; pointer-events: none; mix-blend-mode: overlay;
+            animation: firePulse 4s ease-in-out infinite alternate;
+        }
+        @keyframes firePulse { 0% { opacity: 0.1; } 100% { opacity: 0.5; } }
+
+        .particles-container { position: absolute; inset: 0; pointer-events: none; z-index: 5; overflow: hidden; }
+        .snowflake {
+            position: absolute; top: -10px; background: white; border-radius: 50%; opacity: 0.9;
+            box-shadow: 0 0 3px white; animation: fall linear infinite;
+        }
+        .ember {
+            position: absolute; bottom: -20px; background: #ffcc00; border-radius: 50%;
+            opacity: 0; filter: blur(2px); animation: rise linear infinite;
+        }
+        @keyframes fall { 0% { transform: translate(0, -10vh); } 100% { transform: translate(15vw, 110vh); } }
+        @keyframes rise { 0% { transform: translateY(0); opacity: 0; } 30% { opacity: 0.6; } 100% { transform: translateY(-90vh) translateX(5vw); opacity: 0; } }
+
         .vignette {
             position: absolute; inset: 0;
-            background: radial-gradient(circle at center, transparent 30%, rgba(0,0,0,0.5) 80%, black 100%);
-            z-index: 10; pointer-events: none;
+            background: radial-gradient(circle at center, transparent 40%, rgba(0,0,0,0.7) 85%, black 100%);
+            z-index: 6; pointer-events: none;
         }
 
-        /* --- PLAYER VIDEO --- */
+        /* --- PLAYER --- */
         .video-wrapper {
-            position: relative; width: 80%; aspect-ratio: 16/9; 
+            position: relative;
+            width: auto; height: 75%; aspect-ratio: 16/9;
             border-radius: 15px; overflow: hidden; background: #000;
-            box-shadow: 0 0 40px rgba(255, 200, 100, 0.2), 0 30px 70px rgba(0,0,0,0.95);
+            box-shadow: 0 0 30px rgba(255, 220, 150, 0.2), 0 40px 80px rgba(0,0,0,0.95);
             border: 1px solid rgba(255, 255, 255, 0.15); z-index: 30;
         }
+        @media (max-width: 768px) {
+            .video-wrapper { width: 95%; height: auto; }
+        }
+
         iframe { width: 100%; height: 100%; border: none; display: block; }
         .click-shield { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 30; cursor: default; }
-        
         #custom-fs-btn {
             position: absolute; bottom: 15px; right: 15px; width: 50px; height: 50px;
             background-color: rgba(0, 0, 0, 0.5); border: 1px solid rgba(255, 255, 255, 0.3);
@@ -101,27 +127,21 @@
             display: flex; align-items: center; justify-content: center; cursor: pointer;
             z-index: 40; backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
         }
-
-        /* --- CANVAS NEVE --- */
-        #snowCanvas {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; z-index: 15;
-        }
     </style>
 </head>
 <body>
 
-    <div id="bg-video-container">
-        <video autoplay muted loop playsinline id="bg-video" poster="1b.webp">
-            <source src="sfondo_villaggio.mp4" type="video/mp4">
-        </video>
-    </div>
-    
-    <canvas id="snowCanvas"></canvas>
-    
+    <div id="bg-static"></div>
+    <div class="warm-flicker"></div>
     <div class="vignette"></div>
+    <div class="particles-container" id="particlesContainer"></div>
 
     <div id="main-container">
+        
+        <div class="festive-message">
+            Il Comune di Montefalcone augura a tutti Buone Feste
+        </div>
+
         <div class="video-wrapper" id="videoWrapper">
             <iframe 
                 src="https://www.youtube.com/embed/live_stream?channel=UCsjOOTpNAZZYxzkEj9gpNEw&autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&playsinline=1" 
@@ -133,57 +153,35 @@
             <div id="custom-fs-btn" onclick="toggleFullScreen()">⛶</div>
         </div>
     </div>
-    
+
     <script>
-        // --- MOTORE NEVE JS (Vento realistico) ---
-        (function() {
-            var canvas = document.getElementById('snowCanvas');
-            var ctx = canvas.getContext('2d');
-            var width = window.innerWidth; var height = window.innerHeight;
-            canvas.width = width; canvas.height = height;
-
-            var isMobile = width < 768;
-            var maxFlakes = isMobile ? 70 : 150; 
-            var flakes = [];
-            var currentWind = 0; var targetWind = 0; var windChangeTimer = 0;
-
-            function addFlake() {
-                var x = Math.random() * width; var y = Math.random() * height;
-                var speed = Math.random() * 1 + 0.5; 
-                var radius = Math.random() * 2 + 0.5; if(isMobile) radius += 0.5; 
-                flakes.push({ x: x, y: y, r: radius, d: speed, a: Math.random() * Math.PI * 2, o: Math.random() * 0.5 + 0.3, weight: 1 - (radius / 4) });
+        function createParticles() {
+            const container = document.getElementById('particlesContainer');
+            // NEVE
+            for (let i = 0; i < 70; i++) {
+                const flake = document.createElement('div');
+                flake.classList.add('snowflake');
+                const size = Math.random() * 3 + 2; 
+                flake.style.width = size + 'px'; flake.style.height = size + 'px';
+                flake.style.left = (Math.random() * 120 - 10) + 'vw';
+                flake.style.animationDuration = (Math.random() * 4 + 4) + 's';
+                flake.style.animationDelay = '-' + (Math.random() * 5) + 's';
+                container.appendChild(flake);
             }
-            for (var i = 0; i < maxFlakes; i++) { addFlake(); }
-
-            function updateWind() {
-                windChangeTimer++;
-                if (windChangeTimer > 300) { windChangeTimer = 0; targetWind = (Math.random() - 0.5) * 3; }
-                currentWind += (targetWind - currentWind) * 0.005;
+            // SCINTILLE
+            for (let i = 0; i < 30; i++) {
+                const ember = document.createElement('div');
+                ember.classList.add('ember');
+                const size = Math.random() * 4 + 3;
+                ember.style.width = size + 'px'; ember.style.height = size + 'px';
+                ember.style.left = Math.random() * 100 + 'vw';
+                ember.style.animationDuration = (Math.random() * 6 + 6) + 's';
+                ember.style.animationDelay = '-' + (Math.random() * 10) + 's';
+                container.appendChild(ember);
             }
+        }
+        createParticles();
 
-            function draw() {
-                ctx.clearRect(0, 0, width, height); ctx.fillStyle = "rgba(255, 255, 255, 0.8)"; ctx.beginPath();
-                for (var i = 0; i < maxFlakes; i++) {
-                    var f = flakes[i]; ctx.moveTo(f.x, f.y); ctx.globalAlpha = f.o; ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2, true);
-                }
-                ctx.fill(); move();
-            }
-
-            var angle = 0;
-            function move() {
-                updateWind(); angle += 0.01;
-                for (var i = 0; i < maxFlakes; i++) {
-                    var f = flakes[i]; f.y += Math.pow(f.d, 2) + 0.5; f.x += currentWind * f.weight * 1.5; f.x += Math.sin(angle + f.d) * 0.2;
-                    if (f.y > height) { flakes[i] = { x: Math.random() * width, y: -10, r: f.r, d: f.d, a: f.a, o: f.o, weight: f.weight }; }
-                    if (f.x > width + 20) { f.x = -20; } else if (f.x < -20) { f.x = width + 20; }
-                }
-            }
-            function loop() { draw(); requestAnimationFrame(loop); }
-            loop();
-            window.addEventListener('resize', function() { width = window.innerWidth; height = window.innerHeight; canvas.width = width; canvas.height = height; });
-        })();
-
-        // --- PLAYER LOGIC ---
         var videoWrapper = document.getElementById('videoWrapper');
         function toggleFullScreen() {
             if (!document.fullscreenElement && !document.webkitFullscreenElement) {
@@ -194,15 +192,6 @@
                 else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
             }
         }
-        function adjustLayout() {
-            var ratio = window.innerWidth / window.innerHeight;
-            if (ratio > 1.77) { videoWrapper.style.width = 'auto'; videoWrapper.style.height = '80%'; videoWrapper.style.aspectRatio = '16/9'; } 
-            else { videoWrapper.style.width = '90%'; videoWrapper.style.height = 'auto'; videoWrapper.style.aspectRatio = '16/9'; }
-        }
-        window.addEventListener('resize', adjustLayout);
-        adjustLayout();
     </script>
 </body>
 </html>
-
-
