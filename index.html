@@ -1,87 +1,92 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-    <meta charset="UTF-8" name="viewport" content="width=device-width, height=device-height, initial-scale=1, viewport-fit=cover">
+    <meta charset="UTF-8" name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Webcam Montefalcone</title>
     
     <style>        
-        html { margin: 0; padding: env(safe-area-inset); height: 100%; width: 100%; }
-        body { position: relative; margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; background: #000; }
+        /* Reset e Base */
+        html { height: 100%; width: 100%; margin: 0; padding: env(safe-area-inset); box-sizing: border-box; }
+        body { 
+            position: relative; margin: 0; padding: 0; 
+            height: 100%; width: 100%; 
+            overflow: hidden; 
+            background-color: #000; 
+        }
         
+        /* Contenitore Principale */
         #main-container {
             width: 100%; height: 100%;
             display: flex; justify-content: center; align-items: center;
-            position: relative;
-            z-index: 1;
+            position: relative; z-index: 2;
         }
         
+        /* Sfondo */
         #background {               
             background-image: url("1a.webp");
             background-size: cover; background-position: center; background-repeat: no-repeat;
-            position: absolute; top: -7.5%; left: 0; width: 100%; height: 115%; 
-            z-index: 0;      
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            z-index: 1; opacity: 0.6;   
         }
 
+        /* Wrapper del Video (La cornice) */
         .video-wrapper {
-            aspect-ratio: 16/9;
-            border-radius: 15px;
-            overflow: hidden;
-            width: 80%;
-            height: auto;
             position: relative;
+            width: 80%;
+            aspect-ratio: 16/9; /* Forza la forma rettangolare */
+            border-radius: 15px;
+            overflow: hidden; /* FONDAMENTALE: Taglia tutto ciò che esce dai bordi */
             background: #000;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
             z-index: 10;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
-        /* --- IL TRUCCO AGGRESSIVO --- */
+        /* IL VIDEO YOUTUBE */
         iframe {
             width: 100%;
-            /* Aumentiamo drasticamente l'altezza per spingere via le barre mobili */
-            height: 240%; 
+            height: 100%;
             border: none;
-            position: absolute;
-            /* Centriamo il video spingendo l'iframe in alto del 70% */
-            top: -70%; 
-            left: 0;
-            z-index: 1;
-            transition: all 0.5s ease;
-            pointer-events: none; /* Disabilita i click su YouTube (niente pausa accidentale) */
+            
+            /* NUOVA TECNICA: ZOOM REALE */
+            /* Ingrandisce il video del 35%. Le scritte finiscono fuori dal wrapper */
+            transform: scale(1.35); 
+            transform-origin: center center;
+            
+            /* Disabilita i click sul video per non far apparire i menu di YouTube */
+            pointer-events: none; 
+            
+            transition: transform 0.5s ease;
         }
 
-        /* Quando andiamo a tutto schermo, resetta tutto per vederlo normale */
+        /* QUANDO E' A TUTTO SCHERMO */
+        /* Rimuoviamo lo zoom e riabilitiamo i click */
         .video-wrapper.is-fullscreen iframe {
-            height: 100% !important;
-            top: 0 !important;
-            pointer-events: auto !important; /* Riabilita i controlli in fullscreen */
+            transform: scale(1);
+            pointer-events: auto;
         }
 
-        /* --- PULSANTE CUSTOM --- */
+        /* IL PULSANTE CUSTOM */
         #custom-fs-btn {
             position: absolute;
             bottom: 15px;
             right: 15px;
-            
-            /* Stile Elegante */
-            width: 44px; /* Dimensione dito minima */
-            height: 44px;
-            background-color: rgba(0, 0, 0, 0.6); /* Nero trasparente */
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            border-radius: 50%; /* Rotondo è più moderno */
-            
-            color: white;
-            font-size: 20px;
+            width: 50px; height: 50px;
+            background-color: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            color: #fff;
+            font-size: 24px;
             display: flex; align-items: center; justify-content: center;
             cursor: pointer;
             
-            /* FORZATURA VISIBILITÀ */
-            z-index: 99999 !important;
-            transform: translateZ(100px);
-            -webkit-transform: translateZ(100px);
-            backdrop-filter: blur(4px); /* Effetto vetro carino */
+            /* FORZA BRUTA PER VISIBILITA' */
+            z-index: 999999;
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
         }
         
-        #custom-fs-btn:active { background-color: rgba(0,0,0,0.9); transform: translateZ(100px) scale(0.95); }
+        /* Effetto click pulsante */
+        #custom-fs-btn:active { background-color: rgba(255,255,255,0.2); transform: scale(0.95); }
 
     </style>
 </head>
@@ -94,14 +99,12 @@
             
             <iframe 
                 src="https://www.youtube.com/embed/live_stream?channel=UCsjOOTpNAZZYxzkEj9gpNEw&autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&playsinline=1" 
-                title="Live Webcam" 
+                title="Webcam" 
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
                 allowfullscreen>
             </iframe>
 
-            <div id="custom-fs-btn" onclick="toggleFullScreen()">
-                ⛶
-            </div>
+            <div id="custom-fs-btn" onclick="toggleFullScreen()">⛶</div>
 
         </div>
     </div>
@@ -109,7 +112,7 @@
     <script>
         var videoWrapper = document.getElementById('videoWrapper');
 
-        // Fullscreen Logic
+        // GESTIONE FULLSCREEN
         function toggleFullScreen() {
             if (!document.fullscreenElement && !document.webkitFullscreenElement) {
                 if (videoWrapper.requestFullscreen) videoWrapper.requestFullscreen();
@@ -120,7 +123,7 @@
             }
         }
 
-        // Listener per cambio stato (Zoom in/out)
+        // GESTIONE ZOOM (TOGLIE ZOOM IN FULLSCREEN)
         function handleFullscreenChange() {
             if (document.fullscreenElement || document.webkitFullscreenElement) {
                 videoWrapper.classList.add("is-fullscreen");
@@ -131,29 +134,23 @@
         document.addEventListener("fullscreenchange", handleFullscreenChange);
         document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
 
-        // Layout Logic
+        // LAYOUT RESPONSIVE (MIGLIORATO)
         function adjustLayout() {
             var screenAspectRatio = window.innerWidth / window.innerHeight;
-            var videoAspectRatio = 16 / 9;
-            if (screenAspectRatio > videoAspectRatio) { 
-                videoWrapper.style.width = 'auto'; videoWrapper.style.height = '80%';            
+            // Se lo schermo è più "largo" di un 16:9 (es. PC), limitiamo l'altezza
+            if (screenAspectRatio > 1.77) { 
+                videoWrapper.style.width = 'auto'; 
+                videoWrapper.style.height = '80%';
+                videoWrapper.style.aspectRatio = '16/9';
             } else {            
-                videoWrapper.style.width = '80%'; videoWrapper.style.height = 'auto';
+                // Se lo schermo è più "stretto" (es. Telefono verticale), usiamo la larghezza
+                videoWrapper.style.width = '90%'; 
+                videoWrapper.style.height = 'auto';
+                videoWrapper.style.aspectRatio = '16/9';
             }
         }
         window.addEventListener('resize', adjustLayout);
-        window.addEventListener('orientationchange', adjustLayout);
         adjustLayout();
-        
-        // iPhone Scroll Fix
-        if(/iPhone/.test(navigator.platform)){ 
-            document.body.style.overflow = 'hidden';
-        } else {
-            var bg = document.getElementById("background");
-            if (bg) bg.parentNode.removeChild(bg);
-            document.documentElement.style.background = 'url("1a.webp") center/cover no-repeat fixed';
-            document.documentElement.style.overflow = 'hidden';            
-        }
     </script>
 </body>
 </html>
