@@ -99,7 +99,7 @@
         @media (max-width: 768px) {
             #main-container {
                 justify-content: flex-start; 
-                padding-top: 15vh; /* Regola questo numero se vuoi alzarlo/abbassarlo */
+                padding-top: 15vh;
             }
 
             .municipality-logo {
@@ -140,20 +140,41 @@
 
         .particles-container { position: absolute; inset: 0; pointer-events: none; z-index: 5; overflow: hidden; }
         
+        /* Neve */
         .snowflake {
             position: absolute; top: -10px; background: white; border-radius: 50%; opacity: 0.9;
             box-shadow: 0 0 3px white; 
-            /* L'animazione viene definita nello script ora */
         }
+
+        /* Scintille (Stile Base) */
         .ember {
             position: absolute; bottom: -20px; background: #ffcc00; border-radius: 50%;
             opacity: 0; filter: blur(2px);
-             /* L'animazione viene definita nello script ora */
         }
         
-        /* Definiamo solo i keyframes nel CSS, la durata la gestisce JS */
+        /* --- ANIMAZIONI DIVERSE PER LE SCINTILLE --- */
+        /* 1. Sale verso Destra */
+        @keyframes riseRight { 
+            0% { transform: translateY(0) translateX(0); opacity: 0; } 
+            20% { opacity: 0.8; } 
+            100% { transform: translateY(-90vh) translateX(15vw); opacity: 0; } 
+        }
+        /* 2. Sale verso Sinistra */
+        @keyframes riseLeft { 
+            0% { transform: translateY(0) translateX(0); opacity: 0; } 
+            20% { opacity: 0.8; } 
+            100% { transform: translateY(-90vh) translateX(-15vw); opacity: 0; } 
+        }
+        /* 3. Sale a ZigZag (Vento variabile) */
+        @keyframes riseZigZag { 
+            0% { transform: translateY(0) translateX(0); opacity: 0; } 
+            25% { transform: translateY(-20vh) translateX(5vw); opacity: 0.8; }
+            75% { transform: translateY(-60vh) translateX(-5vw); opacity: 0.4; }
+            100% { transform: translateY(-90vh) translateX(0); opacity: 0; } 
+        }
+
+        /* Animazione Neve */
         @keyframes fall { 0% { transform: translate(0, -10vh); } 100% { transform: translate(15vw, 110vh); } }
-        @keyframes rise { 0% { transform: translateY(0); opacity: 0; } 30% { opacity: 0.6; } 100% { transform: translateY(-90vh) translateX(5vw); opacity: 0; } }
 
         .vignette {
             position: absolute; inset: 0;
@@ -180,7 +201,6 @@
     <div class="particles-container" id="particlesContainer"></div>
 
     <div id="main-container">
-        
         <img src="stemma2-removebg-preview.png" alt="Stemma Comune di Montefalcone" class="municipality-logo">
         
         <div class="festive-message">
@@ -204,14 +224,11 @@
         function createParticles() {
             const container = document.getElementById('particlesContainer');
             
-            // RILEVA SE È MOBILE (Schermo più stretto di 768px)
+            // RILEVA SE È MOBILE
             const isMobile = window.innerWidth < 768;
 
-            // CONFIGURAZIONE: Se è mobile, dimezza il numero di particelle
             const snowCount = isMobile ? 35 : 70; 
             const emberCount = isMobile ? 15 : 30;
-            
-            // CONFIGURAZIONE VELOCITÀ: Se è mobile, rallenta (moltiplica il tempo x 1.5)
             const speedModifier = isMobile ? 1.5 : 1; 
 
             // --- NEVE ---
@@ -222,42 +239,79 @@
                 flake.style.width = size + 'px'; flake.style.height = size + 'px';
                 flake.style.left = (Math.random() * 120 - 10) + 'vw';
                 
-                // Durata Desktop: 4-8s | Durata Mobile: 6-12s (Più lenti)
                 const duration = (Math.random() * 4 + 4) * speedModifier;
                 flake.style.animation = `fall ${duration}s linear infinite`;
-                
                 flake.style.animationDelay = '-' + (Math.random() * 5) + 's';
                 container.appendChild(flake);
             }
 
-            // --- SCINTILLE ---
+            // --- SCINTILLE (RANDOMIZZATE) ---
+            // Lista delle animazioni possibili
+            const animations = ['riseRight', 'riseLeft', 'riseZigZag'];
+
             for (let i = 0; i < emberCount; i++) {
                 const ember = document.createElement('div');
                 ember.classList.add('ember');
                 const size = Math.random() * 4 + 3;
                 ember.style.width = size + 'px'; ember.style.height = size + 'px';
+                
+                // Posizione di partenza random
                 ember.style.left = Math.random() * 100 + 'vw';
                 
-                // Durata Desktop: 6-12s | Durata Mobile: 9-18s (Più lenti)
+                // Velocità random
                 const duration = (Math.random() * 6 + 6) * speedModifier;
-                ember.style.animation = `rise ${duration}s linear infinite`;
-
+                
+                // Scegli un'animazione a caso tra le 3
+                const randomAnim = animations[Math.floor(Math.random() * animations.length)];
+                
+                ember.style.animation = `${randomAnim} ${duration}s linear infinite`;
                 ember.style.animationDelay = '-' + (Math.random() * 10) + 's';
+                
                 container.appendChild(ember);
             }
         }
         createParticles();
 
+        // GESTIONE FULLSCREEN E ORIENTAMENTO
         var videoWrapper = document.getElementById('videoWrapper');
+
         function toggleFullScreen() {
             if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                // ENTRA in Fullscreen
                 if (videoWrapper.requestFullscreen) videoWrapper.requestFullscreen();
                 else if (videoWrapper.webkitRequestFullscreen) videoWrapper.webkitRequestFullscreen();
+                
+                // Prova a bloccare in orizzontale (Landscape) quando entra (se supportato)
+                if (screen.orientation && screen.orientation.lock) {
+                    screen.orientation.lock('landscape').catch(function(e) { /* Ignora errore se non supportato */ });
+                }
+
             } else {
+                // ESCE dal Fullscreen
                 if (document.exitFullscreen) document.exitFullscreen();
                 else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+                
+                // Sblocca orientamento (torna come il telefono)
+                if (screen.orientation && screen.orientation.unlock) {
+                    screen.orientation.unlock();
+                }
             }
         }
+
+        // ASCOLTATORE EVENTI (Fix robusto per quando si esce con il tasto "indietro" del telefono)
+        function onFullScreenChange() {
+            // Se non c'è nessun elemento in fullscreen (siamo usciti)
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                if (screen.orientation && screen.orientation.unlock) {
+                    screen.orientation.unlock(); // Forza sblocco rotazione
+                }
+            }
+        }
+
+        // Aggiungi listener per tutti i browser
+        document.addEventListener('fullscreenchange', onFullScreenChange);
+        document.addEventListener('webkitfullscreenchange', onFullScreenChange);
+        document.addEventListener('mozfullscreenchange', onFullScreenChange);
     </script>
 </body>
 </html>
