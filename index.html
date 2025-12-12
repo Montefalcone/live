@@ -18,16 +18,52 @@
             position: relative; z-index: 20;
         }
 
-        /* --- VIDEO SFONDO --- */
+        /* --- SFONDO CON MOVIMENTO MONGOLFIERA MIGLIORATO --- */
+        #bg-video-container {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            overflow: hidden; /* Fondamentale per nascondere i bordi */
+            z-index: 0;
+        }
+
         #bg-video {
             position: absolute;
+            /* Centro iniziale */
             top: 50%; left: 50%;
-            min-width: 100%; min-height: 100%;
+            /* DIMENSIONE MAGGIORATA: Deve essere più grande dello schermo per muoversi */
+            min-width: 115%; min-height: 115%;
             width: auto; height: auto;
-            transform: translate(-50%, -50%);
-            z-index: 0;
+            
             object-fit: cover; 
             filter: brightness(0.7) contrast(1.1);
+
+            /* ANIMAZIONE MONGOLFIERA LENTISSIMA E FLUIDA */
+            /* transform-origin: center center; */
+            animation: balloonDrift 120s ease-in-out infinite alternate;
+            will-change: transform; /* Ottimizza le prestazioni */
+        }
+
+        /* Definizione del percorso organico (parte dal centro -50%, -50%) */
+        @keyframes balloonDrift {
+            0% { 
+                transform: translate(-50%, -50%) scale(1); 
+            }
+            25% { 
+                /* Si sposta leggermente a destra e in alto, zoom minimo */
+                transform: translate(-48%, -49%) scale(1.02); 
+            }
+            50% { 
+                /* Si sposta in basso, zoom massimo */
+                transform: translate(-50%, -52%) scale(1.04); 
+            }
+            75% { 
+                /* Si sposta a sinistra, zoom medio */
+                transform: translate(-52%, -50%) scale(1.03); 
+            }
+            100% { 
+                /* Torna verso il centro ma leggermente spostato */
+                transform: translate(-51%, -51%) scale(1.01); 
+            }
         }
 
         /* --- VIGNETTATURA --- */
@@ -64,9 +100,11 @@
 </head>
 <body>
 
-    <video autoplay muted loop playsinline id="bg-video" poster="1b.webp">
-        <source src="sfondo_villaggio.mp4" type="video/mp4">
-    </video>
+    <div id="bg-video-container">
+        <video autoplay muted loop playsinline id="bg-video" poster="1b.webp">
+            <source src="sfondo_villaggio.mp4" type="video/mp4">
+        </video>
+    </div>
     
     <canvas id="snowCanvas"></canvas>
     
@@ -86,115 +124,52 @@
     </div>
     
     <script>
-        // --- MOTORE NEVE CON VENTO VARIABILE (Javascript) ---
+        // --- MOTORE NEVE JS (Vento realistico) ---
         (function() {
             var canvas = document.getElementById('snowCanvas');
             var ctx = canvas.getContext('2d');
-            var width = window.innerWidth;
-            var height = window.innerHeight;
+            var width = window.innerWidth; var height = window.innerHeight;
             canvas.width = width; canvas.height = height;
 
             var isMobile = width < 768;
             var maxFlakes = isMobile ? 70 : 150; 
             var flakes = [];
-
-            // VARIABILI VENTO
-            var currentWind = 0;      // Il vento attuale
-            var targetWind = 0;       // Dove vuole andare il vento
-            var windChangeTimer = 0;  // Contatore per cambiare il vento
+            var currentWind = 0; var targetWind = 0; var windChangeTimer = 0;
 
             function addFlake() {
-                var x = Math.random() * width;
-                var y = Math.random() * height;
-                var speed = Math.random() * 1 + 0.5; // Velocità caduta base
-                var radius = Math.random() * 2 + 0.5;
-                if(isMobile) radius += 0.5; 
-
-                flakes.push({
-                    x: x, y: y, r: radius, d: speed,
-                    a: Math.random() * Math.PI * 2, // Angolo oscillazione personale
-                    o: Math.random() * 0.5 + 0.3,   // Opacità
-                    // Peso del fiocco: i piccoli (raggio basso) subiscono più vento
-                    weight: 1 - (radius / 4) 
-                });
+                var x = Math.random() * width; var y = Math.random() * height;
+                var speed = Math.random() * 1 + 0.5; 
+                var radius = Math.random() * 2 + 0.5; if(isMobile) radius += 0.5; 
+                flakes.push({ x: x, y: y, r: radius, d: speed, a: Math.random() * Math.PI * 2, o: Math.random() * 0.5 + 0.3, weight: 1 - (radius / 4) });
             }
-
             for (var i = 0; i < maxFlakes; i++) { addFlake(); }
 
             function updateWind() {
-                // Ogni 200 frame circa (qualche secondo), cambiamo obiettivo del vento
                 windChangeTimer++;
-                if (windChangeTimer > 300) {
-                    windChangeTimer = 0;
-                    // Genera nuovo target vento casuale tra -1.5 (sinistra) e 1.5 (destra)
-                    targetWind = (Math.random() - 0.5) * 3; 
-                }
-
-                // Transizione LENTA verso il target (Interpolazione)
-                // Più basso è il numero (0.005), più è lenta e fluida la transizione
+                if (windChangeTimer > 300) { windChangeTimer = 0; targetWind = (Math.random() - 0.5) * 3; }
                 currentWind += (targetWind - currentWind) * 0.005;
             }
 
             function draw() {
-                // Pulizia canvas
-                ctx.clearRect(0, 0, width, height);
-                ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
-                ctx.beginPath();
-                
+                ctx.clearRect(0, 0, width, height); ctx.fillStyle = "rgba(255, 255, 255, 0.8)"; ctx.beginPath();
                 for (var i = 0; i < maxFlakes; i++) {
-                    var f = flakes[i];
-                    ctx.moveTo(f.x, f.y);
-                    ctx.globalAlpha = f.o;
-                    ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2, true);
+                    var f = flakes[i]; ctx.moveTo(f.x, f.y); ctx.globalAlpha = f.o; ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2, true);
                 }
-                ctx.fill();
-                move();
+                ctx.fill(); move();
             }
 
             var angle = 0;
             function move() {
-                updateWind(); // Aggiorna la fisica del vento
-                angle += 0.01;
-
+                updateWind(); angle += 0.01;
                 for (var i = 0; i < maxFlakes; i++) {
-                    var f = flakes[i];
-                    
-                    // 1. Gravità (Giù)
-                    f.y += Math.pow(f.d, 2) + 0.5; 
-                    
-                    // 2. Vento Globale (Variabile)
-                    // Moltiplichiamo per il 'peso': i fiocchi leggeri volano via di più
-                    f.x += currentWind * f.weight * 1.5;
-
-                    // 3. Oscillazione personale (Piccolo movimento casuale)
-                    f.x += Math.sin(angle + f.d) * 0.2;
-
-                    // Gestione Uscita dallo schermo (Loop)
-                    if (f.y > height) {
-                        // Se esce da sotto, torna sopra in un punto casuale
-                        flakes[i] = { x: Math.random() * width, y: -10, r: f.r, d: f.d, a: f.a, o: f.o, weight: f.weight };
-                    }
-                    
-                    // Se il vento è forte, i fiocchi escono di lato.
-                    // Li facciamo rientrare dal lato opposto per non lasciare buchi.
-                    if (f.x > width + 20) {
-                        f.x = -20; // Rientra da sinistra
-                    } else if (f.x < -20) {
-                        f.x = width + 20; // Rientra da destra
-                    }
+                    var f = flakes[i]; f.y += Math.pow(f.d, 2) + 0.5; f.x += currentWind * f.weight * 1.5; f.x += Math.sin(angle + f.d) * 0.2;
+                    if (f.y > height) { flakes[i] = { x: Math.random() * width, y: -10, r: f.r, d: f.d, a: f.a, o: f.o, weight: f.weight }; }
+                    if (f.x > width + 20) { f.x = -20; } else if (f.x < -20) { f.x = width + 20; }
                 }
             }
-
-            function loop() {
-                draw();
-                requestAnimationFrame(loop);
-            }
+            function loop() { draw(); requestAnimationFrame(loop); }
             loop();
-
-            window.addEventListener('resize', function() {
-                width = window.innerWidth; height = window.innerHeight;
-                canvas.width = width; canvas.height = height;
-            });
+            window.addEventListener('resize', function() { width = window.innerWidth; height = window.innerHeight; canvas.width = width; canvas.height = height; });
         })();
 
         // --- PLAYER LOGIC ---
