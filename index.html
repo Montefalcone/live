@@ -15,7 +15,7 @@
     <meta property="og:description" content="Guarda cosa succede ora a Montefalcone. Clicca per la diretta.">
     <meta property="og:image" content="https://www.webcammontefalconedivalfortore.it/p.png"> <meta name="robots" content="index, follow">
     
- <style>
+<style>
         html, body {
             margin: 0; padding: 0;
             height: 100%; width: 100%;
@@ -26,7 +26,7 @@
         /* --- FONT --- */
         @font-face {
             font-family: 'MerryChristmasFont';
-            src: url('last.otf') format('truetype');
+            src: url('MerryChristmas.ttf') format('truetype');
         }
 
         #main-container {
@@ -42,7 +42,7 @@
         #bg-static {
             position: absolute;
             top: -10%; left: -10%; width: 120%; height: 120%;
-            background-image: url("1b.webp"); 
+            background-image: url("image_13.png"); 
             background-size: cover; background-position: center;
             z-index: 0;
             filter: brightness(0.6) contrast(1.2) saturate(1.1);
@@ -95,38 +95,53 @@
             border: 1px solid rgba(255, 255, 255, 0.15); z-index: 30;
         }
 
-        /* --- OTTIMIZZAZIONE MOBILE --- */
-        @media (max-width: 768px) {
+        /* --- OTTIMIZZAZIONE MOBILE VERTICALE --- */
+        @media (max-width: 768px) and (orientation: portrait) {
             #main-container {
                 justify-content: flex-start; 
                 padding-top: 15vh;
             }
-
-            .municipality-logo {
-                width: 70px; 
-                margin-bottom: 10px;
-            }
-
-            .festive-message {
-                font-size: 5.5vw; 
-                line-height: 1.4;
-                margin-bottom: 15px;
-            }
-
-            .video-wrapper { 
-                width: 95%; 
-                height: auto; 
-            }
-
-            #bg-static {
-                animation: driftingWorldMobile 60s ease-in-out infinite alternate;
-                background-position: center center; 
-            }
+            .municipality-logo { width: 70px; margin-bottom: 10px; }
+            .festive-message { font-size: 5.5vw; line-height: 1.4; margin-bottom: 15px; }
+            .video-wrapper { width: 95%; height: auto; }
+            #bg-static { animation: driftingWorldMobile 60s ease-in-out infinite alternate; background-position: center center; }
         }
 
         @keyframes driftingWorldMobile {
             0% { transform: translate(0, 0) scale(1); }
             100% { transform: translate(-2%, 0) scale(1.1); } 
+        }
+
+        /* --- MAGIC TRICK: FULLSCREEN AUTOMATICO IN ORIZZONTALE --- */
+        @media screen and (orientation: landscape) and (max-height: 600px) {
+            /* 1. Nascondi tutto ciò che non serve */
+            .municipality-logo, .festive-message, #bg-static, .warm-flicker, .vignette, .particles-container, #custom-fs-btn {
+                display: none !important;
+            }
+
+            /* 2. Resetta il contenitore */
+            #main-container {
+                padding: 0 !important;
+                margin: 0 !important;
+                justify-content: center !important;
+                background-color: #000;
+            }
+
+            /* 3. Espandi il video a tutto schermo */
+            .video-wrapper {
+                width: 100vw !important;
+                height: 100vh !important;
+                max-width: none !important;
+                max-height: none !important;
+                border-radius: 0 !important;
+                border: none !important;
+                box-shadow: none !important;
+                aspect-ratio: unset !important; /* Rimuove il vincolo 16/9 per riempire */
+            }
+            
+            iframe {
+                object-fit: contain; /* Assicura che si veda tutto il video */
+            }
         }
 
         /* --- EFFETTI --- */
@@ -139,41 +154,20 @@
         @keyframes firePulse { 0% { opacity: 0.1; } 100% { opacity: 0.5; } }
 
         .particles-container { position: absolute; inset: 0; pointer-events: none; z-index: 5; overflow: hidden; }
-        
-        /* Neve */
         .snowflake {
             position: absolute; top: -10px; background: white; border-radius: 50%; opacity: 0.9;
             box-shadow: 0 0 3px white; 
         }
-
-        /* Scintille (Stile Base) */
         .ember {
             position: absolute; bottom: -20px; background: #ffcc00; border-radius: 50%;
             opacity: 0; filter: blur(2px);
         }
         
-        /* --- ANIMAZIONI DIVERSE PER LE SCINTILLE --- */
-        /* 1. Sale verso Destra */
-        @keyframes riseRight { 
-            0% { transform: translateY(0) translateX(0); opacity: 0; } 
-            20% { opacity: 0.8; } 
-            100% { transform: translateY(-90vh) translateX(15vw); opacity: 0; } 
-        }
-        /* 2. Sale verso Sinistra */
-        @keyframes riseLeft { 
-            0% { transform: translateY(0) translateX(0); opacity: 0; } 
-            20% { opacity: 0.8; } 
-            100% { transform: translateY(-90vh) translateX(-15vw); opacity: 0; } 
-        }
-        /* 3. Sale a ZigZag (Vento variabile) */
-        @keyframes riseZigZag { 
-            0% { transform: translateY(0) translateX(0); opacity: 0; } 
-            25% { transform: translateY(-20vh) translateX(5vw); opacity: 0.8; }
-            75% { transform: translateY(-60vh) translateX(-5vw); opacity: 0.4; }
-            100% { transform: translateY(-90vh) translateX(0); opacity: 0; } 
-        }
-
-        /* Animazione Neve */
+        /* Animazioni Scintille */
+        @keyframes riseRight { 0% { transform: translateY(0) translateX(0); opacity: 0; } 20% { opacity: 0.8; } 100% { transform: translateY(-90vh) translateX(15vw); opacity: 0; } }
+        @keyframes riseLeft { 0% { transform: translateY(0) translateX(0); opacity: 0; } 20% { opacity: 0.8; } 100% { transform: translateY(-90vh) translateX(-15vw); opacity: 0; } }
+        @keyframes riseZigZag { 0% { transform: translateY(0) translateX(0); opacity: 0; } 25% { transform: translateY(-20vh) translateX(5vw); opacity: 0.8; } 75% { transform: translateY(-60vh) translateX(-5vw); opacity: 0.4; } 100% { transform: translateY(-90vh) translateX(0); opacity: 0; } }
+        
         @keyframes fall { 0% { transform: translate(0, -10vh); } 100% { transform: translate(15vw, 110vh); } }
 
         .vignette {
@@ -223,95 +217,79 @@
     <script>
         function createParticles() {
             const container = document.getElementById('particlesContainer');
-            
-            // RILEVA SE È MOBILE
             const isMobile = window.innerWidth < 768;
-
+            
+            // Ottimizzazione Mobile: Meno particelle, più lente
             const snowCount = isMobile ? 35 : 70; 
             const emberCount = isMobile ? 15 : 30;
             const speedModifier = isMobile ? 1.5 : 1; 
 
-            // --- NEVE ---
+            // NEVE
             for (let i = 0; i < snowCount; i++) {
                 const flake = document.createElement('div');
                 flake.classList.add('snowflake');
                 const size = Math.random() * 3 + 2; 
                 flake.style.width = size + 'px'; flake.style.height = size + 'px';
                 flake.style.left = (Math.random() * 120 - 10) + 'vw';
-                
                 const duration = (Math.random() * 4 + 4) * speedModifier;
                 flake.style.animation = `fall ${duration}s linear infinite`;
                 flake.style.animationDelay = '-' + (Math.random() * 5) + 's';
                 container.appendChild(flake);
             }
 
-            // --- SCINTILLE (RANDOMIZZATE) ---
-            // Lista delle animazioni possibili
+            // SCINTILLE (RANDOMIZZATE)
             const animations = ['riseRight', 'riseLeft', 'riseZigZag'];
-
             for (let i = 0; i < emberCount; i++) {
                 const ember = document.createElement('div');
                 ember.classList.add('ember');
                 const size = Math.random() * 4 + 3;
                 ember.style.width = size + 'px'; ember.style.height = size + 'px';
-                
-                // Posizione di partenza random
                 ember.style.left = Math.random() * 100 + 'vw';
-                
-                // Velocità random
                 const duration = (Math.random() * 6 + 6) * speedModifier;
-                
-                // Scegli un'animazione a caso tra le 3
                 const randomAnim = animations[Math.floor(Math.random() * animations.length)];
-                
                 ember.style.animation = `${randomAnim} ${duration}s linear infinite`;
                 ember.style.animationDelay = '-' + (Math.random() * 10) + 's';
-                
                 container.appendChild(ember);
             }
         }
         createParticles();
 
-        // GESTIONE FULLSCREEN E ORIENTAMENTO
+        // GESTIONE FULLSCREEN
         var videoWrapper = document.getElementById('videoWrapper');
 
         function toggleFullScreen() {
             if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-                // ENTRA in Fullscreen
+                // Entra in fullscreen
                 if (videoWrapper.requestFullscreen) videoWrapper.requestFullscreen();
                 else if (videoWrapper.webkitRequestFullscreen) videoWrapper.webkitRequestFullscreen();
-                
-                // Prova a bloccare in orizzontale (Landscape) quando entra (se supportato)
+                // Blocca orizzontale se possibile
                 if (screen.orientation && screen.orientation.lock) {
-                    screen.orientation.lock('landscape').catch(function(e) { /* Ignora errore se non supportato */ });
+                    screen.orientation.lock('landscape').catch(e => {});
                 }
-
             } else {
-                // ESCE dal Fullscreen
+                // Esce da fullscreen
                 if (document.exitFullscreen) document.exitFullscreen();
                 else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
-                
-                // Sblocca orientamento (torna come il telefono)
+                // Sblocca orientamento (torna verticale)
                 if (screen.orientation && screen.orientation.unlock) {
                     screen.orientation.unlock();
                 }
             }
         }
 
-        // ASCOLTATORE EVENTI (Fix robusto per quando si esce con il tasto "indietro" del telefono)
+        // Ascoltatore per quando si esce dal fullscreen (es. tasto indietro del telefono)
         function onFullScreenChange() {
-            // Se non c'è nessun elemento in fullscreen (siamo usciti)
             if (!document.fullscreenElement && !document.webkitFullscreenElement) {
                 if (screen.orientation && screen.orientation.unlock) {
-                    screen.orientation.unlock(); // Forza sblocco rotazione
+                    screen.orientation.unlock(); 
                 }
             }
         }
 
-        // Aggiungi listener per tutti i browser
         document.addEventListener('fullscreenchange', onFullScreenChange);
         document.addEventListener('webkitfullscreenchange', onFullScreenChange);
         document.addEventListener('mozfullscreenchange', onFullScreenChange);
     </script>
 </body>
 </html>
+
