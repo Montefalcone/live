@@ -15,7 +15,7 @@
     <meta property="og:description" content="Guarda cosa succede ora a Montefalcone. Clicca per la diretta.">
     <meta property="og:image" content="https://www.webcammontefalconedivalfortore.it/p.png"> <meta name="robots" content="index, follow">
     
-    <style>
+  <style>
         html, body {
             margin: 0; padding: 0;
             height: 100%; width: 100%;
@@ -33,7 +33,8 @@
             width: 100%; height: 100%;
             display: flex;
             flex-direction: column;
-            justify-content: center; align-items: center;
+            justify-content: center; /* Default: centrato per Desktop */
+            align-items: center;
             position: relative; z-index: 20;
         }
 
@@ -55,22 +56,15 @@
             100% { transform: translate(0, 0) scale(1); }
         }
 
-        /* --- LOGO STEMMA (Color Grading Natalizio) --- */
+        /* --- LOGO STEMMA --- */
         .municipality-logo {
             width: 110px; /* Dimensione Desktop */
             height: auto;
-            margin-bottom: 15px; /* Spazio tra logo e testo */
+            margin-bottom: 15px;
             z-index: 30;
-            
-            /* TRUCCO GRAFICO: */
-            /* 1. Brightness: Lo rende più brillante per spiccare sul buio */
-            /* 2. Drop-shadow: Crea un alone DORATO attorno allo stemma per integrarlo col Natale */
             filter: brightness(1.1) drop-shadow(0 0 15px rgba(255, 215, 0, 0.5));
-            
             transition: transform 0.3s ease;
         }
-        
-        /* Effetto hover carino (opzionale) */
         .municipality-logo:hover {
             transform: scale(1.05);
             filter: brightness(1.2) drop-shadow(0 0 20px rgba(255, 215, 0, 0.8));
@@ -91,10 +85,27 @@
             box-sizing: border-box;
         }
 
-        /* --- MOBILE TWEAKS --- */
+        /* --- PLAYER --- */
+        .video-wrapper {
+            position: relative;
+            width: auto; height: 60%;
+            aspect-ratio: 16/9;
+            border-radius: 15px; overflow: hidden; background: #000;
+            box-shadow: 0 0 30px rgba(255, 220, 150, 0.2), 0 40px 80px rgba(0,0,0,0.95);
+            border: 1px solid rgba(255, 255, 255, 0.15); z-index: 30;
+        }
+
+        /* --- OTTIMIZZAZIONE MOBILE (Tutto più in alto) --- */
         @media (max-width: 768px) {
+            #main-container {
+                /* Invece di 'center', allinea tutto in alto */
+                justify-content: flex-start; 
+                /* Aggiunge spazio sopra (circa il 15% dell'altezza dello schermo) */
+                padding-top: 25vh; 
+            }
+
             .municipality-logo {
-                width: 80px; /* Più piccolo su mobile */
+                width: 70px; /* Logo leggermente più piccolo per salvare spazio */
                 margin-bottom: 10px;
             }
 
@@ -102,6 +113,11 @@
                 font-size: 5.5vw; 
                 line-height: 1.4;
                 margin-bottom: 15px;
+            }
+
+            .video-wrapper { 
+                width: 95%; 
+                height: auto; /* Altezza automatica in base alla larghezza */
             }
 
             #bg-static {
@@ -140,19 +156,6 @@
             position: absolute; inset: 0;
             background: radial-gradient(circle at center, transparent 40%, rgba(0,0,0,0.7) 85%, black 100%);
             z-index: 6; pointer-events: none;
-        }
-
-        /* --- PLAYER --- */
-        .video-wrapper {
-            position: relative;
-            width: auto; height: 60%; /* Ridotto leggermente per far spazio al logo */
-            aspect-ratio: 16/9;
-            border-radius: 15px; overflow: hidden; background: #000;
-            box-shadow: 0 0 30px rgba(255, 220, 150, 0.2), 0 40px 80px rgba(0,0,0,0.95);
-            border: 1px solid rgba(255, 255, 255, 0.15); z-index: 30;
-        }
-        @media (max-width: 768px) {
-            .video-wrapper { width: 95%; height: auto; }
         }
 
         iframe { width: 100%; height: 100%; border: none; display: block; }
@@ -235,5 +238,3 @@
     </script>
 </body>
 </html>
-
-
