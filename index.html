@@ -6,17 +6,20 @@
     
     <style>        
         html { margin: 0; padding: env(safe-area-inset); height: 100%; width: 100%; }
-        body { position: relative; margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; }
+        body { position: relative; margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; background: #000; }
         
         #main-container {
             width: 100%; height: 100%;
             display: flex; justify-content: center; align-items: center;
+            position: relative;
+            z-index: 1;
         }
         
         #background {               
             background-image: url("1a.webp");
             background-size: cover; background-position: center; background-repeat: no-repeat;
-            position: absolute; top: -7.5%; left: 0; width: 100%; height: 115%; z-index: -1;        
+            position: absolute; top: -7.5%; left: 0; width: 100%; height: 115%; 
+            z-index: 0;      
         }
 
         .video-wrapper {
@@ -25,49 +28,60 @@
             overflow: hidden;
             width: 80%;
             height: auto;
-            position: relative; /* Necessario per posizionare il bottone */
+            position: relative;
             background: #000;
+            z-index: 10;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
-        /* STILE IFRAME: Zommato per nascondere i controlli nativi */
+        /* --- IL TRUCCO AGGRESSIVO --- */
         iframe {
             width: 100%;
-            height: 140%; /* Zoom per tagliare barre sopra/sotto */
+            /* Aumentiamo drasticamente l'altezza per spingere via le barre mobili */
+            height: 240%; 
             border: none;
             position: absolute;
-            top: -20%; 
+            /* Centriamo il video spingendo l'iframe in alto del 70% */
+            top: -70%; 
             left: 0;
-            pointer-events: auto;
-            transition: all 0.5s ease; /* Animazione fluida */
+            z-index: 1;
+            transition: all 0.5s ease;
+            pointer-events: none; /* Disabilita i click su YouTube (niente pausa accidentale) */
         }
 
-        /* CLASSE SPECIALE: Quando è a tutto schermo, annulla lo zoom */
+        /* Quando andiamo a tutto schermo, resetta tutto per vederlo normale */
         .video-wrapper.is-fullscreen iframe {
             height: 100% !important;
             top: 0 !important;
+            pointer-events: auto !important; /* Riabilita i controlli in fullscreen */
         }
 
-        /* STILE DEL NUOVO PULSANTE FULLSCREEN */
+        /* --- PULSANTE CUSTOM --- */
         #custom-fs-btn {
             position: absolute;
             bottom: 15px;
             right: 15px;
-            background-color: rgba(0, 0, 0, 0.6);
+            
+            /* Stile Elegante */
+            width: 44px; /* Dimensione dito minima */
+            height: 44px;
+            background-color: rgba(0, 0, 0, 0.6); /* Nero trasparente */
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 50%; /* Rotondo è più moderno */
+            
             color: white;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 5px;
-            width: 40px;
-            height: 30px;
             font-size: 20px;
-            line-height: 20px;
+            display: flex; align-items: center; justify-content: center;
             cursor: pointer;
-            z-index: 10;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            user-select: none;
+            
+            /* FORZATURA VISIBILITÀ */
+            z-index: 99999 !important;
+            transform: translateZ(100px);
+            -webkit-transform: translateZ(100px);
+            backdrop-filter: blur(4px); /* Effetto vetro carino */
         }
-        #custom-fs-btn:hover { background-color: rgba(0, 0, 0, 0.8); }
+        
+        #custom-fs-btn:active { background-color: rgba(0,0,0,0.9); transform: translateZ(100px) scale(0.95); }
 
     </style>
 </head>
@@ -77,44 +91,36 @@
 
     <div id="main-container">
         <div class="video-wrapper" id="videoWrapper">
+            
             <iframe 
                 src="https://www.youtube.com/embed/live_stream?channel=UCsjOOTpNAZZYxzkEj9gpNEw&autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&playsinline=1" 
-                title="Live streaming" 
+                title="Live Webcam" 
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-                referrerpolicy="strict-origin-when-cross-origin" 
                 allowfullscreen>
             </iframe>
 
-            <div id="custom-fs-btn" onclick="toggleFullScreen()">⛶</div>
+            <div id="custom-fs-btn" onclick="toggleFullScreen()">
+                ⛶
+            </div>
+
         </div>
     </div>
     
     <script>
         var videoWrapper = document.getElementById('videoWrapper');
 
-        // --- FUNZIONE PER GESTIRE IL FULLSCREEN ---
+        // Fullscreen Logic
         function toggleFullScreen() {
             if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-                // ENTRA IN FULLSCREEN
-                if (videoWrapper.requestFullscreen) {
-                    videoWrapper.requestFullscreen();
-                } else if (videoWrapper.webkitRequestFullscreen) { /* Safari */
-                    videoWrapper.webkitRequestFullscreen();
-                } else if (videoWrapper.msRequestFullscreen) { /* IE11 */
-                    videoWrapper.msRequestFullscreen();
-                }
+                if (videoWrapper.requestFullscreen) videoWrapper.requestFullscreen();
+                else if (videoWrapper.webkitRequestFullscreen) videoWrapper.webkitRequestFullscreen();
             } else {
-                // ESCI DA FULLSCREEN
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
-                } else if (document.webkitExitFullscreen) {
-                    document.webkitExitFullscreen();
-                }
+                if (document.exitFullscreen) document.exitFullscreen();
+                else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
             }
         }
 
-        // --- GESTIONE DEL CAMBIO DI STATO (ZOOM IN/OUT) ---
-        // Quando entriamo in fullscreen, rimuoviamo lo zoom (il "taglio")
+        // Listener per cambio stato (Zoom in/out)
         function handleFullscreenChange() {
             if (document.fullscreenElement || document.webkitFullscreenElement) {
                 videoWrapper.classList.add("is-fullscreen");
@@ -122,44 +128,30 @@
                 videoWrapper.classList.remove("is-fullscreen");
             }
         }
-
         document.addEventListener("fullscreenchange", handleFullscreenChange);
-        document.addEventListener("webkitfullscreenchange", handleFullscreenChange); // Per Safari
+        document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
 
-        // --- LOGICA DI LAYOUT ESISTENTE (MANTENUTA) ---
+        // Layout Logic
         function adjustLayout() {
             var screenAspectRatio = window.innerWidth / window.innerHeight;
             var videoAspectRatio = 16 / 9;
-        
             if (screenAspectRatio > videoAspectRatio) { 
-                videoWrapper.style.width = 'auto';
-                videoWrapper.style.height = '80%';            
+                videoWrapper.style.width = 'auto'; videoWrapper.style.height = '80%';            
             } else {            
-                videoWrapper.style.width = '80%';
-                videoWrapper.style.height = 'auto';
+                videoWrapper.style.width = '80%'; videoWrapper.style.height = 'auto';
             }
         }
-        
         window.addEventListener('resize', adjustLayout);
         window.addEventListener('orientationchange', adjustLayout);
         adjustLayout();
         
-        // Gestione scroll iPhone (mantenuta dal tuo codice originale)
-        function disableScroll() {
-            document.body.style.overflow = 'hidden';
-        }
-        
+        // iPhone Scroll Fix
         if(/iPhone/.test(navigator.platform)){ 
-            disableScroll();
+            document.body.style.overflow = 'hidden';
         } else {
-            var backgroundElement = document.getElementById("background");
-            if (backgroundElement) {
-                backgroundElement.parentNode.removeChild(backgroundElement);
-            }
-            document.documentElement.style.backgroundImage = 'url("1a.webp")';
-            document.documentElement.style.backgroundSize = 'cover';
-            document.documentElement.style.backgroundPosition = 'center';
-            document.documentElement.style.backgroundRepeat = 'no-repeat';
+            var bg = document.getElementById("background");
+            if (bg) bg.parentNode.removeChild(bg);
+            document.documentElement.style.background = 'url("1a.webp") center/cover no-repeat fixed';
             document.documentElement.style.overflow = 'hidden';            
         }
     </script>
