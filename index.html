@@ -15,7 +15,7 @@
     <meta property="og:description" content="Guarda cosa succede ora a Montefalcone. Clicca per la diretta.">
     <meta property="og:image" content="https://www.webcammontefalconedivalfortore.it/p.png"> <meta name="robots" content="index, follow">
     
-    <<style>
+    <style>
         html, body {
             margin: 0; padding: 0;
             height: 100%; width: 100%;
@@ -26,7 +26,7 @@
         /* --- FONT --- */
         @font-face {
             font-family: 'MerryChristmasFont';
-            src: url('last.otf') format('truetype');
+            src: url('MerryChristmas.ttf') format('truetype');
         }
 
         #main-container {
@@ -37,17 +37,16 @@
             position: relative; z-index: 20;
         }
 
-        /* --- SFONDO DESKTOP --- */
+        /* --- SFONDO --- */
         #bg-static {
             position: absolute;
             top: -10%; left: -10%; width: 120%; height: 120%;
-            background-image: url("1b.webp"); 
+            background-image: url("image_13.png"); 
             background-size: cover; background-position: center;
             z-index: 0;
             filter: brightness(0.6) contrast(1.2) saturate(1.1);
             animation: driftingWorld 80s ease-in-out infinite alternate;
         }
-        /* Animazione Desktop (Movimento ampio) */
         @keyframes driftingWorld {
             0% { transform: translate(0, 0) scale(1); }
             25% { transform: translate(2%, 1.5%) scale(1.02); }
@@ -56,14 +55,34 @@
             100% { transform: translate(0, 0) scale(1); }
         }
 
+        /* --- LOGO STEMMA (Color Grading Natalizio) --- */
+        .municipality-logo {
+            width: 110px; /* Dimensione Desktop */
+            height: auto;
+            margin-bottom: 15px; /* Spazio tra logo e testo */
+            z-index: 30;
+            
+            /* TRUCCO GRAFICO: */
+            /* 1. Brightness: Lo rende più brillante per spiccare sul buio */
+            /* 2. Drop-shadow: Crea un alone DORATO attorno allo stemma per integrarlo col Natale */
+            filter: brightness(1.1) drop-shadow(0 0 15px rgba(255, 215, 0, 0.5));
+            
+            transition: transform 0.3s ease;
+        }
+        
+        /* Effetto hover carino (opzionale) */
+        .municipality-logo:hover {
+            transform: scale(1.05);
+            filter: brightness(1.2) drop-shadow(0 0 20px rgba(255, 215, 0, 0.8));
+        }
+
         /* --- MESSAGGIO --- */
         .festive-message {
             font-family: 'MerryChristmasFont', serif;
             color: #ffffff;
             text-align: center;
-            /* Dimensione base per PC */
             font-size: 3.5rem; 
-            line-height: 1.3;
+            line-height: 1.2;
             margin-bottom: 25px;
             text-shadow: 2px 2px 4px #000, 0 0 25px rgba(255, 255, 255, 0.6);
             z-index: 30;
@@ -72,27 +91,25 @@
             box-sizing: border-box;
         }
 
-        /* --- MODIFICHE SPECIFICHE PER MOBILE --- */
+        /* --- MOBILE TWEAKS --- */
         @media (max-width: 768px) {
-            /* 1. Testo che si adatta alla larghezza per stare su una riga */
-            .festive-message {
-                /* 5.5vw significa: "occupa il 5.5% della larghezza dello schermo" */
-                /* Questo garantisce che entri tutto su una riga */
-                font-size: 5.5vw; 
-                line-height: 1.5;
-                margin-bottom: 15px;
-                padding: 0 5px;
+            .municipality-logo {
+                width: 80px; /* Più piccolo su mobile */
+                margin-bottom: 10px;
             }
 
-            /* 2. Sfondo meno zoomato su mobile per vedere meglio il villaggio */
+            .festive-message {
+                font-size: 5.5vw; 
+                line-height: 1.4;
+                margin-bottom: 15px;
+            }
+
             #bg-static {
                 animation: driftingWorldMobile 60s ease-in-out infinite alternate;
-                /* Centriamo meglio l'immagine in verticale se serve */
                 background-position: center center; 
             }
         }
 
-        /* Animazione Mobile (Più delicata per non tagliare la foto) */
         @keyframes driftingWorldMobile {
             0% { transform: translate(0, 0) scale(1); }
             100% { transform: translate(-2%, 0) scale(1.1); } 
@@ -128,7 +145,8 @@
         /* --- PLAYER --- */
         .video-wrapper {
             position: relative;
-            width: auto; height: 70%; aspect-ratio: 16/9;
+            width: auto; height: 60%; /* Ridotto leggermente per far spazio al logo */
+            aspect-ratio: 16/9;
             border-radius: 15px; overflow: hidden; background: #000;
             box-shadow: 0 0 30px rgba(255, 220, 150, 0.2), 0 40px 80px rgba(0,0,0,0.95);
             border: 1px solid rgba(255, 255, 255, 0.15); z-index: 30;
@@ -157,8 +175,10 @@
 
     <div id="main-container">
         
+        <img src="stemma2-removebg-preview.png" alt="Stemma Comune di Montefalcone" class="municipality-logo">
+        
         <div class="festive-message">
-            Il Comune di Montefalcone di Val Fortore<br>
+            Il comune di Montefalcone di Val Fortore<br>
             augura a tutti Buone Feste
         </div>
 
@@ -215,4 +235,3 @@
     </script>
 </body>
 </html>
-
