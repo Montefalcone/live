@@ -5,67 +5,57 @@
     <title>Webcam Montefalcone</title>
     
     <style>        
-        /* Reset e Base */
-        html { height: 100%; width: 100%; margin: 0; padding: env(safe-area-inset); box-sizing: border-box; }
-        body { 
-            position: relative; margin: 0; padding: 0; 
+        html, body { 
+            margin: 0; padding: 0; 
             height: 100%; width: 100%; 
             overflow: hidden; 
             background-color: #000; 
         }
         
-        /* Contenitore Principale */
         #main-container {
             width: 100%; height: 100%;
             display: flex; justify-content: center; align-items: center;
-            position: relative; z-index: 2;
+            position: relative; z-index: 1;
         }
         
-        /* Sfondo */
         #background {               
             background-image: url("1a.webp");
             background-size: cover; background-position: center; background-repeat: no-repeat;
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            z-index: 1; opacity: 0.6;   
+            position: absolute; inset: 0; 
+            z-index: 0; opacity: 0.6;   
         }
 
-        /* Wrapper del Video (La cornice) */
+        /* CORNICE */
         .video-wrapper {
             position: relative;
             width: 80%;
-            aspect-ratio: 16/9; /* Forza la forma rettangolare */
+            aspect-ratio: 16/9; 
             border-radius: 15px;
-            overflow: hidden; /* FONDAMENTALE: Taglia tutto ciò che esce dai bordi */
+            overflow: hidden;
             background: #000;
             box-shadow: 0 20px 50px rgba(0,0,0,0.8);
             z-index: 10;
         }
 
-        /* IL VIDEO YOUTUBE */
+        /* VIDEO: NESSUNO ZOOM, 100% PURO */
         iframe {
             width: 100%;
             height: 100%;
             border: none;
-            
-            /* NUOVA TECNICA: ZOOM REALE */
-            /* Ingrandisce il video del 35%. Le scritte finiscono fuori dal wrapper */
-            transform: scale(1.35); 
-            transform-origin: center center;
-            
-            /* Disabilita i click sul video per non far apparire i menu di YouTube */
-            pointer-events: none; 
-            
-            transition: transform 0.5s ease;
+            display: block;
         }
 
-        /* QUANDO E' A TUTTO SCHERMO */
-        /* Rimuoviamo lo zoom e riabilitiamo i click */
-        .video-wrapper.is-fullscreen iframe {
-            transform: scale(1);
-            pointer-events: auto;
+        /* LO SCUDO INVISIBILE */
+        /* Questo div copre il video e intercetta i click/tap */
+        .click-shield {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: transparent; /* Invisibile */
+            z-index: 20; /* Sopra al video */
+            cursor: default; /* Non mostra la manina */
         }
 
-        /* IL PULSANTE CUSTOM */
+        /* PULSANTE FULLSCREEN */
         #custom-fs-btn {
             position: absolute;
             bottom: 15px;
@@ -79,13 +69,12 @@
             display: flex; align-items: center; justify-content: center;
             cursor: pointer;
             
-            /* FORZA BRUTA PER VISIBILITA' */
-            z-index: 999999;
+            /* DEVE STARE SOPRA LO SCUDO */
+            z-index: 30; 
             backdrop-filter: blur(5px);
             -webkit-backdrop-filter: blur(5px);
         }
         
-        /* Effetto click pulsante */
         #custom-fs-btn:active { background-color: rgba(255,255,255,0.2); transform: scale(0.95); }
 
     </style>
@@ -104,6 +93,8 @@
                 allowfullscreen>
             </iframe>
 
+            <div class="click-shield"></div>
+
             <div id="custom-fs-btn" onclick="toggleFullScreen()">⛶</div>
 
         </div>
@@ -112,7 +103,23 @@
     <script>
         var videoWrapper = document.getElementById('videoWrapper');
 
-        // GESTIONE FULLSCREEN
+        // Layout Responsive
+        function adjustLayout() {
+            var screenAspectRatio = window.innerWidth / window.innerHeight;
+            if (screenAspectRatio > 1.77) { 
+                videoWrapper.style.width = 'auto'; 
+                videoWrapper.style.height = '80%';
+                videoWrapper.style.aspectRatio = '16/9';
+            } else {            
+                videoWrapper.style.width = '90%'; 
+                videoWrapper.style.height = 'auto';
+                videoWrapper.style.aspectRatio = '16/9';
+            }
+        }
+        window.addEventListener('resize', adjustLayout);
+        adjustLayout();
+
+        // Fullscreen
         function toggleFullScreen() {
             if (!document.fullscreenElement && !document.webkitFullscreenElement) {
                 if (videoWrapper.requestFullscreen) videoWrapper.requestFullscreen();
@@ -122,35 +129,6 @@
                 else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
             }
         }
-
-        // GESTIONE ZOOM (TOGLIE ZOOM IN FULLSCREEN)
-        function handleFullscreenChange() {
-            if (document.fullscreenElement || document.webkitFullscreenElement) {
-                videoWrapper.classList.add("is-fullscreen");
-            } else {
-                videoWrapper.classList.remove("is-fullscreen");
-            }
-        }
-        document.addEventListener("fullscreenchange", handleFullscreenChange);
-        document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
-
-        // LAYOUT RESPONSIVE (MIGLIORATO)
-        function adjustLayout() {
-            var screenAspectRatio = window.innerWidth / window.innerHeight;
-            // Se lo schermo è più "largo" di un 16:9 (es. PC), limitiamo l'altezza
-            if (screenAspectRatio > 1.77) { 
-                videoWrapper.style.width = 'auto'; 
-                videoWrapper.style.height = '80%';
-                videoWrapper.style.aspectRatio = '16/9';
-            } else {            
-                // Se lo schermo è più "stretto" (es. Telefono verticale), usiamo la larghezza
-                videoWrapper.style.width = '90%'; 
-                videoWrapper.style.height = 'auto';
-                videoWrapper.style.aspectRatio = '16/9';
-            }
-        }
-        window.addEventListener('resize', adjustLayout);
-        adjustLayout();
     </script>
 </body>
 </html>
