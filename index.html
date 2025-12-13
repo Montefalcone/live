@@ -36,24 +36,34 @@
             justify-content: center; 
             align-items: center;
             position: relative; z-index: 20;
+            /* Transizione fluida per quando cambiano le proprietà */
+            transition: all 0.5s ease-in-out;
         }
 
-        /* --- SFONDO --- */
+        /* --- SFONDO (Nuova foto satinata) --- */
         #bg-static {
             position: absolute;
             top: -10%; left: -10%; width: 120%; height: 120%;
-            background-image: url("1b.webp"); 
+            /* NOME DEL NUOVO FILE */
+            background-image: url("1a.webp"); 
             background-size: cover; background-position: center;
             z-index: 0;
-            filter: brightness(0.6) contrast(1.2) saturate(1.1);
+            /* Filtro leggermente diverso per esaltare la satinatura */
+            filter: brightness(0.65) contrast(1.15) saturate(1.1);
+            
+            /* Animazione Desktop (Lenta e maestosa) */
             animation: driftingWorld 80s ease-in-out infinite alternate;
         }
         @keyframes driftingWorld {
             0% { transform: translate(0, 0) scale(1); }
-            25% { transform: translate(2%, 1.5%) scale(1.02); }
-            50% { transform: translate(0%, 3%) scale(1.04); }
-            75% { transform: translate(-2%, 1.5%) scale(1.02); }
-            100% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(-2%, 2%) scale(1.05); } 
+        }
+
+        /* --- ELEMENTI DA NASCONDERE/MOSTRARE (Logo, Testo, Ecc) --- */
+        /* Aggiungiamo una transizione di opacità per renderli fluidi */
+        .municipality-logo, .festive-message, .warm-flicker, .vignette, .particles-container {
+            transition: opacity 0.8s ease; /* Sfumatura lenta */
+            opacity: 1; /* Visibili di default */
         }
 
         /* --- LOGO STEMMA --- */
@@ -63,11 +73,6 @@
             margin-bottom: 15px;
             z-index: 30;
             filter: brightness(1.1) drop-shadow(0 0 15px rgba(255, 215, 0, 0.5));
-            transition: transform 0.3s ease;
-        }
-        .municipality-logo:hover {
-            transform: scale(1.05);
-            filter: brightness(1.2) drop-shadow(0 0 20px rgba(255, 215, 0, 0.8));
         }
 
         /* --- MESSAGGIO --- */
@@ -93,54 +98,67 @@
             border-radius: 15px; overflow: hidden; background: #000;
             box-shadow: 0 0 30px rgba(255, 220, 150, 0.2), 0 40px 80px rgba(0,0,0,0.95);
             border: 1px solid rgba(255, 255, 255, 0.15); z-index: 30;
+            /* Transizione fluida anche per il player quando si ingrandisce */
+            transition: all 0.5s ease;
         }
 
-        /* --- OTTIMIZZAZIONE MOBILE VERTICALE --- */
+        /* --- OTTIMIZZAZIONE MOBILE (Verticale) --- */
         @media (max-width: 768px) and (orientation: portrait) {
             #main-container {
                 justify-content: flex-start; 
-                padding-top: 15vh;
+                padding-top: 20vh; /* Un po' più di spazio */
             }
-            .municipality-logo { width: 70px; margin-bottom: 10px; }
-            .festive-message { font-size: 5.5vw; line-height: 1.4; margin-bottom: 15px; }
+
+            .municipality-logo { width: 75px; margin-bottom: 10px; }
+            .festive-message { font-size: 6vw; line-height: 1.4; margin-bottom: 20px; }
             .video-wrapper { width: 95%; height: auto; }
-            #bg-static { animation: driftingWorldMobile 60s ease-in-out infinite alternate; background-position: center center; }
+
+            /* ANIMAZIONE PIÙ VELOCE SU MOBILE */
+            #bg-static {
+                /* Ridotto a 35 secondi per renderlo più vivo */
+                animation: driftingWorldMobile 35s ease-in-out infinite alternate;
+            }
         }
 
         @keyframes driftingWorldMobile {
             0% { transform: translate(0, 0) scale(1); }
-            100% { transform: translate(-2%, 0) scale(1.1); } 
+            100% { transform: translate(-3%, 0) scale(1.15); } 
         }
 
-        /* --- MAGIC TRICK: FULLSCREEN AUTOMATICO IN ORIZZONTALE --- */
+        /* --- MAGIC TRICK: ORIZZONTALE (Landscape) --- */
+        /* Quando giri il telefono, nascondiamo tutto dolcemente e ingrandiamo il video */
         @media screen and (orientation: landscape) and (max-height: 600px) {
-            /* 1. Nascondi tutto ciò che non serve */
-            .municipality-logo, .festive-message, #bg-static, .warm-flicker, .vignette, .particles-container, #custom-fs-btn {
-                display: none !important;
+            
+            /* 1. Sfumiamo via gli elementi di disturbo invece di nasconderli di colpo */
+            .municipality-logo, .festive-message, #bg-static, .warm-flicker, .vignette, .particles-container {
+                opacity: 0 !important; /* Diventano invisibili dolcemente */
+                pointer-events: none; /* Non cliccabili */
+                position: absolute; /* Li togliamo dal flusso per non occupare spazio */
             }
 
-            /* 2. Resetta il contenitore */
             #main-container {
                 padding: 0 !important;
-                margin: 0 !important;
                 justify-content: center !important;
-                background-color: #000;
+                background: #000;
             }
 
-            /* 3. Espandi il video a tutto schermo */
+            /* 2. Il video occupa tutto */
             .video-wrapper {
                 width: 100vw !important;
                 height: 100vh !important;
-                max-width: none !important;
-                max-height: none !important;
                 border-radius: 0 !important;
                 border: none !important;
                 box-shadow: none !important;
-                aspect-ratio: unset !important; /* Rimuove il vincolo 16/9 per riempire */
             }
             
-            iframe {
-                object-fit: contain; /* Assicura che si veda tutto il video */
+            iframe { object-fit: contain; }
+
+            /* 3. IL TASTO DEVE RIMANERE VISIBILE E POSIZIONATO BENE */
+            #custom-fs-btn {
+                display: flex !important; /* Forza visibilità */
+                position: fixed !important;
+                bottom: 20px; right: 20px;
+                z-index: 9999; /* Sopra a tutto */
             }
         }
 
@@ -154,20 +172,12 @@
         @keyframes firePulse { 0% { opacity: 0.1; } 100% { opacity: 0.5; } }
 
         .particles-container { position: absolute; inset: 0; pointer-events: none; z-index: 5; overflow: hidden; }
-        .snowflake {
-            position: absolute; top: -10px; background: white; border-radius: 50%; opacity: 0.9;
-            box-shadow: 0 0 3px white; 
-        }
-        .ember {
-            position: absolute; bottom: -20px; background: #ffcc00; border-radius: 50%;
-            opacity: 0; filter: blur(2px);
-        }
+        .snowflake { position: absolute; top: -10px; background: white; border-radius: 50%; opacity: 0.9; box-shadow: 0 0 3px white; }
+        .ember { position: absolute; bottom: -20px; background: #ffcc00; border-radius: 50%; opacity: 0; filter: blur(2px); }
         
-        /* Animazioni Scintille */
         @keyframes riseRight { 0% { transform: translateY(0) translateX(0); opacity: 0; } 20% { opacity: 0.8; } 100% { transform: translateY(-90vh) translateX(15vw); opacity: 0; } }
         @keyframes riseLeft { 0% { transform: translateY(0) translateX(0); opacity: 0; } 20% { opacity: 0.8; } 100% { transform: translateY(-90vh) translateX(-15vw); opacity: 0; } }
         @keyframes riseZigZag { 0% { transform: translateY(0) translateX(0); opacity: 0; } 25% { transform: translateY(-20vh) translateX(5vw); opacity: 0.8; } 75% { transform: translateY(-60vh) translateX(-5vw); opacity: 0.4; } 100% { transform: translateY(-90vh) translateX(0); opacity: 0; } }
-        
         @keyframes fall { 0% { transform: translate(0, -10vh); } 100% { transform: translate(15vw, 110vh); } }
 
         .vignette {
@@ -178,12 +188,16 @@
 
         iframe { width: 100%; height: 100%; border: none; display: block; }
         .click-shield { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 30; cursor: default; }
+        
+        /* TASTO FULLSCREEN */
         #custom-fs-btn {
             position: absolute; bottom: 15px; right: 15px; width: 50px; height: 50px;
             background-color: rgba(0, 0, 0, 0.5); border: 1px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%; color: #fff; font-size: 24px;
             display: flex; align-items: center; justify-content: center; cursor: pointer;
             z-index: 40; backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
+            /* Aggiungiamo transizione anche al bottone */
+            transition: all 0.3s ease;
         }
     </style>
 </head>
@@ -198,7 +212,7 @@
         <img src="stemma2-removebg-preview.png" alt="Stemma Comune di Montefalcone" class="municipality-logo">
         
         <div class="festive-message">
-            Il Comune di Montefalcone di Val Fortore<br>
+            Il comune di Montefalcone di Val Fortore<br>
             augura a tutti Buone Feste
         </div>
 
@@ -219,7 +233,7 @@
             const container = document.getElementById('particlesContainer');
             const isMobile = window.innerWidth < 768;
             
-            // Ottimizzazione Mobile: Meno particelle, più lente
+            // Mobile: meno particelle, ma più lente e visibili
             const snowCount = isMobile ? 35 : 70; 
             const emberCount = isMobile ? 15 : 30;
             const speedModifier = isMobile ? 1.5 : 1; 
@@ -237,7 +251,7 @@
                 container.appendChild(flake);
             }
 
-            // SCINTILLE (RANDOMIZZATE)
+            // SCINTILLE
             const animations = ['riseRight', 'riseLeft', 'riseZigZag'];
             for (let i = 0; i < emberCount; i++) {
                 const ember = document.createElement('div');
@@ -259,25 +273,21 @@
 
         function toggleFullScreen() {
             if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-                // Entra in fullscreen
                 if (videoWrapper.requestFullscreen) videoWrapper.requestFullscreen();
                 else if (videoWrapper.webkitRequestFullscreen) videoWrapper.webkitRequestFullscreen();
-                // Blocca orizzontale se possibile
                 if (screen.orientation && screen.orientation.lock) {
                     screen.orientation.lock('landscape').catch(e => {});
                 }
             } else {
-                // Esce da fullscreen
                 if (document.exitFullscreen) document.exitFullscreen();
                 else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
-                // Sblocca orientamento (torna verticale)
                 if (screen.orientation && screen.orientation.unlock) {
                     screen.orientation.unlock();
                 }
             }
         }
 
-        // Ascoltatore per quando si esce dal fullscreen (es. tasto indietro del telefono)
+        // Ascoltatore per l'uscita dal fullscreen
         function onFullScreenChange() {
             if (!document.fullscreenElement && !document.webkitFullscreenElement) {
                 if (screen.orientation && screen.orientation.unlock) {
