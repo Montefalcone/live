@@ -36,22 +36,17 @@
             justify-content: center; 
             align-items: center;
             position: relative; z-index: 20;
-            /* Transizione fluida per quando cambiano le proprietà */
             transition: all 0.5s ease-in-out;
         }
 
-        /* --- SFONDO (Nuova foto satinata) --- */
+        /* --- SFONDO (Foto satinata) --- */
         #bg-static {
             position: absolute;
             top: -10%; left: -10%; width: 120%; height: 120%;
-            /* NOME DEL NUOVO FILE */
             background-image: url("1a.webp"); 
             background-size: cover; background-position: center;
             z-index: 0;
-            /* Filtro leggermente diverso per esaltare la satinatura */
             filter: brightness(0.65) contrast(1.15) saturate(1.1);
-            
-            /* Animazione Desktop (Lenta e maestosa) */
             animation: driftingWorld 80s ease-in-out infinite alternate;
         }
         @keyframes driftingWorld {
@@ -59,14 +54,13 @@
             100% { transform: translate(-2%, 2%) scale(1.05); } 
         }
 
-        /* --- ELEMENTI DA NASCONDERE/MOSTRARE (Logo, Testo, Ecc) --- */
-        /* Aggiungiamo una transizione di opacità per renderli fluidi */
+        /* Transizioni fluide per gli elementi che spariscono */
         .municipality-logo, .festive-message, .warm-flicker, .vignette, .particles-container {
-            transition: opacity 0.8s ease; /* Sfumatura lenta */
-            opacity: 1; /* Visibili di default */
+            transition: opacity 0.8s ease;
+            opacity: 1;
         }
 
-        /* --- LOGO STEMMA --- */
+        /* --- LOGO --- */
         .municipality-logo {
             width: 110px; 
             height: auto;
@@ -90,7 +84,7 @@
             box-sizing: border-box;
         }
 
-        /* --- PLAYER --- */
+        /* --- PLAYER VIDEO (Con animazione tasto fixata) --- */
         .video-wrapper {
             position: relative;
             width: auto; height: 60%;
@@ -98,24 +92,40 @@
             border-radius: 15px; overflow: hidden; background: #000;
             box-shadow: 0 0 30px rgba(255, 220, 150, 0.2), 0 40px 80px rgba(0,0,0,0.95);
             border: 1px solid rgba(255, 255, 255, 0.15); z-index: 30;
-            /* Transizione fluida anche per il player quando si ingrandisce */
-            transition: all 0.5s ease;
+            
+            /* LA CHIAVE PER L'ANIMAZIONE FLUIDA DEL TASTO */
+            /* Usiamo una curva di Bezier per un movimento più morbido ed "elastico" */
+            transition: all 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
+
+        /* --- STILE QUANDO È IN REALE FULLSCREEN (Premendo il tasto) --- */
+        /* Questo dice al browser come deve diventare l'elemento quando è fullscreen */
+        /* La 'transition' sopra animerà il passaggio da stato normale a questo stato e viceversa */
+        .video-wrapper:fullscreen, 
+        .video-wrapper:-webkit-full-screen, 
+        .video-wrapper:-moz-full-screen {
+            width: 100vw !important;
+            height: 100vh !important;
+            border-radius: 0 !important; /* Toglie i bordi tondi */
+            border: none !important;
+            box-shadow: none !important;
+            max-width: none !important; /* Rimuove limiti */
+        }
+
 
         /* --- OTTIMIZZAZIONE MOBILE (Verticale) --- */
         @media (max-width: 768px) and (orientation: portrait) {
             #main-container {
                 justify-content: flex-start; 
-                padding-top: 20vh; /* Un po' più di spazio */
+                padding-top: 20vh;
             }
 
             .municipality-logo { width: 75px; margin-bottom: 10px; }
             .festive-message { font-size: 6vw; line-height: 1.4; margin-bottom: 20px; }
             .video-wrapper { width: 95%; height: auto; }
 
-            /* ANIMAZIONE PIÙ VELOCE SU MOBILE */
             #bg-static {
-                /* Ridotto a 35 secondi per renderlo più vivo */
+                /* Animazione sfondo più veloce su mobile */
                 animation: driftingWorldMobile 35s ease-in-out infinite alternate;
             }
         }
@@ -125,15 +135,14 @@
             100% { transform: translate(-3%, 0) scale(1.15); } 
         }
 
-        /* --- MAGIC TRICK: ORIZZONTALE (Landscape) --- */
-        /* Quando giri il telefono, nascondiamo tutto dolcemente e ingrandiamo il video */
+        /* --- FAKE FULLSCREEN (Rotazione Orizzontale) --- */
         @media screen and (orientation: landscape) and (max-height: 600px) {
             
-            /* 1. Sfumiamo via gli elementi di disturbo invece di nasconderli di colpo */
+            /* Sfumiamo via gli elementi di disturbo */
             .municipality-logo, .festive-message, #bg-static, .warm-flicker, .vignette, .particles-container {
-                opacity: 0 !important; /* Diventano invisibili dolcemente */
-                pointer-events: none; /* Non cliccabili */
-                position: absolute; /* Li togliamo dal flusso per non occupare spazio */
+                opacity: 0 !important; 
+                pointer-events: none;
+                position: absolute;
             }
 
             #main-container {
@@ -142,7 +151,7 @@
                 background: #000;
             }
 
-            /* 2. Il video occupa tutto */
+            /* Il video occupa tutto */
             .video-wrapper {
                 width: 100vw !important;
                 height: 100vh !important;
@@ -153,12 +162,12 @@
             
             iframe { object-fit: contain; }
 
-            /* 3. IL TASTO DEVE RIMANERE VISIBILE E POSIZIONATO BENE */
+            /* TASTO VISIBILE */
             #custom-fs-btn {
-                display: flex !important; /* Forza visibilità */
+                display: flex !important;
                 position: fixed !important;
                 bottom: 20px; right: 20px;
-                z-index: 9999; /* Sopra a tutto */
+                z-index: 9999;
             }
         }
 
@@ -196,7 +205,6 @@
             border-radius: 50%; color: #fff; font-size: 24px;
             display: flex; align-items: center; justify-content: center; cursor: pointer;
             z-index: 40; backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
-            /* Aggiungiamo transizione anche al bottone */
             transition: all 0.3s ease;
         }
     </style>
@@ -302,6 +310,3 @@
     </script>
 </body>
 </html>
-
-
-
