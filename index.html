@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     
-    <title>Webcam Montefalcone in Diretta | Vista Panoramica e Meteo Live</title>
+    <title>Webcam Montefalcone di Val Fortore - LIVE</title>
     
     <meta name="description" content="Guarda la webcam in diretta dal Comune di Montefalcone. Vista panoramica live, condizioni meteo attuali e immagini in tempo reale dal centro storico.">
     
@@ -26,7 +26,7 @@
         /* --- FONT --- */
         @font-face {
             font-family: 'MerryChristmasFont';
-            src: url('last.otf') format('truetype');
+            src: url('MerryChristmas.ttf') format('truetype');
         }
 
         #main-container {
@@ -36,13 +36,14 @@
             justify-content: center; 
             align-items: center;
             position: relative; z-index: 20;
+            transition: all 0.5s ease;
         }
 
-        /* --- SFONDO --- */
+        /* --- SFONDO (Satinato) --- */
         #bg-static {
             position: absolute;
             top: -10%; left: -10%; width: 120%; height: 120%;
-            background-image: url("1a.webp"); 
+            background-image: url("sfondo_satinato.png"); 
             background-size: cover; background-position: center;
             z-index: 0;
             filter: brightness(0.65) contrast(1.15) saturate(1.1);
@@ -53,7 +54,7 @@
             100% { transform: translate(-2%, 2%) scale(1.05); } 
         }
 
-        /* --- ELEMENTI UI (Logo, Testo) --- */
+        /* --- ELEMENTI UI --- */
         .municipality-logo, .festive-message, .warm-flicker, .vignette, .particles-container {
             transition: opacity 0.5s ease;
             opacity: 1;
@@ -61,29 +62,20 @@
 
         /* --- LOGO --- */
         .municipality-logo {
-            width: 110px; 
-            height: auto;
-            margin-bottom: 15px;
-            z-index: 30;
+            width: 110px; height: auto; margin-bottom: 15px; z-index: 30;
             filter: brightness(1.1) drop-shadow(0 0 15px rgba(255, 215, 0, 0.5));
         }
 
         /* --- MESSAGGIO --- */
         .festive-message {
             font-family: 'MerryChristmasFont', serif;
-            color: #ffffff;
-            text-align: center;
-            font-size: 3.5rem; 
-            line-height: 1.2;
-            margin-bottom: 25px;
+            color: #ffffff; text-align: center;
+            font-size: 3.5rem; line-height: 1.2; margin-bottom: 25px;
             text-shadow: 2px 2px 4px #000, 0 0 25px rgba(255, 255, 255, 0.6);
-            z-index: 30;
-            padding: 0 20px;
-            width: 100%;
-            box-sizing: border-box;
+            z-index: 30; padding: 0 20px; width: 100%; box-sizing: border-box;
         }
 
-        /* --- PLAYER VIDEO (Cura dell'animazione) --- */
+        /* --- PLAYER VIDEO --- */
         .video-wrapper {
             position: relative;
             width: auto; height: 60%;
@@ -92,15 +84,12 @@
             box-shadow: 0 0 30px rgba(255, 220, 150, 0.2), 0 40px 80px rgba(0,0,0,0.95);
             border: 1px solid rgba(255, 255, 255, 0.15); z-index: 30;
             
-            /* QUESTA È LA PARTE CHE AMMORTIZZA L'USCITA DAL FULLSCREEN */
-            /* "cubic-bezier" crea un effetto elastico morbido invece di uno scatto lineare */
-            transition: all 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
-            
-            /* Ottimizzazione per evitare lag durante il ridimensionamento */
-            will-change: width, height, border-radius; 
+            /* Transizione CSS standard per ammorbidire il ritorno */
+            transition: all 0.3s ease-out;
+            will-change: width, height; /* Ottimizzazione hardware */
         }
 
-        /* Quando è in fullscreen nativo, togliamo bordi e ombre */
+        /* STILE QUANDO IN FULLSCREEN NATIVO */
         .video-wrapper:fullscreen, 
         .video-wrapper:-webkit-full-screen, 
         .video-wrapper:-moz-full-screen {
@@ -113,73 +102,54 @@
 
         /* --- MOBILE PORTRAIT (Verticale) --- */
         @media (max-width: 768px) and (orientation: portrait) {
-            #main-container {
-                justify-content: flex-start; 
-                padding-top: 20vh;
-            }
+            #main-container { justify-content: flex-start; padding-top: 20vh; }
             .municipality-logo { width: 75px; margin-bottom: 10px; }
             .festive-message { font-size: 6vw; line-height: 1.4; margin-bottom: 20px; }
             .video-wrapper { width: 95%; height: auto; }
             #bg-static { animation: driftingWorldMobile 35s ease-in-out infinite alternate; }
         }
+        @keyframes driftingWorldMobile { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(-3%, 0) scale(1.15); } }
 
-        @keyframes driftingWorldMobile {
-            0% { transform: translate(0, 0) scale(1); }
-            100% { transform: translate(-3%, 0) scale(1.15); } 
-        }
-
-        /* --- MOBILE LANDSCAPE (Orizzontale - Solo pulizia visiva) --- */
+        /* --- MOBILE LANDSCAPE (Orizzontale - Fake Fullscreen Visivo) --- */
         @media screen and (orientation: landscape) and (max-height: 600px) {
-            /* Nasconde gli elementi di disturbo per lasciare spazio al video */
+            /* Nascondiamo tutto */
             .municipality-logo, .festive-message, #bg-static, .warm-flicker, .vignette, .particles-container {
                 display: none !important;
             }
             #main-container { padding: 0 !important; justify-content: center !important; background: #000; }
             
-            /* Qui lasciamo che sia l'utente a premere il tasto per il vero fullscreen, 
-               ma intanto allarghiamo il video per occupare lo spazio disponibile */
+            /* Il video si espande per riempire lo spazio */
             .video-wrapper {
                 width: 100vw; height: 100vh;
                 border: none; border-radius: 0;
             }
+            /* Il tasto rimane visibile per attivare il VERO fullscreen se uno vuole */
             #custom-fs-btn { display: flex !important; position: fixed !important; bottom: 20px; right: 20px; z-index: 9999; }
         }
 
         /* --- EFFETTI --- */
-        .warm-flicker {
-            position: absolute; inset: 0;
-            background: radial-gradient(circle, rgba(255, 180, 50, 0.15), transparent 80%);
-            z-index: 2; pointer-events: none; mix-blend-mode: overlay;
-            animation: firePulse 4s ease-in-out infinite alternate;
-        }
+        .warm-flicker { position: absolute; inset: 0; background: radial-gradient(circle, rgba(255, 180, 50, 0.15), transparent 80%); z-index: 2; pointer-events: none; mix-blend-mode: overlay; animation: firePulse 4s ease-in-out infinite alternate; }
         @keyframes firePulse { 0% { opacity: 0.1; } 100% { opacity: 0.5; } }
-
         .particles-container { position: absolute; inset: 0; pointer-events: none; z-index: 5; overflow: hidden; }
         .snowflake { position: absolute; top: -10px; background: white; border-radius: 50%; opacity: 0.9; box-shadow: 0 0 3px white; }
         .ember { position: absolute; bottom: -20px; background: #ffcc00; border-radius: 50%; opacity: 0; filter: blur(2px); }
-        
+        .vignette { position: absolute; inset: 0; background: radial-gradient(circle at center, transparent 40%, rgba(0,0,0,0.7) 85%, black 100%); z-index: 6; pointer-events: none; }
+
+        @keyframes fall { 0% { transform: translate(0, -10vh); } 100% { transform: translate(15vw, 110vh); } }
         @keyframes riseRight { 0% { transform: translateY(0) translateX(0); opacity: 0; } 20% { opacity: 0.8; } 100% { transform: translateY(-90vh) translateX(15vw); opacity: 0; } }
         @keyframes riseLeft { 0% { transform: translateY(0) translateX(0); opacity: 0; } 20% { opacity: 0.8; } 100% { transform: translateY(-90vh) translateX(-15vw); opacity: 0; } }
         @keyframes riseZigZag { 0% { transform: translateY(0) translateX(0); opacity: 0; } 25% { transform: translateY(-20vh) translateX(5vw); opacity: 0.8; } 75% { transform: translateY(-60vh) translateX(-5vw); opacity: 0.4; } 100% { transform: translateY(-90vh) translateX(0); opacity: 0; } }
-        @keyframes fall { 0% { transform: translate(0, -10vh); } 100% { transform: translate(15vw, 110vh); } }
 
-        .vignette {
-            position: absolute; inset: 0;
-            background: radial-gradient(circle at center, transparent 40%, rgba(0,0,0,0.7) 85%, black 100%);
-            z-index: 6; pointer-events: none;
-        }
-
-        iframe { width: 100%; height: 100%; border: none; display: block; }
+        iframe { width: 100%; height: 100%; border: none; display: block; object-fit: contain; }
         .click-shield { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 30; cursor: default; }
+        
         #custom-fs-btn {
             position: absolute; bottom: 15px; right: 15px; width: 50px; height: 50px;
             background-color: rgba(0, 0, 0, 0.5); border: 1px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%; color: #fff; font-size: 24px;
             display: flex; align-items: center; justify-content: center; cursor: pointer;
             z-index: 40; backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
-            transition: transform 0.2s ease;
         }
-        #custom-fs-btn:active { transform: scale(0.9); }
     </style>
 </head>
 <body>
@@ -210,16 +180,13 @@
     </div>
 
     <script>
-        // PARTICELLE (JS ottimizzato per Mobile)
         function createParticles() {
             const container = document.getElementById('particlesContainer');
             const isMobile = window.innerWidth < 768;
-            
             const snowCount = isMobile ? 35 : 70; 
             const emberCount = isMobile ? 15 : 30;
             const speedModifier = isMobile ? 1.5 : 1; 
 
-            // NEVE
             for (let i = 0; i < snowCount; i++) {
                 const flake = document.createElement('div');
                 flake.classList.add('snowflake');
@@ -232,7 +199,6 @@
                 container.appendChild(flake);
             }
 
-            // SCINTILLE
             const animations = ['riseRight', 'riseLeft', 'riseZigZag'];
             for (let i = 0; i < emberCount; i++) {
                 const ember = document.createElement('div');
@@ -249,32 +215,32 @@
         }
         createParticles();
 
-        // GESTIONE FULLSCREEN NATIVO (Semplificato)
+        // GESTIONE FULLSCREEN NATIVO
         var videoWrapper = document.getElementById('videoWrapper');
 
         function toggleFullScreen() {
             if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-                // ENTRA
+                // Entra in fullscreen
                 if (videoWrapper.requestFullscreen) videoWrapper.requestFullscreen();
                 else if (videoWrapper.webkitRequestFullscreen) videoWrapper.webkitRequestFullscreen();
                 
-                // Blocca orizzontale se possibile
+                // Tenta di bloccare in orizzontale (Best effort)
                 if (screen.orientation && screen.orientation.lock) {
                     screen.orientation.lock('landscape').catch(e => {});
                 }
             } else {
-                // ESCI
+                // Esci da fullscreen
                 if (document.exitFullscreen) document.exitFullscreen();
                 else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
                 
-                // Sblocca rotazione
+                // Sblocca orientamento
                 if (screen.orientation && screen.orientation.unlock) {
                     screen.orientation.unlock();
                 }
             }
         }
-
-        // Ascoltatore eventi per assicurare lo sblocco rotazione anche se si usa il tasto "Indietro" fisico
+        
+        // Listener per garantire che l'orientamento si sblocchi sempre
         function onFullScreenChange() {
             if (!document.fullscreenElement && !document.webkitFullscreenElement) {
                 if (screen.orientation && screen.orientation.unlock) {
