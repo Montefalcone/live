@@ -13,9 +13,10 @@
     
     <meta property="og:title" content="Webcam Montefalcone Live">
     <meta property="og:description" content="Guarda cosa succede ora a Montefalcone. Clicca per la diretta.">
-    <meta property="og:image" content="https://www.webcammontefalconedivalfortore.it/p.png"> <meta name="robots" content="index, follow">
+    <meta property="og:image" content="https://www.webcammontefalconedivalfortore.it/p.png"> 
+    <meta name="robots" content="index, follow">
     
-<style>
+    <style>
         html, body {
             margin: 0; padding: 0;
             height: 100%; width: 100%;
@@ -37,6 +38,17 @@
             align-items: center;
             position: relative; z-index: 20;
             transition: all 0.5s ease;
+        }
+
+        /* --- CLASSE SEO INVISIBILE (Nuova) --- */
+        .seo-title {
+            position: absolute;
+            width: 1px; height: 1px;
+            padding: 0; margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
         }
 
         /* --- SFONDO (Satinato) --- */
@@ -154,6 +166,8 @@
 </head>
 <body>
 
+    <h1 class="seo-title">Webcam Montefalcone di Val Fortore in Diretta - Meteo e Panorami Live</h1>
+
     <div id="bg-static"></div>
     <div class="warm-flicker"></div>
     <div class="vignette"></div>
@@ -167,7 +181,7 @@
             augura a tutti Buone Feste
         </div>
 
-        <div class="video-wrapper" id="videoWrapper">
+        <div class="video-wrapper" id="videoWrapper" data-nosnippet>
             <iframe 
                 src="https://www.youtube.com/embed/live_stream?channel=UCsjOOTpNAZZYxzkEj9gpNEw&autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&playsinline=1" 
                 title="Webcam" 
@@ -254,4 +268,3 @@
     </script>
 </body>
 </html>
-
