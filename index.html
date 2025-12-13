@@ -36,10 +36,9 @@
             justify-content: center; 
             align-items: center;
             position: relative; z-index: 20;
-            transition: all 0.5s ease-in-out;
         }
 
-        /* --- SFONDO (Foto satinata) --- */
+        /* --- SFONDO --- */
         #bg-static {
             position: absolute;
             top: -10%; left: -10%; width: 120%; height: 120%;
@@ -54,9 +53,9 @@
             100% { transform: translate(-2%, 2%) scale(1.05); } 
         }
 
-        /* Transizioni fluide per gli elementi che spariscono */
+        /* --- ELEMENTI UI (Logo, Testo) --- */
         .municipality-logo, .festive-message, .warm-flicker, .vignette, .particles-container {
-            transition: opacity 0.8s ease;
+            transition: opacity 0.5s ease;
             opacity: 1;
         }
 
@@ -84,7 +83,7 @@
             box-sizing: border-box;
         }
 
-        /* --- PLAYER VIDEO (Con animazione tasto fixata) --- */
+        /* --- PLAYER VIDEO (Cura dell'animazione) --- */
         .video-wrapper {
             position: relative;
             width: auto; height: 60%;
@@ -93,41 +92,35 @@
             box-shadow: 0 0 30px rgba(255, 220, 150, 0.2), 0 40px 80px rgba(0,0,0,0.95);
             border: 1px solid rgba(255, 255, 255, 0.15); z-index: 30;
             
-            /* LA CHIAVE PER L'ANIMAZIONE FLUIDA DEL TASTO */
-            /* Usiamo una curva di Bezier per un movimento più morbido ed "elastico" */
+            /* QUESTA È LA PARTE CHE AMMORTIZZA L'USCITA DAL FULLSCREEN */
+            /* "cubic-bezier" crea un effetto elastico morbido invece di uno scatto lineare */
             transition: all 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
+            
+            /* Ottimizzazione per evitare lag durante il ridimensionamento */
+            will-change: width, height, border-radius; 
         }
 
-        /* --- STILE QUANDO È IN REALE FULLSCREEN (Premendo il tasto) --- */
-        /* Questo dice al browser come deve diventare l'elemento quando è fullscreen */
-        /* La 'transition' sopra animerà il passaggio da stato normale a questo stato e viceversa */
+        /* Quando è in fullscreen nativo, togliamo bordi e ombre */
         .video-wrapper:fullscreen, 
         .video-wrapper:-webkit-full-screen, 
         .video-wrapper:-moz-full-screen {
-            width: 100vw !important;
-            height: 100vh !important;
-            border-radius: 0 !important; /* Toglie i bordi tondi */
+            border-radius: 0 !important;
             border: none !important;
             box-shadow: none !important;
-            max-width: none !important; /* Rimuove limiti */
+            width: 100% !important;
+            height: 100% !important;
         }
 
-
-        /* --- OTTIMIZZAZIONE MOBILE (Verticale) --- */
+        /* --- MOBILE PORTRAIT (Verticale) --- */
         @media (max-width: 768px) and (orientation: portrait) {
             #main-container {
                 justify-content: flex-start; 
                 padding-top: 20vh;
             }
-
             .municipality-logo { width: 75px; margin-bottom: 10px; }
             .festive-message { font-size: 6vw; line-height: 1.4; margin-bottom: 20px; }
             .video-wrapper { width: 95%; height: auto; }
-
-            #bg-static {
-                /* Animazione sfondo più veloce su mobile */
-                animation: driftingWorldMobile 35s ease-in-out infinite alternate;
-            }
+            #bg-static { animation: driftingWorldMobile 35s ease-in-out infinite alternate; }
         }
 
         @keyframes driftingWorldMobile {
@@ -135,40 +128,21 @@
             100% { transform: translate(-3%, 0) scale(1.15); } 
         }
 
-        /* --- FAKE FULLSCREEN (Rotazione Orizzontale) --- */
+        /* --- MOBILE LANDSCAPE (Orizzontale - Solo pulizia visiva) --- */
         @media screen and (orientation: landscape) and (max-height: 600px) {
-            
-            /* Sfumiamo via gli elementi di disturbo */
+            /* Nasconde gli elementi di disturbo per lasciare spazio al video */
             .municipality-logo, .festive-message, #bg-static, .warm-flicker, .vignette, .particles-container {
-                opacity: 0 !important; 
-                pointer-events: none;
-                position: absolute;
+                display: none !important;
             }
-
-            #main-container {
-                padding: 0 !important;
-                justify-content: center !important;
-                background: #000;
-            }
-
-            /* Il video occupa tutto */
-            .video-wrapper {
-                width: 100vw !important;
-                height: 100vh !important;
-                border-radius: 0 !important;
-                border: none !important;
-                box-shadow: none !important;
-            }
+            #main-container { padding: 0 !important; justify-content: center !important; background: #000; }
             
-            iframe { object-fit: contain; }
-
-            /* TASTO VISIBILE */
-            #custom-fs-btn {
-                display: flex !important;
-                position: fixed !important;
-                bottom: 20px; right: 20px;
-                z-index: 9999;
+            /* Qui lasciamo che sia l'utente a premere il tasto per il vero fullscreen, 
+               ma intanto allarghiamo il video per occupare lo spazio disponibile */
+            .video-wrapper {
+                width: 100vw; height: 100vh;
+                border: none; border-radius: 0;
             }
+            #custom-fs-btn { display: flex !important; position: fixed !important; bottom: 20px; right: 20px; z-index: 9999; }
         }
 
         /* --- EFFETTI --- */
@@ -197,16 +171,15 @@
 
         iframe { width: 100%; height: 100%; border: none; display: block; }
         .click-shield { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 30; cursor: default; }
-        
-        /* TASTO FULLSCREEN */
         #custom-fs-btn {
             position: absolute; bottom: 15px; right: 15px; width: 50px; height: 50px;
             background-color: rgba(0, 0, 0, 0.5); border: 1px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%; color: #fff; font-size: 24px;
             display: flex; align-items: center; justify-content: center; cursor: pointer;
             z-index: 40; backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
-            transition: all 0.3s ease;
+            transition: transform 0.2s ease;
         }
+        #custom-fs-btn:active { transform: scale(0.9); }
     </style>
 </head>
 <body>
@@ -237,11 +210,11 @@
     </div>
 
     <script>
+        // PARTICELLE (JS ottimizzato per Mobile)
         function createParticles() {
             const container = document.getElementById('particlesContainer');
             const isMobile = window.innerWidth < 768;
             
-            // Mobile: meno particelle, ma più lente e visibili
             const snowCount = isMobile ? 35 : 70; 
             const emberCount = isMobile ? 15 : 30;
             const speedModifier = isMobile ? 1.5 : 1; 
@@ -276,34 +249,39 @@
         }
         createParticles();
 
-        // GESTIONE FULLSCREEN
+        // GESTIONE FULLSCREEN NATIVO (Semplificato)
         var videoWrapper = document.getElementById('videoWrapper');
 
         function toggleFullScreen() {
             if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                // ENTRA
                 if (videoWrapper.requestFullscreen) videoWrapper.requestFullscreen();
                 else if (videoWrapper.webkitRequestFullscreen) videoWrapper.webkitRequestFullscreen();
+                
+                // Blocca orizzontale se possibile
                 if (screen.orientation && screen.orientation.lock) {
                     screen.orientation.lock('landscape').catch(e => {});
                 }
             } else {
+                // ESCI
                 if (document.exitFullscreen) document.exitFullscreen();
                 else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+                
+                // Sblocca rotazione
                 if (screen.orientation && screen.orientation.unlock) {
                     screen.orientation.unlock();
                 }
             }
         }
 
-        // Ascoltatore per l'uscita dal fullscreen
+        // Ascoltatore eventi per assicurare lo sblocco rotazione anche se si usa il tasto "Indietro" fisico
         function onFullScreenChange() {
             if (!document.fullscreenElement && !document.webkitFullscreenElement) {
                 if (screen.orientation && screen.orientation.unlock) {
-                    screen.orientation.unlock(); 
+                    screen.orientation.unlock();
                 }
             }
         }
-
         document.addEventListener('fullscreenchange', onFullScreenChange);
         document.addEventListener('webkitfullscreenchange', onFullScreenChange);
         document.addEventListener('mozfullscreenchange', onFullScreenChange);
