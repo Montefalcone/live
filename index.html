@@ -16,11 +16,20 @@
     <meta property="og:image" content="https://www.webcammontefalconedivalfortore.it/p.png"> 
     <meta name="robots" content="index, follow">
     
-    <style>
+ <style>
+        /* --- BLOCCO TOTALE SCORRIMENTO --- */
         html, body {
             margin: 0; padding: 0;
-            height: 100%; width: 100%;
-            overflow: hidden;
+            width: 100%; height: 100%;
+            /* 1. Nasconde tutto ciò che esce */
+            overflow: hidden; 
+            /* 2. Blocca il body alla finestra (fondamentale per alcuni Android) */
+            position: fixed; 
+            top: 0; left: 0;
+            /* 3. Disabilita l'effetto elastico (rubber-banding) */
+            overscroll-behavior: none;
+            /* 4. Disabilita le gesture di pan/zoom del browser */
+            touch-action: none;
             background-color: #000;
         }
 
@@ -40,17 +49,6 @@
             transition: all 0.5s ease;
         }
 
-        /* --- CLASSE SEO INVISIBILE (Nuova) --- */
-        .seo-title {
-            position: absolute;
-            width: 1px; height: 1px;
-            padding: 0; margin: -1px;
-            overflow: hidden;
-            clip: rect(0, 0, 0, 0);
-            white-space: nowrap;
-            border: 0;
-        }
-
         /* --- SFONDO (Satinato) --- */
         #bg-static {
             position: absolute;
@@ -60,6 +58,8 @@
             z-index: 0;
             filter: brightness(0.65) contrast(1.15) saturate(1.1);
             animation: driftingWorld 80s ease-in-out infinite alternate;
+            /* Impedisce al mouse/dito di interagire con lo sfondo */
+            pointer-events: none; 
         }
         @keyframes driftingWorld {
             0% { transform: translate(0, 0) scale(1); }
@@ -70,7 +70,12 @@
         .municipality-logo, .festive-message, .warm-flicker, .vignette, .particles-container {
             transition: opacity 0.5s ease;
             opacity: 1;
+            /* Importante: impedisce che questi elementi blocchino i click */
+            pointer-events: none; 
         }
+        
+        /* Riabilitiamo i click solo sugli elementi che devono essere interattivi se necessario, 
+           ma qui logo e testo sono solo visivi */
 
         /* --- LOGO --- */
         .municipality-logo {
@@ -96,12 +101,13 @@
             box-shadow: 0 0 30px rgba(255, 220, 150, 0.2), 0 40px 80px rgba(0,0,0,0.95);
             border: 1px solid rgba(255, 255, 255, 0.15); z-index: 30;
             
-            /* Transizione CSS standard per ammorbidire il ritorno */
+            /* Riabilitiamo i pointer-events qui perché il video DEVE essere cliccabile */
+            pointer-events: auto; 
+            
             transition: all 0.3s ease-out;
-            will-change: width, height; /* Ottimizzazione hardware */
+            will-change: width, height; 
         }
 
-        /* STILE QUANDO IN FULLSCREEN NATIVO */
         .video-wrapper:fullscreen, 
         .video-wrapper:-webkit-full-screen, 
         .video-wrapper:-moz-full-screen {
@@ -112,7 +118,7 @@
             height: 100% !important;
         }
 
-        /* --- MOBILE PORTRAIT (Verticale) --- */
+        /* --- MOBILE PORTRAIT --- */
         @media (max-width: 768px) and (orientation: portrait) {
             #main-container { justify-content: flex-start; padding-top: 20vh; }
             .municipality-logo { width: 75px; margin-bottom: 10px; }
@@ -122,20 +128,16 @@
         }
         @keyframes driftingWorldMobile { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(-3%, 0) scale(1.15); } }
 
-        /* --- MOBILE LANDSCAPE (Orizzontale - Fake Fullscreen Visivo) --- */
+        /* --- MOBILE LANDSCAPE (Fake Fullscreen Visivo) --- */
         @media screen and (orientation: landscape) and (max-height: 600px) {
-            /* Nascondiamo tutto */
             .municipality-logo, .festive-message, #bg-static, .warm-flicker, .vignette, .particles-container {
                 display: none !important;
             }
             #main-container { padding: 0 !important; justify-content: center !important; background: #000; }
-            
-            /* Il video si espande per riempire lo spazio */
             .video-wrapper {
                 width: 100vw; height: 100vh;
                 border: none; border-radius: 0;
             }
-            /* Il tasto rimane visibile per attivare il VERO fullscreen se uno vuole */
             #custom-fs-btn { display: flex !important; position: fixed !important; bottom: 20px; right: 20px; z-index: 9999; }
         }
 
@@ -161,12 +163,13 @@
             border-radius: 50%; color: #fff; font-size: 24px;
             display: flex; align-items: center; justify-content: center; cursor: pointer;
             z-index: 40; backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
+            transition: transform 0.2s ease;
+            pointer-events: auto; /* Assicuriamo che il bottone sia cliccabile */
         }
+        #custom-fs-btn:active { transform: scale(0.9); }
     </style>
 </head>
 <body>
-
-    <h1 class="seo-title">Webcam Montefalcone di Val Fortore in Diretta - Meteo e Panorami Live</h1>
 
     <div id="bg-static"></div>
     <div class="warm-flicker"></div>
@@ -181,7 +184,7 @@
             augura a tutti Buone Feste
         </div>
 
-        <div class="video-wrapper" id="videoWrapper" data-nosnippet>
+        <div class="video-wrapper" id="videoWrapper">
             <iframe 
                 src="https://www.youtube.com/embed/live_stream?channel=UCsjOOTpNAZZYxzkEj9gpNEw&autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&playsinline=1" 
                 title="Webcam" 
@@ -194,6 +197,15 @@
     </div>
 
     <script>
+        // --- BLOCCO SCORRIMENTO VIA JAVASCRIPT (SOLUZIONE NUCLEARE) ---
+        // Questo script impedisce fisicamente al browser di scorrere quando si tocca lo schermo
+        // Tranne che per i pulsanti o elementi interattivi espliciti
+        document.addEventListener('touchmove', function(e) {
+            e.preventDefault();
+        }, { passive: false });
+
+
+        // --- PARTICELLE ---
         function createParticles() {
             const container = document.getElementById('particlesContainer');
             const isMobile = window.innerWidth < 768;
@@ -229,32 +241,29 @@
         }
         createParticles();
 
-        // GESTIONE FULLSCREEN NATIVO
+        // --- FULLSCREEN NATIVO ---
         var videoWrapper = document.getElementById('videoWrapper');
 
         function toggleFullScreen() {
             if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-                // Entra in fullscreen
+                // ENTRA
                 if (videoWrapper.requestFullscreen) videoWrapper.requestFullscreen();
                 else if (videoWrapper.webkitRequestFullscreen) videoWrapper.webkitRequestFullscreen();
                 
-                // Tenta di bloccare in orizzontale (Best effort)
                 if (screen.orientation && screen.orientation.lock) {
                     screen.orientation.lock('landscape').catch(e => {});
                 }
             } else {
-                // Esci da fullscreen
+                // ESCI
                 if (document.exitFullscreen) document.exitFullscreen();
                 else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
                 
-                // Sblocca orientamento
                 if (screen.orientation && screen.orientation.unlock) {
                     screen.orientation.unlock();
                 }
             }
         }
         
-        // Listener per garantire che l'orientamento si sblocchi sempre
         function onFullScreenChange() {
             if (!document.fullscreenElement && !document.webkitFullscreenElement) {
                 if (screen.orientation && screen.orientation.unlock) {
