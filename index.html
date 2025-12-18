@@ -17,142 +17,187 @@
     
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 
+   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
     <style>
+        /* --- STILI DI BASE --- */
         html, body {
             margin: 0; padding: 0;
             width: 100%; height: 100%;
             overflow: hidden; 
             background-color: #000;
+            font-family: sans-serif;
         }
 
-        @font-face {
-            font-family: 'MerryChristmasFont';
-            src: url('last.otf') format('truetype');
-        }
-
+        /* --- CONTENITORE PRINCIPALE --- */
         #main-container {
             width: 100%; height: 100%;
             display: flex;
             flex-direction: column;
             justify-content: center; 
             align-items: center;
-            position: relative; z-index: 20;
-        }
-
-        #bg-static {
-            position: absolute;
-            top: -10%; left: -10%; width: 120%; height: 120%;
             background-image: url("1a.webp"); 
-            background-size: cover; background-position: center;
-            z-index: 0;
-            filter: brightness(0.65) contrast(1.15) saturate(1.1);
-            animation: driftingWorld 80s ease-in-out infinite alternate;
-            pointer-events: none; 
+            background-size: cover; 
+            background-position: center;
+            position: relative;
         }
-        @keyframes driftingWorld {
-            0% { transform: translate(0, 0) scale(1); }
-            100% { transform: translate(-2%, 2%) scale(1.05); } 
-        }
-
-        .municipality-logo, .festive-message, .warm-flicker, .vignette, .particles-container {
-            pointer-events: none; 
+        
+        /* Sfondo scuro per leggere meglio */
+        .overlay-bg {
+            position: absolute; inset: 0;
+            background: rgba(0,0,0,0.4);
+            pointer-events: none;
         }
 
-        .municipality-logo {
-            width: 110px; height: auto; margin-bottom: 15px; z-index: 30;
-            filter: brightness(1.1) drop-shadow(0 0 15px rgba(255, 215, 0, 0.5));
-        }
-
-        .festive-message {
-            font-family: 'MerryChristmasFont', serif;
-            color: #ffffff; text-align: center;
-            font-size: 3.5rem; line-height: 1.2; margin-bottom: 25px;
-            text-shadow: 2px 2px 4px #000, 0 0 25px rgba(255, 255, 255, 0.6);
-            z-index: 30; padding: 0 20px; width: 100%; box-sizing: border-box;
-        }
-
-        /* --- PLAYER WRAPPER --- */
+        /* --- PLAYER BOX --- */
         .video-wrapper {
             position: relative;
-            z-index: 30;
-            width: 80%;       
-            max-width: 1000px; 
-            aspect-ratio: 16/9;
-            border-radius: 15px; 
-            overflow: hidden; 
+            z-index: 20;
+            
+            /* DIMENSIONI FISSE PER EVITARE ERRORI */
+            width: 90%;       
+            max-width: 1100px; 
+            aspect-ratio: 16/9; 
+            
             background: #000;
-            box-shadow: 0 0 30px rgba(255, 220, 150, 0.2), 0 40px 80px rgba(0,0,0,0.95);
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 40px rgba(0,0,0,0.8);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 16px;
+            overflow: hidden; /* Taglia gli angoli del video */
         }
 
-        /* STILE DEL VIDEO TAG NATIVO */
+        /* --- VIDEO NATIVO --- */
         video {
             width: 100%;
             height: 100%;
             display: block;
-            object-fit: contain; /* Fondamentale: adatta il video al box */
-            outline: none;
+            /* 'cover' forza il video a riempire tutto il box, niente bande nere */
+            object-fit: cover; 
         }
+
+        /* --- BOTTONE PLAY PERSONALIZZATO --- */
+        /* Appare se l'autoplay fallisce */
+        #play-overlay {
+            position: absolute; inset: 0;
+            background: rgba(0,0,0,0.6);
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            cursor: pointer;
+            z-index: 30;
+            transition: opacity 0.3s;
+        }
+        .play-btn {
+            width: 80px; height: 80px;
+            background: white;
+            border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 0 20px rgba(255,255,255,0.5);
+        }
+        .play-triangle {
+            width: 0; height: 0;
+            border-left: 25px solid #333;
+            border-top: 15px solid transparent;
+            border-bottom: 15px solid transparent;
+            margin-left: 5px;
+        }
+        .play-text {
+            color: white; margin-top: 15px; font-size: 1.2rem; font-weight: bold;
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+
+        /* Nascondi overlay quando si clicca */
+        .hidden { opacity: 0; pointer-events: none; }
+
+        /* --- TESTI --- */
+        .header-content {
+            position: relative; z-index: 20;
+            text-align: center; color: white;
+            margin-bottom: 20px;
+            text-shadow: 0 2px 4px black;
+            pointer-events: none;
+        }
+        .logo { width: 100px; margin-bottom: 10px; }
+        .festive-text { font-family: 'Times New Roman', serif; font-size: 2.5rem; line-height: 1.1; }
 
         /* --- MOBILE --- */
-        @media (max-width: 768px) and (orientation: portrait) {
-            #main-container { justify-content: flex-start; padding-top: 20vh; }
-            .municipality-logo { width: 75px; margin-bottom: 10px; }
-            .festive-message { font-size: 6vw; line-height: 1.4; margin-bottom: 20px; }
-            .video-wrapper { width: 95%; aspect-ratio: 16/9; }
-            #bg-static { animation: driftingWorldMobile 35s ease-in-out infinite alternate; }
+        @media (max-width: 768px) {
+            .video-wrapper { width: 100%; border-radius: 0; border: none; }
+            .festive-text { font-size: 1.5rem; }
+            #main-container { justify-content: flex-start; padding-top: 50px; }
         }
-        @keyframes driftingWorldMobile { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(-3%, 0) scale(1.15); } }
-
-        @media screen and (orientation: landscape) and (max-height: 600px) {
-            .municipality-logo, .festive-message, #bg-static, .warm-flicker, .vignette, .particles-container { display: none !important; }
-            #main-container { padding: 0 !important; justify-content: center !important; background: #000; }
-            .video-wrapper { width: 100vw; height: 100vh; max-width: none; border: none; border-radius: 0; }
-        }
-
-        /* --- EFFETTI --- */
-        .warm-flicker { position: absolute; inset: 0; background: radial-gradient(circle, rgba(255, 180, 50, 0.15), transparent 80%); z-index: 2; pointer-events: none; mix-blend-mode: overlay; animation: firePulse 4s ease-in-out infinite alternate; }
-        @keyframes firePulse { 0% { opacity: 0.1; } 100% { opacity: 0.5; } }
-        .particles-container { position: absolute; inset: 0; pointer-events: none; z-index: 5; overflow: hidden; }
-        .snowflake { position: absolute; top: -10px; background: white; border-radius: 50%; opacity: 0.9; box-shadow: 0 0 3px white; }
-        .ember { position: absolute; bottom: -20px; background: #ffcc00; border-radius: 50%; opacity: 0; filter: blur(2px); }
-        .vignette { position: absolute; inset: 0; background: radial-gradient(circle at center, transparent 40%, rgba(0,0,0,0.7) 85%, black 100%); z-index: 6; pointer-events: none; }
-        @keyframes fall { 0% { transform: translate(0, -10vh); } 100% { transform: translate(15vw, 110vh); } }
-        @keyframes riseZigZag { 0% { transform: translateY(0) translateX(0); opacity: 0; } 50% { opacity: 0.8; } 100% { transform: translateY(-90vh) translateX(0); opacity: 0; } }
     </style>
 </head>
 <body>
 
-    <div id="bg-static"></div>
-    <div class="warm-flicker"></div>
-    <div class="vignette"></div>
-    <div class="particles-container" id="particlesContainer"></div>
-
     <div id="main-container">
-        <img src="stemma2-removebg-preview.png" alt="Stemma Comune di Montefalcone" class="municipality-logo">
-        <div class="festive-message">
-            Il comune di Montefalcone di Val Fortore<br>augura a tutti Buone Feste
+        <div class="overlay-bg"></div>
+
+        <div class="header-content">
+            <img src="stemma2-removebg-preview.png" class="logo" alt="Stemma">
+            <div class="festive-text">
+                Il comune di Montefalcone di Val Fortore<br>
+                augura a tutti Buone Feste
+            </div>
         </div>
 
         <div class="video-wrapper">
-            <video id="live-video" controls autoplay muted playsinline poster="p.png"></video>
+            
+            <div id="play-overlay" onclick="startVideo()">
+                <div class="play-btn"><div class="play-triangle"></div></div>
+                <div class="play-text">Clicca per la diretta</div>
+            </div>
+
+            <video id="live-video" muted playsinline poster="p.png"></video>
+
         </div>
     </div>
 
     <script>
-        // --- CONFIGURAZIONE HLS ---
-        var videoSrc = https://live.webcammontefalconedivalfortore.it/memfs/58e0bcbe-f1bd-4c8b-85f7-b4566a3e5392.m3u8'; 
+        // --- IL TUO LINK INSERITO DIRETTAMENTE ---
+        var videoSrc = 'https://live.webcammontefalconedivalfortore.it/memfs/58e0bcbe-f1bd-4c8b-85f7-b4566a3e5392.m3u8';
         
         var video = document.getElementById('live-video');
+        var overlay = document.getElementById('play-overlay');
+        var hls = null;
 
+        // Funzione per avviare il video (chiamata dal click o dall'autoplay)
+        function startVideo() {
+            video.muted = false; // Attiva l'audio
+            video.play()
+                .then(() => {
+                    // Se parte, nascondi l'overlay e mostra i controlli nativi
+                    overlay.classList.add('hidden');
+                    video.controls = true;
+                })
+                .catch(e => {
+                    console.log("Impossibile avviare audio/video senza interazione", e);
+                    // Se fallisce, l'overlay resta visibile così l'utente deve cliccare
+                });
+        }
+
+        // --- INIZIALIZZAZIONE HLS ---
         if (Hls.isSupported()) {
-            var hls = new Hls();
+            hls = new Hls();
             hls.loadSource(videoSrc);
             hls.attachMedia(video);
+            
             hls.on(Hls.Events.MANIFEST_PARSED, function() {
-                video.play().catch(e => console.log("Autoplay bloccato"));
+                // Tenta l'autoplay mutato all'inizio
+                video.muted = true;
+                var promise = video.play();
+                if (promise !== undefined) {
+                    promise.then(_ => {
+                        // Autoplay riuscito! Nascondi overlay
+                        overlay.classList.add('hidden');
+                        video.controls = true; // Mostra controlli
+                    }).catch(error => {
+                        // Autoplay bloccato. L'overlay resta visibile.
+                        console.log("Autoplay bloccato, serve click.");
+                    });
+                }
             });
-            // Gestione errori e riconnessione
+
+            // Gestione errori stream (riconnessione automatica)
             hls.on(Hls.Events.ERROR, function (event, data) {
                 if (data.fatal) {
                     switch (data.type) {
@@ -169,49 +214,17 @@
                 }
             });
         }
+        // Supporto nativo Safari (iPhone/iPad)
         else if (video.canPlayType('application/vnd.apple.mpegurl')) {
             video.src = videoSrc;
             video.addEventListener('loadedmetadata', function() {
-                video.play();
+                video.muted = true;
+                video.play().then(() => {
+                    overlay.classList.add('hidden');
+                    video.controls = true;
+                }).catch(e => {});
             });
         }
-
-        // --- PREVENZIONE SCROLL ---
-        document.addEventListener('touchmove', function(e) {
-            if(e.target.tagName !== 'VIDEO') e.preventDefault();
-        }, { passive: false });
-
-        // --- PARTICELLE ---
-        function createParticles() {
-            const container = document.getElementById('particlesContainer');
-            const isMobile = window.innerWidth < 768;
-            const snowCount = isMobile ? 35 : 70; 
-            const emberCount = isMobile ? 15 : 30;
-
-            for (let i = 0; i < snowCount; i++) {
-                const flake = document.createElement('div');
-                flake.classList.add('snowflake');
-                const size = Math.random() * 3 + 2;
-                flake.style.width = size + 'px'; flake.style.height = size + 'px';
-                flake.style.left = (Math.random() * 120 - 10) + 'vw';
-                flake.style.animation = `fall ${(Math.random() * 4 + 4)}s linear infinite`;
-                flake.style.animationDelay = '-' + (Math.random() * 5) + 's';
-                container.appendChild(flake);
-            }
-            
-            const animations = ['riseZigZag'];
-            for (let i = 0; i < emberCount; i++) {
-                const ember = document.createElement('div');
-                ember.classList.add('ember');
-                const size = Math.random() * 4 + 3;
-                ember.style.width = size + 'px'; ember.style.height = size + 'px';
-                ember.style.left = Math.random() * 100 + 'vw';
-                ember.style.animation = `riseZigZag ${(Math.random() * 6 + 6)}s linear infinite`;
-                ember.style.animationDelay = '-' + (Math.random() * 10) + 's';
-                container.appendChild(ember);
-            }
-        }
-        createParticles();
     </script>
 </body>
 </html>
