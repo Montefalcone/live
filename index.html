@@ -8,7 +8,6 @@
     <title>Webcam Montefalcone di Val Fortore - LIVE</title>
     
     <meta name="description" content="Guarda la webcam in diretta dal Comune di Montefalcone. Vista panoramica live, condizioni meteo attuali e immagini in tempo reale dal centro storico.">
-    
     <meta name="keywords" content="webcam montefalcone, meteo montefalcone, comune di montefalcone live, telecamera diretta">
     
     <meta property="og:title" content="Webcam Montefalcone Live">
@@ -21,14 +20,10 @@
         html, body {
             margin: 0; padding: 0;
             width: 100%; height: 100%;
-            /* 1. Nasconde tutto ciò che esce */
             overflow: hidden; 
-            /* 2. Blocca il body alla finestra (fondamentale per alcuni Android) */
             position: fixed; 
             top: 0; left: 0;
-            /* 3. Disabilita l'effetto elastico (rubber-banding) */
             overscroll-behavior: none;
-            /* 4. Disabilita le gesture di pan/zoom del browser */
             touch-action: none;
             background-color: #000;
         }
@@ -58,7 +53,6 @@
             z-index: 0;
             filter: brightness(0.65) contrast(1.15) saturate(1.1);
             animation: driftingWorld 80s ease-in-out infinite alternate;
-            /* Impedisce al mouse/dito di interagire con lo sfondo */
             pointer-events: none; 
         }
         @keyframes driftingWorld {
@@ -70,12 +64,8 @@
         .municipality-logo, .festive-message, .warm-flicker, .vignette, .particles-container {
             transition: opacity 0.5s ease;
             opacity: 1;
-            /* Importante: impedisce che questi elementi blocchino i click */
             pointer-events: none; 
         }
-        
-        /* Riabilitiamo i click solo sugli elementi che devono essere interattivi se necessario, 
-           ma qui logo e testo sono solo visivi */
 
         /* --- LOGO --- */
         .municipality-logo {
@@ -92,7 +82,7 @@
             z-index: 30; padding: 0 20px; width: 100%; box-sizing: border-box;
         }
 
-        /* --- PLAYER VIDEO --- */
+        /* --- PLAYER VIDEO WRAPPER --- */
         .video-wrapper {
             position: relative;
             width: auto; height: 60%;
@@ -100,22 +90,16 @@
             border-radius: 15px; overflow: hidden; background: #000;
             box-shadow: 0 0 30px rgba(255, 220, 150, 0.2), 0 40px 80px rgba(0,0,0,0.95);
             border: 1px solid rgba(255, 255, 255, 0.15); z-index: 30;
-            
-            /* Riabilitiamo i pointer-events qui perché il video DEVE essere cliccabile */
-            pointer-events: auto; 
-            
+            pointer-events: auto; /* Il video deve essere cliccabile */
             transition: all 0.3s ease-out;
-            will-change: width, height; 
         }
 
-        .video-wrapper:fullscreen, 
-        .video-wrapper:-webkit-full-screen, 
-        .video-wrapper:-moz-full-screen {
-            border-radius: 0 !important;
-            border: none !important;
-            box-shadow: none !important;
+        /* Forza l'iframe a riempire il contenitore responsive */
+        .video-wrapper iframe {
             width: 100% !important;
             height: 100% !important;
+            border: none;
+            display: block;
         }
 
         /* --- MOBILE PORTRAIT --- */
@@ -138,7 +122,6 @@
                 width: 100vw; height: 100vh;
                 border: none; border-radius: 0;
             }
-            #custom-fs-btn { display: flex !important; position: fixed !important; bottom: 20px; right: 20px; z-index: 9999; }
         }
 
         /* --- EFFETTI --- */
@@ -154,19 +137,6 @@
         @keyframes riseLeft { 0% { transform: translateY(0) translateX(0); opacity: 0; } 20% { opacity: 0.8; } 100% { transform: translateY(-90vh) translateX(-15vw); opacity: 0; } }
         @keyframes riseZigZag { 0% { transform: translateY(0) translateX(0); opacity: 0; } 25% { transform: translateY(-20vh) translateX(5vw); opacity: 0.8; } 75% { transform: translateY(-60vh) translateX(-5vw); opacity: 0.4; } 100% { transform: translateY(-90vh) translateX(0); opacity: 0; } }
 
-        iframe { width: 100%; height: 100%; border: none; display: block; object-fit: contain; }
-        .click-shield { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 30; cursor: default; }
-        
-        #custom-fs-btn {
-            position: absolute; bottom: 15px; right: 15px; width: 50px; height: 50px;
-            background-color: rgba(0, 0, 0, 0.5); border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%; color: #fff; font-size: 24px;
-            display: flex; align-items: center; justify-content: center; cursor: pointer;
-            z-index: 40; backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
-            transition: transform 0.2s ease;
-            pointer-events: auto; /* Assicuriamo che il bottone sia cliccabile */
-        }
-        #custom-fs-btn:active { transform: scale(0.9); }
     </style>
 </head>
 <body>
@@ -185,21 +155,22 @@
         </div>
 
         <div class="video-wrapper" id="videoWrapper">
+            
             <iframe 
-                src="https://www.youtube.com/embed/live_stream?channel=UCsjOOTpNAZZYxzkEj9gpNEw&autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&playsinline=1" 
-                title="Webcam" 
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                src="https://live.webcammontefalconedivalfortore.it/58e0bcbe-f1bd-4c8b-85f7-b4566a3e5392.html" 
+                width="100%" 
+                height="100%" 
+                frameborder="no" 
+                scrolling="no" 
+                allow="autoplay; fullscreen" 
                 allowfullscreen>
             </iframe>
-            <div class="click-shield"></div>
-            <div id="custom-fs-btn" onclick="toggleFullScreen()">⛶</div>
+
         </div>
     </div>
 
     <script>
-        // --- BLOCCO SCORRIMENTO VIA JAVASCRIPT (SOLUZIONE NUCLEARE) ---
-        // Questo script impedisce fisicamente al browser di scorrere quando si tocca lo schermo
-        // Tranne che per i pulsanti o elementi interattivi espliciti
+        // --- BLOCCO SCORRIMENTO VIA JAVASCRIPT ---
         document.addEventListener('touchmove', function(e) {
             e.preventDefault();
         }, { passive: false });
@@ -240,40 +211,6 @@
             }
         }
         createParticles();
-
-        // --- FULLSCREEN NATIVO ---
-        var videoWrapper = document.getElementById('videoWrapper');
-
-        function toggleFullScreen() {
-            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-                // ENTRA
-                if (videoWrapper.requestFullscreen) videoWrapper.requestFullscreen();
-                else if (videoWrapper.webkitRequestFullscreen) videoWrapper.webkitRequestFullscreen();
-                
-                if (screen.orientation && screen.orientation.lock) {
-                    screen.orientation.lock('landscape').catch(e => {});
-                }
-            } else {
-                // ESCI
-                if (document.exitFullscreen) document.exitFullscreen();
-                else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
-                
-                if (screen.orientation && screen.orientation.unlock) {
-                    screen.orientation.unlock();
-                }
-            }
-        }
-        
-        function onFullScreenChange() {
-            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-                if (screen.orientation && screen.orientation.unlock) {
-                    screen.orientation.unlock();
-                }
-            }
-        }
-        document.addEventListener('fullscreenchange', onFullScreenChange);
-        document.addEventListener('webkitfullscreenchange', onFullScreenChange);
-        document.addEventListener('mozfullscreenchange', onFullScreenChange);
     </script>
 </body>
 </html>
