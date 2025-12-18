@@ -15,12 +15,8 @@
     <meta property="og:image" content="https://www.webcammontefalconedivalfortore.it/p.png"> 
     <meta name="robots" content="index, follow">
     
-<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-
-   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-
-    <style>
-        /* --- STILI DI BASE --- */
+<style>
+        /* --- RESET --- */
         html, body {
             margin: 0; padding: 0;
             width: 100%; height: 100%;
@@ -29,7 +25,6 @@
             font-family: sans-serif;
         }
 
-        /* --- CONTENITORE PRINCIPALE --- */
         #main-container {
             width: 100%; height: 100%;
             display: flex;
@@ -41,79 +36,42 @@
             background-position: center;
             position: relative;
         }
-        
-        /* Sfondo scuro per leggere meglio */
+
+        /* SFONDO SCURO */
         .overlay-bg {
             position: absolute; inset: 0;
-            background: rgba(0,0,0,0.4);
+            background: rgba(0,0,0,0.5);
             pointer-events: none;
         }
 
-        /* --- PLAYER BOX --- */
+        /* --- WRAPPER DEL VIDEO --- */
         .video-wrapper {
             position: relative;
             z-index: 20;
-            
-            /* DIMENSIONI FISSE PER EVITARE ERRORI */
+            /* Dimensioni fisse e centrate */
             width: 90%;       
             max-width: 1100px; 
             aspect-ratio: 16/9; 
             
             background: #000;
-            box-shadow: 0 0 40px rgba(0,0,0,0.8);
+            box-shadow: 0 0 50px rgba(0,0,0,0.9);
             border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 16px;
-            overflow: hidden; /* Taglia gli angoli del video */
+            border-radius: 12px;
+            overflow: hidden; 
         }
 
-        /* --- VIDEO NATIVO --- */
-        video {
+        /* Assicura che il player Clappr riempia il box */
+        #player {
             width: 100%;
             height: 100%;
-            display: block;
-            /* 'cover' forza il video a riempire tutto il box, niente bande nere */
-            object-fit: cover; 
         }
 
-        /* --- BOTTONE PLAY PERSONALIZZATO --- */
-        /* Appare se l'autoplay fallisce */
-        #play-overlay {
-            position: absolute; inset: 0;
-            background: rgba(0,0,0,0.6);
-            display: flex; flex-direction: column;
-            justify-content: center; align-items: center;
-            cursor: pointer;
-            z-index: 30;
-            transition: opacity 0.3s;
-        }
-        .play-btn {
-            width: 80px; height: 80px;
-            background: white;
-            border-radius: 50%;
-            display: flex; justify-content: center; align-items: center;
-            box-shadow: 0 0 20px rgba(255,255,255,0.5);
-        }
-        .play-triangle {
-            width: 0; height: 0;
-            border-left: 25px solid #333;
-            border-top: 15px solid transparent;
-            border-bottom: 15px solid transparent;
-            margin-left: 5px;
-        }
-        .play-text {
-            color: white; margin-top: 15px; font-size: 1.2rem; font-weight: bold;
-            text-transform: uppercase; letter-spacing: 1px;
-        }
-
-        /* Nascondi overlay quando si clicca */
-        .hidden { opacity: 0; pointer-events: none; }
-
-        /* --- TESTI --- */
+        /* --- HEADER TESTI --- */
         .header-content {
             position: relative; z-index: 20;
             text-align: center; color: white;
             margin-bottom: 20px;
-            text-shadow: 0 2px 4px black;
+            text-shadow: 0 2px 5px black;
             pointer-events: none;
         }
         .logo { width: 100px; margin-bottom: 10px; }
@@ -121,9 +79,9 @@
 
         /* --- MOBILE --- */
         @media (max-width: 768px) {
-            .video-wrapper { width: 100%; border-radius: 0; border: none; }
+            .video-wrapper { width: 100%; border-radius: 0; border: none; aspect-ratio: 16/9; }
             .festive-text { font-size: 1.5rem; }
-            #main-container { justify-content: flex-start; padding-top: 50px; }
+            #main-container { justify-content: flex-start; padding-top: 40px; }
         }
     </style>
 </head>
@@ -141,90 +99,39 @@
         </div>
 
         <div class="video-wrapper">
-            
-            <div id="play-overlay" onclick="startVideo()">
-                <div class="play-btn"><div class="play-triangle"></div></div>
-                <div class="play-text">Clicca per la diretta</div>
-            </div>
-
-            <video id="live-video" muted playsinline poster="p.png"></video>
-
+            <div id="player"></div>
         </div>
     </div>
 
     <script>
-        // --- IL TUO LINK INSERITO DIRETTAMENTE ---
-        var videoSrc = 'https://live.webcammontefalconedivalfortore.it/memfs/58e0bcbe-f1bd-4c8b-85f7-b4566a3e5392.m3u8';
-        
-        var video = document.getElementById('live-video');
-        var overlay = document.getElementById('play-overlay');
-        var hls = null;
-
-        // Funzione per avviare il video (chiamata dal click o dall'autoplay)
-        function startVideo() {
-            video.muted = false; // Attiva l'audio
-            video.play()
-                .then(() => {
-                    // Se parte, nascondi l'overlay e mostra i controlli nativi
-                    overlay.classList.add('hidden');
-                    video.controls = true;
-                })
-                .catch(e => {
-                    console.log("Impossibile avviare audio/video senza interazione", e);
-                    // Se fallisce, l'overlay resta visibile così l'utente deve cliccare
-                });
-        }
-
-        // --- INIZIALIZZAZIONE HLS ---
-        if (Hls.isSupported()) {
-            hls = new Hls();
-            hls.loadSource(videoSrc);
-            hls.attachMedia(video);
+        // CONFIGURAZIONE CLAPPR PLAYER
+        var player = new Clappr.Player({
+            // IL TUO LINK .m3u8 CHE FUNZIONA
+            source: 'https://live.webcammontefalconedivalfortore.it/memfs/58e0bcbe-f1bd-4c8b-85f7-b4566a3e5392.m3u8',
             
-            hls.on(Hls.Events.MANIFEST_PARSED, function() {
-                // Tenta l'autoplay mutato all'inizio
-                video.muted = true;
-                var promise = video.play();
-                if (promise !== undefined) {
-                    promise.then(_ => {
-                        // Autoplay riuscito! Nascondi overlay
-                        overlay.classList.add('hidden');
-                        video.controls = true; // Mostra controlli
-                    }).catch(error => {
-                        // Autoplay bloccato. L'overlay resta visibile.
-                        console.log("Autoplay bloccato, serve click.");
-                    });
-                }
-            });
-
-            // Gestione errori stream (riconnessione automatica)
-            hls.on(Hls.Events.ERROR, function (event, data) {
-                if (data.fatal) {
-                    switch (data.type) {
-                        case Hls.ErrorTypes.NETWORK_ERROR:
-                            hls.startLoad();
-                            break;
-                        case Hls.ErrorTypes.MEDIA_ERROR:
-                            hls.recoverMediaError();
-                            break;
-                        default:
-                            hls.destroy();
-                            break;
-                    }
-                }
-            });
-        }
-        // Supporto nativo Safari (iPhone/iPad)
-        else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-            video.src = videoSrc;
-            video.addEventListener('loadedmetadata', function() {
-                video.muted = true;
-                video.play().then(() => {
-                    overlay.classList.add('hidden');
-                    video.controls = true;
-                }).catch(e => {});
-            });
-        }
+            // DOVE INSERIRLO
+            parentId: "#player",
+            
+            // OPZIONI VIDEO
+            width: '100%',
+            height: '100%',
+            autoPlay: true,     // Tenta l'avvio automatico
+            mute: true,         // Necessario per l'autoplay su Chrome/Mobile
+            poster: 'p.png',    // Immagine di copertina
+            
+            // OPZIONI DI RIPRODUZIONE
+            playback: {
+                playInline: true, // Fondamentale per iPhone (evita fullscreen forzato)
+                recycleVideo: true
+            },
+            
+            // GESTIONE ERRORI HLS
+            hlsjsConfig: {
+                debug: false,
+                enableWorker: true,
+                recoverMediaError: true // Recupera se lo stream si blocca
+            }
+        });
     </script>
 </body>
 </html>
