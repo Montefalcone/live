@@ -14,15 +14,11 @@
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clappr-chromecast-plugin@latest/dist/clappr-chromecast-plugin.min.js"></script>
     
     <style>
-        /* --- STILI ORIGINALI RIPRISTINATI --- */
+        /* --- RESET E STRUTTURA --- */
         html, body {
             margin: 0; padding: 0;
             width: 100%; height: 100%;
             overflow: hidden; 
-            position: fixed; 
-            top: 0; left: 0;
-            overscroll-behavior: none;
-            touch-action: none;
             background-color: #000;
         }
 
@@ -31,127 +27,139 @@
             src: url('last.otf') format('truetype');
         }
 
-        #main-container {
-            width: 100%; height: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center; 
-            align-items: center;
-            position: relative; z-index: 20;
+        /* --- SFONDO E ATMOSFERA --- */
+        #background-layer {
+            position: fixed;
+            top: -5%; left: -5%; width: 110%; height: 110%;
+            background: url("1a.webp") no-repeat center center;
+            background-size: cover;
+            z-index: 1;
+            filter: brightness(0.6);
+            animation: drifting 60s ease-in-out infinite alternate;
+        }
+        @keyframes drifting { from { transform: scale(1); } to { transform: scale(1.1); } }
+
+        .vignette {
+            position: fixed; inset: 0;
+            background: radial-gradient(circle, transparent 40%, black 100%);
+            z-index: 2; pointer-events: none;
         }
 
-        #bg-static {
-            position: absolute;
-            top: -10%; left: -10%; width: 120%; height: 120%;
-            background-image: url("1a.webp"); 
-            background-size: cover; background-position: center;
-            z-index: 0;
-            filter: brightness(0.65) contrast(1.15) saturate(1.1);
-            animation: driftingWorld 80s ease-in-out infinite alternate;
-            pointer-events: none; 
-        }
-        @keyframes driftingWorld {
-            0% { transform: translate(0, 0) scale(1); }
-            100% { transform: translate(-2%, 2%) scale(1.05); } 
-        }
-
-        .municipality-logo {
-            width: 110px; height: auto; margin-bottom: 15px; z-index: 30;
-            filter: brightness(1.1) drop-shadow(0 0 15px rgba(255, 215, 0, 0.5));
-            pointer-events: none;
-        }
-
-        .festive-message {
-            font-family: 'MerryChristmasFont', serif;
-            color: #ffffff; text-align: center;
-            font-size: 3.5rem; line-height: 1.2; margin-bottom: 25px;
-            text-shadow: 2px 2px 4px #000, 0 0 25px rgba(255, 255, 255, 0.6);
-            z-index: 30; padding: 0 20px; width: 100%; box-sizing: border-box;
-            pointer-events: none;
-        }
-
-        /* --- PLAYER WRAPPER (CORRETTO PER CLAPPR) --- */
-        .video-wrapper {
+        /* --- CONTENITORE UI --- */
+        #interface-wrapper {
             position: relative;
-            z-index: 100;
-            width: 90%;          
-            max-width: 1100px;   
-            aspect-ratio: 16/9;  /* Forza il formato 16:9 */
-            background: #000;
-            border-radius: 15px; 
-            overflow: hidden; 
-            box-shadow: 0 0 30px rgba(255, 220, 150, 0.2), 0 40px 80px rgba(0,0,0,0.95);
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            width: 100%; height: 100%;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            z-index: 10;
         }
 
-        #player { width: 100%; height: 100%; }
+        .header-box { text-align: center; margin-bottom: 20px; pointer-events: none; }
+        .logo-img { width: 110px; height: auto; filter: drop-shadow(0 0 10px gold); margin-bottom: 10px; }
+        
+        .festive-title {
+            font-family: 'MerryChristmasFont', serif;
+            color: #fff; font-size: 3.5rem; line-height: 1.1;
+            text-shadow: 0 0 20px rgba(255,255,255,0.4), 2px 2px 5px #000;
+        }
+
+        /* --- IL PLAYER (DIMENSIONI FORZATE) --- */
+        .player-box {
+            position: relative;
+            width: 90%; 
+            max-width: 1050px;
+            aspect-ratio: 16/9; /* Mantiene la forma corretta */
+            background: #000;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+            z-index: 100;
+        }
+
+        #video-player { width: 100%; height: 100%; }
+
+        /* --- EFFETTI NEVE --- */
+        .snow-container { position: fixed; inset: 0; pointer-events: none; z-index: 5; }
+        .snowflake { position: absolute; top: -10px; background: white; border-radius: 50%; opacity: 0.8; }
+        @keyframes fall { to { transform: translateY(105vh); } }
 
         /* --- MOBILE --- */
         @media (max-width: 768px) {
-            #main-container { justify-content: flex-start; padding-top: 15vh; }
-            .festive-message { font-size: 1.8rem; }
-            .municipality-logo { width: 75px; }
-            .video-wrapper { width: 95%; }
+            .festive-title { font-size: 1.8rem; }
+            .logo-img { width: 75px; }
+            #interface-wrapper { justify-content: flex-start; padding-top: 50px; }
+            .player-box { width: 95%; border-radius: 8px; }
         }
-
-        /* --- PARTICELLE E VIGNETTE --- */
-        .vignette { position: absolute; inset: 0; background: radial-gradient(circle at center, transparent 40%, rgba(0,0,0,0.7) 85%, black 100%); z-index: 6; pointer-events: none; }
-        .particles-container { position: absolute; inset: 0; pointer-events: none; z-index: 5; overflow: hidden; }
-        .snowflake { position: absolute; top: -10px; background: white; border-radius: 50%; opacity: 0.9; }
-        @keyframes fall { 0% { transform: translate(0, -10vh); } 100% { transform: translate(15vw, 110vh); } }
     </style>
 </head>
 <body>
 
-    <div id="bg-static"></div>
+    <div id="background-layer"></div>
     <div class="vignette"></div>
-    <div class="particles-container" id="particlesContainer"></div>
+    <div class="snow-container" id="snowField"></div>
 
-    <div id="main-container">
-        <img src="stemma2-removebg-preview.png" alt="Stemma" class="municipality-logo">
-        <div class="festive-message">
-            Il comune di Montefalcone di Val Fortore<br>augura a tutti Buone Feste
+    <div id="interface-wrapper">
+        
+        <div class="header-box">
+            <img src="stemma2-removebg-preview.png" class="logo-img" alt="Logo">
+            <div class="festive-title">
+                Il comune di Montefalcone di Val Fortore<br>augura a tutti Buone Feste
+            </div>
         </div>
 
-        <div class="video-wrapper">
-            <div id="player"></div>
+        <div class="player-box">
+            <div id="video-player"></div>
         </div>
+
     </div>
 
     <script>
-        // --- LOGICA NEVE ---
-        function createParticles() {
-            const container = document.getElementById('particlesContainer');
-            for (let i = 0; i < 50; i++) {
-                const flake = document.createElement('div');
-                flake.className = 'snowflake';
-                flake.style.width = flake.style.height = (Math.random() * 3 + 2) + 'px';
-                flake.style.left = Math.random() * 100 + 'vw';
-                flake.style.animation = `fall ${Math.random() * 5 + 5}s linear infinite -${Math.random() * 5}s`;
-                container.appendChild(flake);
+        // 1. NEVE
+        function makeSnow() {
+            const field = document.getElementById('snowField');
+            for(let i=0; i<50; i++) {
+                let s = document.createElement('div');
+                s.className = 'snowflake';
+                let size = Math.random()*3+2;
+                s.style.width = s.style.height = size+'px';
+                s.style.left = Math.random()*100+'vw';
+                s.style.animation = `fall ${Math.random()*5+5}s linear infinite -${Math.random()*5}s`;
+                field.appendChild(s);
             }
         }
-        createParticles();
+        makeSnow();
 
-        // --- INIZIALIZZAZIONE CLAPPR ---
-        var player = new Clappr.Player({
-            source: 'https://live.webcammontefalconedivalfortore.it/memfs/58e0bcbe-f1bd-4c8b-85f7-b4566a3e5392.m3u8',
-            parentId: "#player",
-            plugins: [ClapprChromecastPlugin],
-            width: '100%',
-            height: '100%',
-            autoPlay: true,
-            mute: true, // Necessario per l'autoplay
-            poster: 'p.png',
-            chromecast: {
-                appId: '9DFB77C0',
-                media: { type: 'live', title: 'Montefalcone Live' }
-            },
-            playback: { playInline: true, recycleVideo: true }
-        });
+        // 2. PLAYER CLAPPR (MOTORE FUNZIONANTE)
+        window.onload = function() {
+            var player = new Clappr.Player({
+                source: "https://live.webcammontefalconedivalfortore.it/memfs/58e0bcbe-f1bd-4c8b-85f7-b4566a3e5392.m3u8",
+                parentId: "#video-player",
+                plugins: [ClapprChromecastPlugin],
+                width: '100%',
+                height: '100%',
+                autoPlay: true,
+                mute: true,
+                poster: 'p.png',
+                playback: {
+                    playInline: true,
+                    recycleVideo: true
+                },
+                chromecast: {
+                    appId: '9DFB77C0',
+                    media: {
+                        type: 'live',
+                        title: 'Webcam Montefalcone Live'
+                    }
+                },
+                mediacontrol: {seekbar: "#FFD700", buttons: "#FFFFFF"}
+            });
+        };
 
-        // Blocco scorrimento nucleare
-        document.addEventListener('touchmove', function(e) { e.preventDefault(); }, { passive: false });
+        // Blocco scorrimento
+        document.addEventListener('touchmove', function(e) { 
+            if(!e.target.closest('.player-box')) e.preventDefault(); 
+        }, { passive: false });
     </script>
 </body>
 </html>
