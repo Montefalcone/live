@@ -4,164 +4,275 @@
     <meta name="google-site-verification" content="DLjKDn5UupGNdRgZXo9CuMc0Sg1S1aULxDJfIHT9tYo" />
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
     <title>Webcam Montefalcone di Val Fortore - LIVE</title>
     
-    <meta name="description" content="Guarda la webcam in diretta dal Comune di Montefalcone.">
+    <meta name="description" content="Guarda la webcam in diretta dal Comune di Montefalcone. Vista panoramica live, condizioni meteo attuali e immagini in tempo reale dal centro storico.">
+    <meta name="keywords" content="webcam montefalcone, meteo montefalcone, comune di montefalcone live, telecamera diretta">
+    <meta property="og:title" content="Webcam Montefalcone Live">
+    <meta property="og:description" content="Guarda cosa succede ora a Montefalcone. Clicca per la diretta.">
     <meta property="og:image" content="https://www.webcammontefalconedivalfortore.it/p.png"> 
+    <meta name="robots" content="index, follow">
 
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@clappr/player@latest/dist/clappr.min.js"></script>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clappr-chromecast-plugin@latest/dist/clappr-chromecast-plugin.min.js"></script>
     
     <style>
-        /* --- RESET --- */
+        /* --- BLOCCO TOTALE SCORRIMENTO --- */
         html, body {
             margin: 0; padding: 0;
             width: 100%; height: 100%;
             overflow: hidden; 
+            position: fixed; 
+            top: 0; left: 0;
+            overscroll-behavior: none;
+            touch-action: none;
             background-color: #000;
         }
 
-        /* --- FONT NATALIZIO --- */
+        /* --- FONT --- */
         @font-face {
             font-family: 'MerryChristmasFont';
             src: url('last.otf') format('truetype');
         }
 
-        /* --- SFONDO (LIVELLO 1) --- */
-        #bg-static {
-            position: fixed;
-            top: -10%; left: -10%; width: 120%; height: 120%;
-            background: url("1a.webp") no-repeat center center;
-            background-size: cover;
-            z-index: 1;
-            filter: brightness(0.6) contrast(1.1);
-            animation: driftingWorld 80s ease-in-out infinite alternate;
-            pointer-events: none;
-        }
-        @keyframes driftingWorld { 0% { transform: scale(1); } 100% { transform: scale(1.1); } }
-
-        /* --- ATMOSFERA (LIVELLO 2) --- */
-        .vignette {
-            position: fixed; inset: 0;
-            background: radial-gradient(circle, transparent 40%, rgba(0,0,0,0.8) 100%);
-            z-index: 2; pointer-events: none;
-        }
-        .particles-container { position: fixed; inset: 0; z-index: 3; pointer-events: none; }
-
-        /* --- CONTENITORE UI (LIVELLO 10) --- */
-        #main-wrapper {
-            position: relative;
+        #main-container {
             width: 100%; height: 100%;
-            display: flex; flex-direction: column;
-            justify-content: center; align-items: center;
-            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            justify-content: center; 
+            align-items: center;
+            position: relative; z-index: 20;
+            transition: all 0.5s ease;
         }
 
-        .header-box { text-align: center; margin-bottom: 25px; pointer-events: none; }
-        .logo { width: 110px; height: auto; filter: drop-shadow(0 0 15px gold); margin-bottom: 10px; }
+        /* --- SFONDO (Satinato) --- */
+        #bg-static {
+            position: absolute;
+            top: -10%; left: -10%; width: 120%; height: 120%;
+            background-image: url("1a.webp"); 
+            background-size: cover; background-position: center;
+            z-index: 0;
+            filter: brightness(0.65) contrast(1.15) saturate(1.1);
+            animation: driftingWorld 80s ease-in-out infinite alternate;
+            pointer-events: none; 
+        }
+        @keyframes driftingWorld {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(-2%, 2%) scale(1.05); } 
+        }
+
+        /* --- ELEMENTI UI --- */
+        .municipality-logo, .festive-message, .warm-flicker, .vignette, .particles-container {
+            transition: opacity 0.5s ease;
+            opacity: 1;
+            pointer-events: none; 
+        }
+        
+        /* --- LOGO --- */
+        .municipality-logo {
+            width: 110px; height: auto; margin-bottom: 15px; z-index: 30;
+            filter: brightness(1.1) drop-shadow(0 0 15px rgba(255, 215, 0, 0.5));
+        }
+
+        /* --- MESSAGGIO --- */
         .festive-message {
             font-family: 'MerryChristmasFont', serif;
-            color: #fff; font-size: 3.5rem; line-height: 1.2;
-            text-shadow: 2px 2px 4px #000, 0 0 25px rgba(255,255,255,0.5);
+            color: #ffffff; text-align: center;
+            font-size: 3.5rem; line-height: 1.2; margin-bottom: 25px;
+            text-shadow: 2px 2px 4px #000, 0 0 25px rgba(255, 255, 255, 0.6);
+            z-index: 30; padding: 0 20px; width: 100%; box-sizing: border-box;
         }
 
-        /* --- PLAYER BOX (FORZATO) --- */
+        /* --- PLAYER VIDEO --- */
         .video-wrapper {
             position: relative;
-            width: 90%; 
-            max-width: 1100px;
-            aspect-ratio: 16/9; /* Mantiene la proporzione rettangolare */
-            background: #000;
-            border-radius: 15px;
-            overflow: hidden;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.9);
-            border: 1px solid rgba(255,255,255,0.2);
-            z-index: 100; /* SOPRA A TUTTO */
+            width: auto; height: 60%;
+            aspect-ratio: 16/9;
+            border-radius: 15px; overflow: hidden; background: #000;
+            box-shadow: 0 0 30px rgba(255, 220, 150, 0.2), 0 40px 80px rgba(0,0,0,0.95);
+            border: 1px solid rgba(255, 255, 255, 0.15); z-index: 30;
+            
+            pointer-events: auto; 
+            
+            transition: all 0.3s ease-out;
+            will-change: width, height; 
         }
 
-        /* Forza Clappr a occupare il box */
-        #video-player-id { width: 100%; height: 100%; }
+        /* Stile specifico per Clappr per riempire il wrapper */
+        #player { width: 100%; height: 100%; }
 
-        /* --- MOBILE --- */
-        @media (max-width: 768px) {
-            #main-wrapper { justify-content: flex-start; padding-top: 10vh; }
-            .festive-message { font-size: 2rem; }
-            .logo { width: 80px; }
-            .video-wrapper { width: 95%; }
+        .video-wrapper:fullscreen, 
+        .video-wrapper:-webkit-full-screen, 
+        .video-wrapper:-moz-full-screen {
+            border-radius: 0 !important;
+            border: none !important;
+            box-shadow: none !important;
+            width: 100% !important;
+            height: 100% !important;
         }
 
-        /* --- NEVE --- */
-        .snowflake { position: absolute; top: -10px; background: white; border-radius: 50%; opacity: 0.8; }
-        @keyframes fall { to { transform: translateY(110vh); } }
+        /* --- MOBILE PORTRAIT --- */
+        @media (max-width: 768px) and (orientation: portrait) {
+            #main-container { justify-content: flex-start; padding-top: 20vh; }
+            .municipality-logo { width: 75px; margin-bottom: 10px; }
+            .festive-message { font-size: 6vw; line-height: 1.4; margin-bottom: 20px; }
+            .video-wrapper { width: 95%; height: auto; }
+            #bg-static { animation: driftingWorldMobile 35s ease-in-out infinite alternate; }
+        }
+        @keyframes driftingWorldMobile { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(-3%, 0) scale(1.15); } }
+
+        /* --- MOBILE LANDSCAPE --- */
+        @media screen and (orientation: landscape) and (max-height: 600px) {
+            .municipality-logo, .festive-message, #bg-static, .warm-flicker, .vignette, .particles-container {
+                display: none !important;
+            }
+            #main-container { padding: 0 !important; justify-content: center !important; background: #000; }
+            .video-wrapper {
+                width: 100vw; height: 100vh;
+                border: none; border-radius: 0;
+            }
+            #custom-fs-btn { display: flex !important; position: fixed !important; bottom: 20px; right: 20px; z-index: 9999; }
+        }
+
+        /* --- EFFETTI --- */
+        .warm-flicker { position: absolute; inset: 0; background: radial-gradient(circle, rgba(255, 180, 50, 0.15), transparent 80%); z-index: 2; pointer-events: none; mix-blend-mode: overlay; animation: firePulse 4s ease-in-out infinite alternate; }
+        @keyframes firePulse { 0% { opacity: 0.1; } 100% { opacity: 0.5; } }
+        .particles-container { position: absolute; inset: 0; pointer-events: none; z-index: 5; overflow: hidden; }
+        .snowflake { position: absolute; top: -10px; background: white; border-radius: 50%; opacity: 0.9; box-shadow: 0 0 3px white; }
+        .ember { position: absolute; bottom: -20px; background: #ffcc00; border-radius: 50%; opacity: 0; filter: blur(2px); }
+        .vignette { position: absolute; inset: 0; background: radial-gradient(circle at center, transparent 40%, rgba(0,0,0,0.7) 85%, black 100%); z-index: 6; pointer-events: none; }
+
+        @keyframes fall { 0% { transform: translate(0, -10vh); } 100% { transform: translate(15vw, 110vh); } }
+        @keyframes riseRight { 0% { transform: translateY(0) translateX(0); opacity: 0; } 20% { opacity: 0.8; } 100% { transform: translateY(-90vh) translateX(15vw); opacity: 0; } }
+        @keyframes riseLeft { 0% { transform: translateY(0) translateX(0); opacity: 0; } 20% { opacity: 0.8; } 100% { transform: translateY(-90vh) translateX(-15vw); opacity: 0; } }
+        @keyframes riseZigZag { 0% { transform: translateY(0) translateX(0); opacity: 0; } 25% { transform: translateY(-20vh) translateX(5vw); opacity: 0.8; } 75% { transform: translateY(-60vh) translateX(-5vw); opacity: 0.4; } 100% { transform: translateY(-90vh) translateX(0); opacity: 0; } }
+
+        /* Tasto Fullscreen Custom */
+        #custom-fs-btn {
+            position: absolute; bottom: 15px; right: 15px; width: 50px; height: 50px;
+            background-color: rgba(0, 0, 0, 0.5); border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%; color: #fff; font-size: 24px;
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+            z-index: 40; backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
+            transition: transform 0.2s ease;
+            pointer-events: auto;
+        }
+        #custom-fs-btn:active { transform: scale(0.9); }
     </style>
 </head>
 <body>
 
     <div id="bg-static"></div>
+    <div class="warm-flicker"></div>
     <div class="vignette"></div>
-    <div class="particles-container" id="snow-field"></div>
+    <div class="particles-container" id="particlesContainer"></div>
 
-    <div id="main-wrapper">
-        <div class="header-box">
-            <img src="stemma2-removebg-preview.png" class="logo" alt="Logo">
-            <div class="festive-message">
-                Il comune di Montefalcone di Val Fortore<br>augura a tutti Buone Feste
-            </div>
+    <div id="main-container">
+        <img src="stemma2-removebg-preview.png" alt="Stemma Comune di Montefalcone" class="municipality-logo">
+        
+        <div class="festive-message">
+            Il comune di Montefalcone di Val Fortore<br>
+            augura a tutti Buone Feste
         </div>
 
-        <div class="video-wrapper">
-            <div id="video-player-id"></div>
+        <div class="video-wrapper" id="videoWrapper">
+            <div id="player"></div>
+            
+            <div id="custom-fs-btn" onclick="toggleFullScreen()">⛶</div>
         </div>
     </div>
 
     <script>
-        // 1. GENERATORE NEVE
-        function createSnow() {
-            const field = document.getElementById('snow-field');
-            for(let i=0; i<50; i++) {
-                let s = document.createElement('div');
-                s.className = 'snowflake';
-                let size = Math.random()*3+2;
-                s.style.width = s.style.height = size+'px';
-                s.style.left = Math.random()*100+'vw';
-                s.style.animation = `fall ${Math.random()*5+5}s linear infinite -${Math.random()*5}s`;
-                field.appendChild(s);
+        // --- BLOCCO SCORRIMENTO VIA JAVASCRIPT ---
+        document.addEventListener('touchmove', function(e) {
+            e.preventDefault();
+        }, { passive: false });
+
+        // --- PARTICELLE ---
+        function createParticles() {
+            const container = document.getElementById('particlesContainer');
+            const isMobile = window.innerWidth < 768;
+            const snowCount = isMobile ? 35 : 70; 
+            const emberCount = isMobile ? 15 : 30;
+            const speedModifier = isMobile ? 1.5 : 1; 
+
+            for (let i = 0; i < snowCount; i++) {
+                const flake = document.createElement('div');
+                flake.classList.add('snowflake');
+                const size = Math.random() * 3 + 2; 
+                flake.style.width = size + 'px'; flake.style.height = size + 'px';
+                flake.style.left = (Math.random() * 120 - 10) + 'vw';
+                const duration = (Math.random() * 4 + 4) * speedModifier;
+                flake.style.animation = `fall ${duration}s linear infinite`;
+                flake.style.animationDelay = '-' + (Math.random() * 5) + 's';
+                container.appendChild(flake);
+            }
+
+            const animations = ['riseRight', 'riseLeft', 'riseZigZag'];
+            for (let i = 0; i < emberCount; i++) {
+                const ember = document.createElement('div');
+                ember.classList.add('ember');
+                const size = Math.random() * 4 + 3;
+                ember.style.width = size + 'px'; ember.style.height = size + 'px';
+                ember.style.left = Math.random() * 100 + 'vw';
+                const duration = (Math.random() * 6 + 6) * speedModifier;
+                const randomAnim = animations[Math.floor(Math.random() * animations.length)];
+                ember.style.animation = `${randomAnim} ${duration}s linear infinite`;
+                ember.style.animationDelay = '-' + (Math.random() * 10) + 's';
+                container.appendChild(ember);
             }
         }
-        createSnow();
+        createParticles();
 
-        // 2. INIZIALIZZA CLAPPR (MOTORE CHE FUNZIONA)
-        // Usiamo window.onload per garantire che il contenitore esista prima del caricamento
-        window.onload = function() {
-            var player = new Clappr.Player({
-                source: "https://live.webcammontefalconedivalfortore.it/memfs/58e0bcbe-f1bd-4c8b-85f7-b4566a3e5392.m3u8",
-                parentId: "#video-player-id",
-                plugins: [ClapprChromecastPlugin],
-                width: '100%',
-                height: '100%',
-                autoPlay: true,
-                mute: true,
-                poster: 'p.png',
-                playback: {
-                    playInline: true,
-                    recycleVideo: true
-                },
-                chromecast: {
-                    appId: '9DFB77C0',
-                    media: {
-                        type: 'live',
-                        title: 'Webcam Montefalcone Live',
-                        subtitle: 'Montefalcone di Val Fortore'
-                    }
-                },
-                mediacontrol: {seekbar: "#FFD700", buttons: "#FFFFFF"}
-            });
-        };
+        // --- CONFIGURAZIONE CLAPPR (SOSTITUISCE YOUTUBE) ---
+        var player = new Clappr.Player({
+            source: 'https://live.webcammontefalconedivalfortore.it/memfs/58e0bcbe-f1bd-4c8b-85f7-b4566a3e5392.m3u8',
+            parentId: "#player",
+            width: '100%',
+            height: '100%',
+            autoPlay: true,
+            mute: true, // Necessario per l'autoplay
+            poster: 'p.png',
+            playback: {
+                playInline: true, // Importante per iOS
+                recycleVideo: true
+            },
+            mediacontrol: {seekbar: "#E5BC00", buttons: "#FFFFFF"} // Colori natalizi (oro)
+        });
 
-        // Blocco scorrimento
-        document.addEventListener('touchmove', function(e) { 
-            if(!e.target.closest('.video-wrapper')) e.preventDefault(); 
-        }, { passive: false });
+        // --- FULLSCREEN NATIVO ---
+        var videoWrapper = document.getElementById('videoWrapper');
+
+        function toggleFullScreen() {
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                // ENTRA
+                if (videoWrapper.requestFullscreen) videoWrapper.requestFullscreen();
+                else if (videoWrapper.webkitRequestFullscreen) videoWrapper.webkitRequestFullscreen();
+                
+                if (screen.orientation && screen.orientation.lock) {
+                    screen.orientation.lock('landscape').catch(e => {});
+                }
+            } else {
+                // ESCI
+                if (document.exitFullscreen) document.exitFullscreen();
+                else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+                
+                if (screen.orientation && screen.orientation.unlock) {
+                    screen.orientation.unlock();
+                }
+            }
+        }
+        
+        function onFullScreenChange() {
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                if (screen.orientation && screen.orientation.unlock) {
+                    screen.orientation.unlock();
+                }
+            }
+        }
+        document.addEventListener('fullscreenchange', onFullScreenChange);
+        document.addEventListener('webkitfullscreenchange', onFullScreenChange);
+        document.addEventListener('mozfullscreenchange', onFullScreenChange);
     </script>
 </body>
 </html>
