@@ -19,7 +19,7 @@
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clappr-chromecast-plugin@latest/dist/clappr-chromecast-plugin.min.js"></script>
     
     <style>
-        /* --- BLOCCO TOTALE SCORRIMENTO --- */
+        /* --- RESET --- */
         html, body {
             margin: 0; padding: 0;
             width: 100%; height: 100%;
@@ -31,7 +31,7 @@
             background-color: #000;
         }
 
-        /* --- FONT ORIGINALE --- */
+        /* --- FONT NATALIZIO --- */
         @font-face {
             font-family: 'MerryChristmasFont';
             src: url('last.otf') format('truetype');
@@ -44,10 +44,9 @@
             justify-content: center; 
             align-items: center;
             position: relative; z-index: 20;
-            transition: all 0.5s ease;
         }
 
-        /* --- SFONDO ANIMATO ORIGINALE --- */
+        /* --- SFONDO --- */
         #bg-static {
             position: absolute;
             top: -10%; left: -10%; width: 120%; height: 120%;
@@ -65,18 +64,14 @@
 
         /* --- ELEMENTI UI --- */
         .municipality-logo, .festive-message, .warm-flicker, .vignette, .particles-container {
-            transition: opacity 0.5s ease;
-            opacity: 1;
             pointer-events: none; 
         }
 
-        /* --- LOGO --- */
         .municipality-logo {
             width: 110px; height: auto; margin-bottom: 15px; z-index: 30;
             filter: brightness(1.1) drop-shadow(0 0 15px rgba(255, 215, 0, 0.5));
         }
 
-        /* --- MESSAGGIO CON FONT NATALIZIO --- */
         .festive-message {
             font-family: 'MerryChristmasFont', serif;
             color: #ffffff; text-align: center;
@@ -85,44 +80,42 @@
             z-index: 30; padding: 0 20px; width: 100%; box-sizing: border-box;
         }
 
-        /* --- PLAYER VIDEO WRAPPER --- */
+        /* --- PLAYER WRAPPER (CORRETTO) --- */
+        /* Uso la logica width-based che funzionava prima */
         .video-wrapper {
             position: relative;
-            width: auto; height: 60%;
-            aspect-ratio: 16/9;
-            border-radius: 15px; 
-            /* Importante per Clappr: nasconde gli angoli */
-            overflow: hidden; 
+            z-index: 40; /* Z-index alto per essere sicuri sia cliccabile */
+            
+            width: 90%;       
+            max-width: 1100px; 
+            aspect-ratio: 16/9; 
+            
             background: #000;
-            box-shadow: 0 0 30px rgba(255, 220, 150, 0.2), 0 40px 80px rgba(0,0,0,0.95);
-            border: 1px solid rgba(255, 255, 255, 0.15); z-index: 30;
-            pointer-events: auto; 
-            transition: all 0.3s ease-out;
+            box-shadow: 0 0 40px rgba(0,0,0,0.9);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px; 
+            overflow: hidden; 
         }
 
-        /* Stile per il contenitore interno di Clappr */
+        /* Assicura che il player riempia il wrapper */
         #player {
             width: 100%;
             height: 100%;
         }
-        /* Forza Clappr a rispettare i bordi arrotondati */
-        .player-container, .media-control-layer {
-             border-radius: 15px !important;
-             overflow: hidden !important;
-        }
 
-
-        /* --- MOBILE PORTRAIT --- */
+        /* --- MOBILE --- */
         @media (max-width: 768px) and (orientation: portrait) {
-            #main-container { justify-content: flex-start; padding-top: 20vh; }
+            #main-container { justify-content: flex-start; padding-top: 15vh; }
             .municipality-logo { width: 75px; margin-bottom: 10px; }
             .festive-message { font-size: 6vw; line-height: 1.4; margin-bottom: 20px; }
-            .video-wrapper { width: 95%; height: auto; }
+            
+            /* Su mobile vertical */
+            .video-wrapper { width: 95%; aspect-ratio: 16/9; }
+            
             #bg-static { animation: driftingWorldMobile 35s ease-in-out infinite alternate; }
         }
         @keyframes driftingWorldMobile { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(-3%, 0) scale(1.15); } }
 
-        /* --- MOBILE LANDSCAPE --- */
         @media screen and (orientation: landscape) and (max-height: 600px) {
             .municipality-logo, .festive-message, #bg-static, .warm-flicker, .vignette, .particles-container {
                 display: none !important;
@@ -130,23 +123,18 @@
             #main-container { padding: 0 !important; justify-content: center !important; background: #000; }
             .video-wrapper {
                 width: 100vw; height: 100vh;
-                border: none; border-radius: 0;
+                max-width: none; border: none; border-radius: 0;
             }
-            /* Rimuovi bordi arrotondati in fullscreen mobile */
-            .player-container, .media-control-layer { border-radius: 0 !important; }
         }
 
-        /* --- EFFETTI ORIGINALI --- */
+        /* --- EFFETTI --- */
         .warm-flicker { position: absolute; inset: 0; background: radial-gradient(circle, rgba(255, 180, 50, 0.15), transparent 80%); z-index: 2; pointer-events: none; mix-blend-mode: overlay; animation: firePulse 4s ease-in-out infinite alternate; }
         @keyframes firePulse { 0% { opacity: 0.1; } 100% { opacity: 0.5; } }
         .particles-container { position: absolute; inset: 0; pointer-events: none; z-index: 5; overflow: hidden; }
         .snowflake { position: absolute; top: -10px; background: white; border-radius: 50%; opacity: 0.9; box-shadow: 0 0 3px white; }
         .ember { position: absolute; bottom: -20px; background: #ffcc00; border-radius: 50%; opacity: 0; filter: blur(2px); }
         .vignette { position: absolute; inset: 0; background: radial-gradient(circle at center, transparent 40%, rgba(0,0,0,0.7) 85%, black 100%); z-index: 6; pointer-events: none; }
-
         @keyframes fall { 0% { transform: translate(0, -10vh); } 100% { transform: translate(15vw, 110vh); } }
-        @keyframes riseRight { 0% { transform: translateY(0) translateX(0); opacity: 0; } 20% { opacity: 0.8; } 100% { transform: translateY(-90vh) translateX(15vw); opacity: 0; } }
-        @keyframes riseLeft { 0% { transform: translateY(0) translateX(0); opacity: 0; } 20% { opacity: 0.8; } 100% { transform: translateY(-90vh) translateX(-15vw); opacity: 0; } }
         @keyframes riseZigZag { 0% { transform: translateY(0) translateX(0); opacity: 0; } 25% { transform: translateY(-20vh) translateX(5vw); opacity: 0.8; } 75% { transform: translateY(-60vh) translateX(-5vw); opacity: 0.4; } 100% { transform: translateY(-90vh) translateX(0); opacity: 0; } }
 
     </style>
@@ -172,19 +160,17 @@
     </div>
 
     <script>
-        // --- BLOCCO SCORRIMENTO ORIGINALE ---
+        // --- BLOCCO SCORRIMENTO ---
         document.addEventListener('touchmove', function(e) {
             e.preventDefault();
         }, { passive: false });
 
-
-        // --- PARTICELLE ORIGINALI ---
+        // --- PARTICELLE ---
         function createParticles() {
             const container = document.getElementById('particlesContainer');
             const isMobile = window.innerWidth < 768;
             const snowCount = isMobile ? 35 : 70; 
             const emberCount = isMobile ? 15 : 30;
-            const speedModifier = isMobile ? 1.5 : 1; 
 
             for (let i = 0; i < snowCount; i++) {
                 const flake = document.createElement('div');
@@ -192,48 +178,43 @@
                 const size = Math.random() * 3 + 2; 
                 flake.style.width = size + 'px'; flake.style.height = size + 'px';
                 flake.style.left = (Math.random() * 120 - 10) + 'vw';
-                const duration = (Math.random() * 4 + 4) * speedModifier;
-                flake.style.animation = `fall ${duration}s linear infinite`;
+                flake.style.animation = `fall ${(Math.random() * 4 + 4)}s linear infinite`;
                 flake.style.animationDelay = '-' + (Math.random() * 5) + 's';
                 container.appendChild(flake);
             }
 
-            const animations = ['riseRight', 'riseLeft', 'riseZigZag'];
+            const animations = ['riseZigZag'];
             for (let i = 0; i < emberCount; i++) {
                 const ember = document.createElement('div');
                 ember.classList.add('ember');
                 const size = Math.random() * 4 + 3;
                 ember.style.width = size + 'px'; ember.style.height = size + 'px';
                 ember.style.left = Math.random() * 100 + 'vw';
-                const duration = (Math.random() * 6 + 6) * speedModifier;
-                const randomAnim = animations[Math.floor(Math.random() * animations.length)];
-                ember.style.animation = `${randomAnim} ${duration}s linear infinite`;
+                ember.style.animation = `riseZigZag ${(Math.random() * 6 + 6)}s linear infinite`;
                 ember.style.animationDelay = '-' + (Math.random() * 10) + 's';
                 container.appendChild(ember);
             }
         }
         createParticles();
 
-        // --- CONFIGURAZIONE NUOVO PLAYER CLAPPR + CHROMECAST ---
+        // --- INIZIALIZZAZIONE CLAPPR ---
         var player = new Clappr.Player({
-            // IL LINK DIRETTO .m3u8 CHE FUNZIONA
             source: 'https://live.webcammontefalconedivalfortore.it/memfs/58e0bcbe-f1bd-4c8b-85f7-b4566a3e5392.m3u8',
             
             parentId: "#player",
-            plugins: [ClapprChromecastPlugin], // Attiva Chromecast
+            plugins: [ClapprChromecastPlugin],
 
             width: '100%',
             height: '100%',
             autoPlay: true,
-            mute: true, // Necessario per autoplay
-            poster: 'p.png', // La tua immagine di copertina
+            mute: true,
+            poster: 'p.png',
             
             playback: {
-                playInline: true, // Fondamentale per iOS
+                playInline: true,
                 recycleVideo: true
             },
             
-            // Configurazione Chromecast
             chromecast: {
                 appId: '9DFB77C0', 
                 media: {
@@ -243,7 +224,6 @@
                 }
             },
             
-            // Colori interfaccia per adattarsi al tema scuro
             mediacontrol: {seekbar: "#e6b400", buttons: "#ffffff"} 
         });
     </script>
