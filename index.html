@@ -3,7 +3,9 @@
 <head>
     <meta name="google-site-verification" content="DLjKDn5UupGNdRgZXo9CuMc0Sg1S1aULxDJfIHT9tYo" />
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+
+    <!-- (2) Viewport: riabilita zoom, niente blocchi accessibilità -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 
     <title>Webcam Montefalcone di Val Fortore - LIVE</title>
 
@@ -23,7 +25,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&display=swap" rel="stylesheet">
 
     <style>
-        /* --- BLOCCO TOTALE SCORRIMENTO --- */
+        /* --- BLOCCO TOTALE SCORRIMENTO (senza disabilitare pinch-zoom) --- */
         html, body {
             margin: 0; padding: 0;
             width: 100%; height: 100%;
@@ -31,14 +33,15 @@
             position: fixed;
             top: 0; left: 0;
             overscroll-behavior: none;
-            touch-action: none;
             background-color: #000;
         }
 
         /* --- FONT --- */
+        /* (4) formato corretto + font-display */
         @font-face {
             font-family: 'MerryChristmasFont';
-            src: url('last.otf') format('truetype');
+            src: url('last.otf') format('opentype');
+            font-display: swap;
         }
 
         /* --- LAYOUT PRINCIPALE --- */
@@ -102,12 +105,21 @@
             will-change: width, height;
         }
 
+        /* (5) Fullscreen robusto: il wrapper è il fullscreen element */
         .video-wrapper:fullscreen,
         .video-wrapper:-webkit-full-screen,
         .video-wrapper:-moz-full-screen {
             border-radius: 0 !important;
             border: none !important;
             box-shadow: none !important;
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        /* (5) Assicura che il media-controller riempia in fullscreen */
+        #videoWrapper:fullscreen #mc,
+        #videoWrapper:-webkit-full-screen #mc,
+        #videoWrapper:-moz-full-screen #mc {
             width: 100% !important;
             height: 100% !important;
         }
@@ -125,7 +137,7 @@
             object-fit: contain;
         }
 
-        /* Layer per il tap (Play/Pause) */
+        /* Layer per il tap */
         #videoWrapper .tap-layer {
             position: absolute; inset: 0; z-index: 10;
             cursor: default;
@@ -166,12 +178,10 @@
             letter-spacing: .14em;
             text-transform: uppercase;
 
-            /* più trasparente: sfondo meno "pesante" */
             background: rgba(0, 0, 0, 0.18);
             border: 1px solid rgba(255,255,255,.18);
             box-shadow: 0 10px 28px rgba(0,0,0,.28);
 
-            /* blur presente ma leggero */
             backdrop-filter: blur(6px);
             -webkit-backdrop-filter: blur(6px);
 
@@ -191,16 +201,34 @@
         #videoWrapper .osd {
             position: absolute; inset: 0; z-index: 20;
             display: flex; align-items: center; justify-content: center;
-            pointer-events: none; opacity: 0; transform: scale(.98);
+            pointer-events: none;
+            opacity: 0; transform: scale(.98);
             transition: opacity 140ms ease, transform 140ms ease;
         }
 
+        /* (mobile fix) il chip è cliccabile, il resto “passa attraverso” */
         #videoWrapper .osd-chip {
             width: 84px; height: 84px; border-radius: 999px;
             display: flex; align-items: center; justify-content: center;
             background: rgba(0,0,0,.35);
             border: 1px solid rgba(255,255,255,.22);
             backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+
+            pointer-events: auto;
+            cursor: pointer;
+
+            /* reset button */
+            appearance: none;
+            -webkit-appearance: none;
+            padding: 0;
+            margin: 0;
+            font: inherit;
+            color: inherit;
+        }
+        #videoWrapper .osd-chip::-moz-focus-inner { border: 0; padding: 0; }
+        #videoWrapper .osd-chip:focus-visible {
+            outline: 2px solid rgba(255,255,255,.35);
+            outline-offset: 2px;
         }
 
         #videoWrapper .osd-icon {
@@ -220,8 +248,7 @@
 
         /* --- MOBILE MEDIA QUERIES --- */
         @media (max-width: 768px) and (orientation: portrait) {
-            /* tutto leggermente più su */
-            #main-container { justify-content: flex-start; padding-top: 16vh; }
+            #main-container { justify-content: flex-start; padding-top: 15vh; }
 
             .municipality-logo { width: 75px; margin-bottom: 10px; }
             .festive-message { font-size: 6vw; line-height: 1.4; margin-bottom: 20px; }
@@ -253,6 +280,15 @@
         @keyframes riseRight { 0% { transform: translateY(0) translateX(0); opacity: 0; } 20% { opacity: 0.8; } 100% { transform: translateY(-90vh) translateX(15vw); opacity: 0; } }
         @keyframes riseLeft { 0% { transform: translateY(0) translateX(0); opacity: 0; } 20% { opacity: 0.8; } 100% { transform: translateY(-90vh) translateX(-15vw); opacity: 0; } }
         @keyframes riseZigZag { 0% { transform: translateY(0) translateX(0); opacity: 0; } 25% { transform: translateY(-20vh) translateX(5vw); opacity: 0.8; } 75% { transform: translateY(-60vh) translateX(-5vw); opacity: 0.4; } 100% { transform: translateY(-90vh) translateX(0); opacity: 0; } }
+
+        /* (3) Riduzione movimento: niente animazioni/transizioni + niente particelle */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation: none !important;
+                transition: none !important;
+            }
+            .particles-container { display: none !important; }
+        }
     </style>
 </head>
 
@@ -272,7 +308,9 @@
         </div>
 
         <div class="video-wrapper" id="videoWrapper">
-            <media-controller id="mc">
+            <!-- (5) fullscreenelement: fullscreen sul wrapper -->
+            <!-- (1) + (mobile fix) gesturesdisabled: disabilita gesture built-in tipo click-to-toggle -->
+            <media-controller id="mc" autohide="2" gesturesdisabled fullscreenelement="videoWrapper">
                 <hls-video
                     id="liveVideo"
                     slot="media"
@@ -291,163 +329,212 @@
                     <span>LIVE</span>
                 </div>
 
-                <div class="osd" aria-hidden="true">
-                    <div class="osd-chip">
+                <div class="osd">
+                    <!-- Bottone reale (serve per mobile: mostra e poi clicchi qui per play/pausa) -->
+                    <button class="osd-chip" id="osdBtn" type="button" aria-label="Pausa">
                         <svg class="osd-icon play" viewBox="0 0 24 24" aria-hidden="true">
                             <path d="M8 5v14l11-7z"></path>
                         </svg>
                         <svg class="osd-icon pause" viewBox="0 0 24 24" aria-hidden="true">
                             <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path>
                         </svg>
-                    </div>
+                    </button>
                 </div>
 
                 <media-control-bar>
-                    <media-fullscreen-button id="fsBtn"></media-fullscreen-button>
+                    <!-- Rimuove il tooltip “Enter Fullscreen” -->
+                    <media-fullscreen-button id="fsBtn" notooltip tooltipplacement="none"></media-fullscreen-button>
                 </media-control-bar>
 
             </media-controller>
-
-            <script>
-                (function () {
-                    const wrapper = document.getElementById('videoWrapper');
-                    const video = document.getElementById('liveVideo');
-                    const tapLayer = document.getElementById('tapLayer');
-                    const fsBtn = document.getElementById('fsBtn');
-
-                    let flashTimer = null;
-
-                    function setPausedUI() {
-                        wrapper.classList.toggle('is-paused', video.paused);
-                    }
-
-                    function flashOSD() {
-                        wrapper.classList.add('flash');
-                        clearTimeout(flashTimer);
-                        flashTimer = setTimeout(() => wrapper.classList.remove('flash'), 420);
-                    }
-
-                    async function lockOrientation(mode) {
-                        try {
-                            if (screen.orientation && screen.orientation.lock) {
-                                await screen.orientation.lock(mode);
-                            }
-                        } catch (e) {
-                            // Ignora errori su iOS/Safari
-                        }
-                    }
-
-                    function unlockOrientation() {
-                        try {
-                            if (screen.orientation && screen.orientation.unlock) {
-                                screen.orientation.unlock();
-                            }
-                        } catch (e) {}
-
-                    }
-
-                    // Stato iniziale + update
-                    video.addEventListener('loadedmetadata', setPausedUI);
-                    video.addEventListener('play', () => { setPausedUI(); flashOSD(); });
-                    video.addEventListener('pause', () => { setPausedUI(); flashOSD(); });
-
-                    // Tap singolo: toggle play/pause
-                    tapLayer.addEventListener('click', () => {
-                        if (video.paused) {
-                            video.play().catch(() => {});
-                        } else {
-                            video.pause();
-                        }
-                        flashOSD();
-                    }, { passive: true });
-
-                    // Retry leggero se il live cade
-                    video.addEventListener('error', () => {
-                        setTimeout(() => {
-                            try {
-                                video.load();
-                                video.play().catch(() => {});
-                            } catch (e) {}
-                        }, 1500);
-                    });
-
-                    // Gestione Schermo Intero e Rotazione
-                    function isFullscreen() {
-                        return document.fullscreenElement || document.webkitFullscreenElement;
-                    }
-
-                    async function onFullscreenChange() {
-                        if (isFullscreen()) {
-                            // entra: prova a bloccare in landscape
-                            await lockOrientation('landscape');
-                        } else {
-                            // esce: prova a tornare portrait
-                            try { await lockOrientation('portrait'); } catch (e) {}
-                            unlockOrientation();
-                        }
-                    }
-
-                    document.addEventListener('fullscreenchange', onFullscreenChange);
-                    document.addEventListener('webkitfullscreenchange', onFullscreenChange);
-
-                    // Tentativo di lock al click
-                    fsBtn?.addEventListener('click', () => {
-                        setTimeout(() => {
-                            if (isFullscreen()) lockOrientation('landscape');
-                        }, 0);
-                    });
-
-                    setPausedUI();
-                })();
-            </script>
         </div>
     </div>
 
-    <script>
-        // --- BLOCCO SCORRIMENTO (Prevent Default) ---
-        document.addEventListener('touchmove', function(e) {
-            e.preventDefault();
-        }, { passive: false });
+    <!-- (1) Script robusto: modulo + attende custom elements (niente race condition) -->
+    <script type="module">
+        (async () => {
+            // Attendi che i componenti siano definiti (evita bug intermittenti)
+            const safeWhenDefined = (tag) => {
+                try { return customElements.whenDefined(tag); }
+                catch { return Promise.resolve(); }
+            };
 
-        // --- SISTEMA PARTICELLE (Neve e Scintille) ---
-        function createParticles() {
-            const container = document.getElementById('particlesContainer');
-            const isMobile = window.innerWidth < 768;
-            const snowCount = isMobile ? 35 : 70;
-            const emberCount = isMobile ? 15 : 30;
-            const speedModifier = isMobile ? 1.5 : 1;
+            await Promise.all([
+                safeWhenDefined('media-controller'),
+                safeWhenDefined('media-fullscreen-button'),
+                safeWhenDefined('hls-video'),
+            ]);
 
-            // Neve
-            for (let i = 0; i < snowCount; i++) {
-                const flake = document.createElement('div');
-                flake.classList.add('snowflake');
-                const size = Math.random() * 3 + 2;
-                flake.style.width = size + 'px'; flake.style.height = size + 'px';
-                flake.style.left = (Math.random() * 120 - 10) + 'vw';
-                const duration = (Math.random() * 4 + 4) * speedModifier;
-                flake.style.animation = `fall ${duration}s linear infinite`;
-                flake.style.animationDelay = '-' + (Math.random() * 5) + 's';
-                container.appendChild(flake);
+            const wrapper = document.getElementById('videoWrapper');
+            const mc = document.getElementById('mc');
+            const video = document.getElementById('liveVideo');
+            const tapLayer = document.getElementById('tapLayer');
+            const fsBtn = document.getElementById('fsBtn');
+            const osdBtn = document.getElementById('osdBtn');
+
+            if (!wrapper || !mc || !video) return;
+
+            const prefersReducedMotion = !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
+            // Heuristica mobile/touch (serve SOLO per cambiare la logica del tap)
+            const isTouchLike = () => {
+                return (
+                    !!window.matchMedia?.('(hover: none) and (pointer: coarse)').matches ||
+                    (navigator.maxTouchPoints && navigator.maxTouchPoints > 0) ||
+                    window.innerWidth < 768
+                );
+            };
+
+            let osdTimer = null;
+
+            function updateOsdAriaLabel() {
+                if (!osdBtn) return;
+                osdBtn.setAttribute('aria-label', video.paused ? 'Play' : 'Pausa');
             }
 
-            // Scintille
-            const animations = ['riseRight', 'riseLeft', 'riseZigZag'];
-            for (let i = 0; i < emberCount; i++) {
-                const ember = document.createElement('div');
-                ember.classList.add('ember');
-                const size = Math.random() * 4 + 3;
-                ember.style.width = size + 'px'; ember.style.height = size + 'px';
-                ember.style.left = Math.random() * 100 + 'vw';
-                const duration = (Math.random() * 6 + 6) * speedModifier;
-                const randomAnim = animations[Math.floor(Math.random() * animations.length)];
-                ember.style.animation = `${randomAnim} ${duration}s linear infinite`;
-                ember.style.animationDelay = '-' + (Math.random() * 10) + 's';
-                container.appendChild(ember);
+            function setPausedUI() {
+                wrapper.classList.toggle('is-paused', !!video.paused);
+                updateOsdAriaLabel();
             }
-        }
-        createParticles();
+
+            function showOSD(ms = 420) {
+                wrapper.classList.add('flash');
+                clearTimeout(osdTimer);
+                osdTimer = setTimeout(() => wrapper.classList.remove('flash'), ms);
+            }
+
+            function togglePlayPause() {
+                if (video.paused) {
+                    video.play().catch(() => {});
+                } else {
+                    video.pause();
+                }
+            }
+
+            // Stato iniziale + update
+            video.addEventListener('loadedmetadata', setPausedUI);
+            video.addEventListener('play', () => { setPausedUI(); showOSD(420); });
+            video.addEventListener('pause', () => { setPausedUI(); /* quando è in pausa resta visibile via .is-paused */ });
+
+            // Mobile: tap nel player NON toggla, mostra solo il bottone.
+            // Desktop: mantiene il toggle comodo (come prima).
+            tapLayer?.addEventListener('click', () => {
+                if (isTouchLike()) {
+                    showOSD(2500); // tempo sufficiente per premere il bottone centrale
+                    return;
+                }
+                togglePlayPause();
+                showOSD(420);
+            });
+
+            // Il vero tasto play/pausa (soprattutto per mobile)
+            osdBtn?.addEventListener('click', (e) => {
+                e.stopPropagation();
+                togglePlayPause();
+                showOSD(420);
+            });
+
+            // Retry leggero se il live cade
+            video.addEventListener('error', () => {
+                setTimeout(() => {
+                    try {
+                        video.load();
+                        video.play().catch(() => {});
+                    } catch (e) {}
+                }, 1500);
+            });
+
+            async function lockOrientation(mode) {
+                try {
+                    if (screen.orientation && screen.orientation.lock) {
+                        await screen.orientation.lock(mode);
+                    }
+                } catch (e) {
+                    // Ignora errori su iOS/Safari
+                }
+            }
+
+            function unlockOrientation() {
+                try {
+                    if (screen.orientation && screen.orientation.unlock) {
+                        screen.orientation.unlock();
+                    }
+                } catch (e) {}
+            }
+
+            function isFullscreen() {
+                return document.fullscreenElement || document.webkitFullscreenElement;
+            }
+
+            // (PC fullscreen) barra che scompare anche se il mouse era sopra:
+            // abilitiamo autohideovercontrols SOLO in fullscreen, per non cambiare comportamento fuori.
+            async function onFullscreenChange() {
+                if (isFullscreen()) {
+                    mc.setAttribute('autohideovercontrols', '');
+                    await lockOrientation('landscape');
+                } else {
+                    mc.removeAttribute('autohideovercontrols');
+                    try { await lockOrientation('portrait'); } catch (e) {}
+                    unlockOrientation();
+                }
+            }
+
+            document.addEventListener('fullscreenchange', onFullscreenChange);
+            document.addEventListener('webkitfullscreenchange', onFullscreenChange);
+
+            // Tentativo di lock al click (best-effort)
+            fsBtn?.addEventListener('click', () => {
+                // Nota: il tooltip è disabilitato via notooltip/tooltipplacement
+                setTimeout(() => {
+                    if (isFullscreen()) lockOrientation('landscape');
+                }, 0);
+            });
+
+            setPausedUI();
+            onFullscreenChange();
+
+            // --- PARTICELLE (con rispetto prefers-reduced-motion) ---
+            function createParticles() {
+                const container = document.getElementById('particlesContainer');
+                if (!container) return;
+
+                const isMobile = window.innerWidth < 768;
+                const snowCount = isMobile ? 35 : 70;
+                const emberCount = isMobile ? 15 : 30;
+                const speedModifier = isMobile ? 1.5 : 1;
+
+                // Neve
+                for (let i = 0; i < snowCount; i++) {
+                    const flake = document.createElement('div');
+                    flake.classList.add('snowflake');
+                    const size = Math.random() * 3 + 2;
+                    flake.style.width = size + 'px'; flake.style.height = size + 'px';
+                    flake.style.left = (Math.random() * 120 - 10) + 'vw';
+                    const duration = (Math.random() * 4 + 4) * speedModifier;
+                    flake.style.animation = `fall ${duration}s linear infinite`;
+                    flake.style.animationDelay = '-' + (Math.random() * 5) + 's';
+                    container.appendChild(flake);
+                }
+
+                // Scintille
+                const animations = ['riseRight', 'riseLeft', 'riseZigZag'];
+                for (let i = 0; i < emberCount; i++) {
+                    const ember = document.createElement('div');
+                    ember.classList.add('ember');
+                    const size = Math.random() * 4 + 3;
+                    ember.style.width = size + 'px'; ember.style.height = size + 'px';
+                    ember.style.left = Math.random() * 100 + 'vw';
+                    const duration = (Math.random() * 6 + 6) * speedModifier;
+                    const randomAnim = animations[Math.floor(Math.random() * animations.length)];
+                    ember.style.animation = `${randomAnim} ${duration}s linear infinite`;
+                    ember.style.animationDelay = '-' + (Math.random() * 10) + 's';
+                    container.appendChild(ember);
+                }
+            }
+
+            if (!prefersReducedMotion) createParticles();
+        })();
     </script>
 
 </body>
 </html>
-
