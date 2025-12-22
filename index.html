@@ -263,11 +263,14 @@
       width: 84px; height: 84px; border-radius: 999px;
       display: flex; align-items: center; justify-content: center;
 
-      background: rgba(0,0,0,.35);
+      /* Ho abbassato l'opacità da .35 a .25 per far risaltare il blur */
+      background: rgba(0,0,0,.25);
+      
       border: 1px solid rgba(255,255,255,.22);
 
-      backdrop-filter: blur(22px);
-      -webkit-backdrop-filter: blur(22px);
+      /* QUI AUMENTIAMO IL BLUR */
+      backdrop-filter: blur(50px);
+      -webkit-backdrop-filter: blur(50px);
 
       pointer-events: none;
       cursor: pointer;
@@ -608,3 +611,4 @@
   </script>
 </body>
 </html>
+
