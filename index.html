@@ -23,7 +23,7 @@
 
   <style>
     :root{
-      --ui-blur: 4px;      /* blur fullscreen + badge */
+      --ui-blur: 4px;       /* blur fullscreen + badge */
       --ui-bg: rgba(0,0,0,.35);
       --ui-border: rgba(255,255,255,.20);
     }
@@ -258,19 +258,19 @@
       will-change: opacity, transform;
     }
 
-    /* ✅ BLUR PLAY DIRETTO (no variabile) */
+    /* ✅ FIX BLUR TASTO PLAY
+       Aumentato il blur a 30px e ridotta l'opacità dello sfondo.
+       Forzata accelerazione hardware per renderizzare sopra il video.
+    */
     #videoWrapper .osd-chip {
       width: 84px; height: 84px; border-radius: 999px;
       display: flex; align-items: center; justify-content: center;
 
-      /* Ho abbassato l'opacità da .35 a .25 per far risaltare il blur */
-      background: rgba(0,0,0,.25);
-      
-      border: 1px solid rgba(255,255,255,.22);
+      background: rgba(10, 10, 10, 0.20); /* Sfondo molto trasparente */
+      border: 1px solid rgba(255,255,255,.25);
 
-      /* QUI AUMENTIAMO IL BLUR */
-      backdrop-filter: blur(50px);
-      -webkit-backdrop-filter: blur(50px);
+      backdrop-filter: blur(30px) saturate(180%);
+      -webkit-backdrop-filter: blur(30px) saturate(180%);
 
       pointer-events: none;
       cursor: pointer;
@@ -279,8 +279,9 @@
       padding: 0;
       margin: 0;
 
-      transform: translateZ(0);
-      -webkit-transform: translateZ(0);
+      /* FORZA RENDERING SU GPU */
+      transform: translate3d(0,0,0);
+      -webkit-transform: translate3d(0,0,0);
       will-change: backdrop-filter, transform;
       backface-visibility: hidden;
       -webkit-backface-visibility: hidden;
@@ -418,29 +419,47 @@
         document.addEventListener(evt, (e) => e.preventDefault(), { passive: false });
       });
 
-      // --- trova il <video> interno a hls-video (Shadow DOM) e forza compositing (NO overlay)
-      function forceNoOverlay() {
-        try {
-          const root = hlsEl.shadowRoot;
-          if (root) {
-            const vids = root.querySelectorAll('video');
-            vids.forEach(v => {
-              v.style.filter = 'opacity(0.9999)';       // chiave: disabilita overlay
-              v.style.webkitFilter = 'opacity(0.9999)';
-              v.style.transform = 'translateZ(0)';
-              v.style.webkitTransform = 'translateZ(0)';
-              v.style.willChange = 'transform, filter';
-              v.style.backfaceVisibility = 'hidden';
-              v.style.webkitBackfaceVisibility = 'hidden';
-            });
+      // =========================================================================
+      // FIX CRITICO BLUR: forza il video a non usare l'overlay hardware
+      // applicando opacity 0.999 al tag <video> interno allo Shadow DOM.
+      // Esegue il controllo in loop per assicurarsi che venga applicato.
+      // =========================================================================
+      function applyVideoOverlayFix() {
+        if (!hlsEl || !hlsEl.shadowRoot) return;
+        const v = hlsEl.shadowRoot.querySelector('video');
+        if (v) {
+          // Se non è già settato, applica l'hack
+          if (v.style.opacity !== '0.999') {
+            v.style.opacity = '0.999'; 
+            v.style.transform = 'translateZ(0)';
+            v.style.webkitTransform = 'translateZ(0)';
+            v.style.willChange = 'opacity, transform';
+            // console.log('FIX BLUR APPLICATO'); // Debug
           }
-        } catch (e) {}
+        }
       }
 
-      // prova subito + riprova nei momenti giusti
-      forceNoOverlay();
-      const mo = new MutationObserver(() => forceNoOverlay());
-      if (hlsEl.shadowRoot) mo.observe(hlsEl.shadowRoot, { childList: true, subtree: true });
+      // 1. Prova subito
+      applyVideoOverlayFix();
+
+      // 2. Riprova con un timer (polling) per i primi secondi
+      const fixInterval = setInterval(applyVideoOverlayFix, 500);
+      setTimeout(() => clearInterval(fixInterval), 8000); // Smette dopo 8 sec
+
+      // 3. Osserva se il DOM cambia (es. il player ricarica il video)
+      try {
+        const observer = new MutationObserver(() => applyVideoOverlayFix());
+        // Attendi che lo shadowRoot esista
+        const waitForShadow = setInterval(() => {
+          if (hlsEl.shadowRoot) {
+            clearInterval(waitForShadow);
+            applyVideoOverlayFix();
+            observer.observe(hlsEl.shadowRoot, { childList: true, subtree: true });
+          }
+        }, 100);
+      } catch(e){}
+      // =========================================================================
+
 
       // stato video (usa l'elemento video interno se disponibile)
       function getInnerVideo() {
@@ -484,7 +503,7 @@
         const v = getInnerVideo();
         if (!v) return;
 
-        forceNoOverlay();
+        applyVideoOverlayFix(); // Riapplica fix per sicurezza
 
         if (v.paused) {
           setReady(false);
@@ -528,12 +547,12 @@
         v.__hwHooked = true;
 
         v.addEventListener('loadedmetadata', () => {
-          forceNoOverlay();
+          applyVideoOverlayFix();
           setPausedUI();
         });
 
         v.addEventListener('playing', () => {
-          forceNoOverlay();
+          applyVideoOverlayFix();
           setReady(true);
           setPausedUI();
           prewarmBlurOnce();
@@ -547,7 +566,7 @@
         v.addEventListener('error', () => {
           setReady(false);
           setTimeout(() => {
-            forceNoOverlay();
+            applyVideoOverlayFix();
             try {
               // se va in errore, ricarica il custom element
               hlsEl.load?.();
@@ -611,4 +630,3 @@
   </script>
 </body>
 </html>
-
