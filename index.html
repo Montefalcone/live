@@ -4,7 +4,7 @@
   <meta name="google-site-verification" content="DLjKDn5UupGNdRgZXo9CuMc0Sg1S1aULxDJfIHT9tYo" />
   <meta charset="UTF-8">
 
-  <!-- Zoom disabilitato (come vuoi tu) -->
+  <!-- Zoom disabilitato -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 
   <title>Webcam Montefalcone di Val Fortore - LIVE</title>
@@ -26,7 +26,15 @@
   <style>
     :root{
       --ui-blur: 3.5px;   /* blur controlli (fullscreen + badge live) */
-      --play-blur: 6px;   /* blur solo tasto play/pause */
+      --play-blur: 8px;   /* ✅ aumentato: blur SOLO tasto play/pause */
+    }
+
+    /* Desktop: rimpicciolisci leggermente tutto per non dare fastidio con taskbar Windows */
+    @media (min-width: 1024px) {
+      #main-container{
+        transform: scale(0.965);
+        transform-origin: center top;
+      }
     }
 
     html, body {
@@ -138,7 +146,7 @@
     /* LOADING overlay (anteprima + spinner) */
     #videoWrapper .loading-overlay{
       position:absolute; inset:0;
-      z-index: 80;                  /* sopra a tutto */
+      z-index: 80;
       display:flex; align-items:center; justify-content:center;
       background:#000;
       opacity:1;
@@ -155,7 +163,7 @@
       opacity:.85;
     }
 
-    /* FIX spinner: animazione robusta su Android/Chrome */
+    /* Spinner robusto */
     #videoWrapper .loading-overlay .spinner{
       position:relative;
       width:46px; height:46px;
@@ -291,19 +299,6 @@
     #videoWrapper.is-paused .osd-icon.play { display: block; }
     #videoWrapper.is-paused .osd-icon.pause { display: none; }
 
-    /* Warm-up blur (fatto bene): rende visibili (quasi zero) i controlli per inizializzare i layer */
-    #videoWrapper.blur-prewarm media-control-bar{
-      opacity: 0.01 !important;
-      transition: none !important;
-      pointer-events: none !important;
-    }
-    #videoWrapper.blur-prewarm .osd{
-      opacity: 0.01 !important;
-      transition: none !important;
-      transform: translateZ(0) scale(1) !important;
-      -webkit-transform: translateZ(0) scale(1) !important;
-    }
-
     /* Curtain transizione fullscreen */
     #pageCurtain, #fsCurtain {
       background: #000;
@@ -366,10 +361,37 @@
         animation: spin .9s linear infinite !important;
       }
     }
+
+    /* ✅ BLUR GHOST: mantiene caldo il compositor (risolve delay blur su desktop+mobile) */
+    .blur-ghost{
+      position: fixed;
+      left: 10px; top: 10px;
+      width: 2px; height: 2px;
+      opacity: 0.01;
+      pointer-events: none;
+      z-index: 1; /* sopra lo sfondo, sotto tutto il resto */
+      background: rgba(0,0,0,0.01);
+      transform: translateZ(0);
+      -webkit-transform: translateZ(0);
+      will-change: backdrop-filter;
+    }
+    #blurGhostUI{
+      backdrop-filter: blur(var(--ui-blur));
+      -webkit-backdrop-filter: blur(var(--ui-blur));
+    }
+    #blurGhostPlay{
+      left: 14px; top: 14px;
+      backdrop-filter: blur(var(--play-blur));
+      -webkit-backdrop-filter: blur(var(--play-blur));
+    }
   </style>
 </head>
 
 <body>
+  <!-- blur ghost: invisibili ma sempre presenti -->
+  <div id="blurGhostUI" class="blur-ghost" aria-hidden="true"></div>
+  <div id="blurGhostPlay" class="blur-ghost" aria-hidden="true"></div>
+
   <div id="bg-static"></div>
   <div class="warm-flicker"></div>
   <div class="vignette"></div>
@@ -454,16 +476,13 @@
 
       if (!wrapper || !video) return;
 
-      const prefersReducedMotion = !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-
-      // ---------- Loading overlay helpers ----------
       function setReady(ready) {
         wrapper.classList.toggle('is-ready', !!ready);
       }
       setReady(false);
 
-      // ---------- CLICK 1 / CLICK 2 + AUTOHIDE ----------
-      const AUTOHIDE_MS = 4000; // cambia qui la durata
+      // CLICK 1 / CLICK 2 + AUTOHIDE
+      const AUTOHIDE_MS = 4000;
       let autoHideTimer = null;
 
       function clearAutoHide() {
@@ -477,11 +496,7 @@
         }, AUTOHIDE_MS);
       }
 
-      let userRequestedControls = false;
-      let blurWarmed = false;
-
       function showControls() {
-        userRequestedControls = true;
         wrapper.classList.add('controls-visible');
         scheduleAutoHide();
       }
@@ -498,33 +513,14 @@
         scheduleAutoHide();
       }
 
-      // Warm-up blur (fullscreen + control bar + osd) sotto l’overlay
-      function warmBlurLayers() {
-        if (blurWarmed) return;
-        blurWarmed = true;
-
-        wrapper.classList.add('blur-prewarm');
-        wrapper.classList.add('controls-visible');
-
-        requestAnimationFrame(() => requestAnimationFrame(() => {
-          setTimeout(() => {
-            wrapper.classList.remove('blur-prewarm');
-            if (!userRequestedControls) wrapper.classList.remove('controls-visible');
-          }, 450);
-        }));
-      }
-      warmBlurLayers();
-
-      // Click/tap sul player: solo show/hide
       tapLayer?.addEventListener('click', () => toggleControls());
 
-      // reset timer se muovi/clicchi mentre i controlli sono su
       wrapper.addEventListener('pointermove', bumpControlsTimer, { passive: true });
       wrapper.addEventListener('touchstart', bumpControlsTimer, { passive: true });
       wrapper.addEventListener('mousemove', bumpControlsTimer, { passive: true });
       wrapper.addEventListener('keydown', bumpControlsTimer);
 
-      // ---------- LIVE catch-up (non aggressivo) ----------
+      // LIVE catch-up (non aggressivo)
       const MAX_BEHIND_SEC = 20;
       const TARGET_BEHIND_SEC = 2.5;
       const CATCHUP_COOLDOWN_MS = 12000;
@@ -559,7 +555,7 @@
         return false;
       }
 
-      // ---------- HARD RESYNC quando torni da Home / background ----------
+      // HARD RESYNC quando torni da Home / background
       let lastHiddenAt = 0;
       let lastHardResyncAt = 0;
       const HARD_RESYNC_COOLDOWN_MS = 8000;
@@ -570,7 +566,6 @@
         lastHardResyncAt = now;
 
         setReady(false);
-        warmBlurLayers();
 
         const wasPaused = video.paused;
 
@@ -594,11 +589,8 @@
           return;
         }
         const hiddenFor = Date.now() - (lastHiddenAt || Date.now());
-        if (!video.paused && hiddenFor > 1200) {
-          hardResyncToLive();
-        } else {
-          setTimeout(() => catchUpToLiveIfNeeded(true), 250);
-        }
+        if (!video.paused && hiddenFor > 1200) hardResyncToLive();
+        else setTimeout(() => catchUpToLiveIfNeeded(true), 250);
       });
 
       window.addEventListener('focus', () => {
@@ -609,7 +601,7 @@
         if (e.persisted) hardResyncToLive();
       });
 
-      // ---------- PLAY/PAUSE solo dal bottone centrale ----------
+      // Play/pause SOLO dal bottone centrale
       function setPausedUI() {
         wrapper.classList.toggle('is-paused', !!video.paused);
         osdBtn?.setAttribute('aria-label', video.paused ? 'Play' : 'Pausa');
@@ -620,13 +612,11 @@
 
         if (video.paused) {
           setReady(false);
-          warmBlurLayers();
           video.play().catch(() => {});
           setTimeout(() => catchUpToLiveIfNeeded(true), 900);
         } else {
           video.pause();
         }
-
         showControls();
       }
 
@@ -635,7 +625,7 @@
         togglePlayPause();
       });
 
-      // ---------- Video events: overlay e UI ----------
+      // Video events: overlay e UI
       video.addEventListener('loadedmetadata', () => {
         setPausedUI();
         setTimeout(() => catchUpToLiveIfNeeded(true), 300);
@@ -654,7 +644,6 @@
 
       video.addEventListener('error', () => {
         setReady(false);
-        warmBlurLayers();
         setTimeout(() => {
           try {
             video.load();
@@ -664,11 +653,10 @@
         }, 1500);
       });
 
-      // ---------- Fullscreen + curtain ----------
+      // Fullscreen + curtain
       function isFullscreen() {
         return document.fullscreenElement || document.webkitFullscreenElement;
       }
-
       function curtainOn(el) { if (el) el.classList.add('on'); }
       function curtainOff(el) { if (el) el.classList.remove('on'); }
 
@@ -696,7 +684,6 @@
 
       fsBtn?.addEventListener('click', () => {
         showControls();
-        warmBlurLayers();
         if (touchMode) {
           curtainOn(fsCurtain);
           curtainOn(pageCurtain);
@@ -713,7 +700,6 @@
           curtainOn(pageCurtain);
           unlockOrientation();
         }
-
         setTimeout(() => {
           curtainOff(fsCurtain);
           curtainOff(pageCurtain);
@@ -723,7 +709,7 @@
       document.addEventListener('fullscreenchange', onFullscreenChange);
       document.addEventListener('webkitfullscreenchange', onFullscreenChange);
 
-      // ---------- Particelle ----------
+      // Particelle
       function createParticles() {
         const container = document.getElementById('particlesContainer');
         if (!container) return;
@@ -760,6 +746,7 @@
         }
       }
 
+      const prefersReducedMotion = !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
       if (!prefersReducedMotion) createParticles();
 
       // init
