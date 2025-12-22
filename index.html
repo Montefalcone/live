@@ -23,8 +23,9 @@
 
   <style>
     :root{
-      --ui-blur: 3.5px;    /* blur badge + fullscreen */
-      --play-blur: 30px;  
+      --ui-blur: 4px;      /* blur fullscreen + badge */
+      --ui-bg: rgba(0,0,0,.35);
+      --ui-border: rgba(255,255,255,.20);
     }
 
     /* Desktop: rimpicciolisci leggermente tutto per non dare fastidio con taskbar */
@@ -42,6 +43,7 @@
       position: fixed;
       top: 0; left: 0;
       overscroll-behavior: none;
+      touch-action: none; /* blocca gesture/zoom */
       background-color: #000;
     }
 
@@ -120,22 +122,13 @@
       width: 100%; height: 100%;
       display: block; position: relative;
       background: #000;
-      --media-tooltip-display: none; /* no "Enter Fullscreen" */
+      --media-tooltip-display: none; /* no tooltip "Enter Fullscreen" */
     }
 
-    /* ✅ FIX VERO: disabilita hardware overlay del video.
-       Questo elimina il ritardo del blur e rende visibile la differenza di blur radius. */
     #videoWrapper hls-video {
       width: 100%; height: 100%;
       display: block; background: #000;
       object-fit: contain;
-
-      filter: opacity(0.9999);
-      -webkit-filter: opacity(0.9999);
-
-      transform: translateZ(0);
-      -webkit-transform: translateZ(0);
-      will-change: transform, filter;
     }
 
     #videoWrapper .tap-layer {
@@ -143,7 +136,7 @@
       cursor: default;
     }
 
-    /* LOADING overlay */
+    /* Loading overlay */
     #videoWrapper .loading-overlay{
       position:absolute; inset:0;
       z-index: 80;
@@ -197,21 +190,22 @@
       pointer-events: auto;
     }
 
-    /* Fullscreen button (blur immediato grazie al fix overlay) */
+    /* Fullscreen button */
     #videoWrapper media-fullscreen-button {
       width: 44px; height: 44px;
       border-radius: 999px;
-      border: 1px solid rgba(255,255,255,.20);
-      background: rgba(0,0,0,.35);
+      border: 1px solid var(--ui-border);
+      background: var(--ui-bg);
+
       backdrop-filter: blur(var(--ui-blur));
       -webkit-backdrop-filter: blur(var(--ui-blur));
-      cursor: pointer;
 
+      cursor: pointer;
       transform: translateZ(0);
       -webkit-transform: translateZ(0);
+      will-change: backdrop-filter, transform;
       backface-visibility: hidden;
       -webkit-backface-visibility: hidden;
-      will-change: backdrop-filter, transform;
     }
 
     /* LIVE badge */
@@ -264,6 +258,7 @@
       will-change: opacity, transform;
     }
 
+    /* ✅ BLUR PLAY DIRETTO (no variabile) */
     #videoWrapper .osd-chip {
       width: 84px; height: 84px; border-radius: 999px;
       display: flex; align-items: center; justify-content: center;
@@ -271,8 +266,8 @@
       background: rgba(0,0,0,.35);
       border: 1px solid rgba(255,255,255,.22);
 
-      backdrop-filter: blur(var(--play-blur));
-      -webkit-backdrop-filter: blur(var(--play-blur));
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
 
       pointer-events: none;
       cursor: pointer;
@@ -284,6 +279,8 @@
       transform: translateZ(0);
       -webkit-transform: translateZ(0);
       will-change: backdrop-filter, transform;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
     }
 
     #videoWrapper.controls-visible .osd {
@@ -297,6 +294,14 @@
     #videoWrapper .osd-icon.play { display: none; }
     #videoWrapper.is-paused .osd-icon.play { display: block; }
     #videoWrapper.is-paused .osd-icon.pause { display: none; }
+
+    /* PREWARM: renderizza blur per 1 frame senza mostrarlo */
+    #videoWrapper.prewarm media-control-bar,
+    #videoWrapper.prewarm .osd {
+      opacity: 0.001 !important;
+      transition: none !important;
+      pointer-events: none !important;
+    }
 
     /* effetti */
     .warm-flicker { position: absolute; inset: 0; background: radial-gradient(circle, rgba(255, 180, 50, 0.15), transparent 80%); z-index: 2; pointer-events: none; mix-blend-mode: overlay; animation: firePulse 4s ease-in-out infinite alternate; }
@@ -396,14 +401,54 @@
       await Promise.all([when('media-controller'), when('media-fullscreen-button'), when('hls-video')]);
 
       const wrapper = document.getElementById('videoWrapper');
-      const video   = document.getElementById('liveVideo');
+      const hlsEl   = document.getElementById('liveVideo');
       const tapLayer= document.getElementById('tapLayer');
       const osdBtn  = document.getElementById('osdBtn');
 
-      if (!wrapper || !video) return;
+      if (!wrapper || !hlsEl) return;
+
+      // --- blocco zoom "professionale" anche su desktop (Ctrl+wheel) + iOS gesture
+      document.addEventListener('wheel', (e) => {
+        if (e.ctrlKey) e.preventDefault();
+      }, { passive: false });
+      ['gesturestart','gesturechange','gestureend'].forEach(evt => {
+        document.addEventListener(evt, (e) => e.preventDefault(), { passive: false });
+      });
+
+      // --- trova il <video> interno a hls-video (Shadow DOM) e forza compositing (NO overlay)
+      function forceNoOverlay() {
+        try {
+          const root = hlsEl.shadowRoot;
+          if (root) {
+            const vids = root.querySelectorAll('video');
+            vids.forEach(v => {
+              v.style.filter = 'opacity(0.9999)';       // chiave: disabilita overlay
+              v.style.webkitFilter = 'opacity(0.9999)';
+              v.style.transform = 'translateZ(0)';
+              v.style.webkitTransform = 'translateZ(0)';
+              v.style.willChange = 'transform, filter';
+              v.style.backfaceVisibility = 'hidden';
+              v.style.webkitBackfaceVisibility = 'hidden';
+            });
+          }
+        } catch (e) {}
+      }
+
+      // prova subito + riprova nei momenti giusti
+      forceNoOverlay();
+      const mo = new MutationObserver(() => forceNoOverlay());
+      if (hlsEl.shadowRoot) mo.observe(hlsEl.shadowRoot, { childList: true, subtree: true });
+
+      // stato video (usa l'elemento video interno se disponibile)
+      function getInnerVideo() {
+        try {
+          const root = hlsEl.shadowRoot;
+          const v = root?.querySelector('video');
+          return v || null;
+        } catch { return null; }
+      }
 
       function setReady(ready) { wrapper.classList.toggle('is-ready', !!ready); }
-      setReady(false);
 
       // click 1/2 + autohide
       const AUTOHIDE_MS = 4000;
@@ -424,104 +469,98 @@
       wrapper.addEventListener('touchstart', bumpControlsTimer, { passive:true });
       wrapper.addEventListener('mousemove', bumpControlsTimer, { passive:true });
 
-      // live catch-up
-      const MAX_BEHIND_SEC = 20;
-      const TARGET_BEHIND_SEC = 2.5;
-      const CATCHUP_COOLDOWN_MS = 12000;
-      let lastCatchUpAt = 0;
-
-      function getSeekableEnd(){
-        try {
-          const s = video.seekable;
-          if (s && s.length) return s.end(s.length - 1);
-        } catch (e) {}
-        return null;
+      // play/pause solo dal bottone
+      function setPausedUI() {
+        const v = getInnerVideo();
+        const paused = v ? v.paused : false;
+        wrapper.classList.toggle('is-paused', !!paused);
+        osdBtn?.setAttribute('aria-label', paused ? 'Play' : 'Pausa');
       }
 
-      function catchUpToLiveIfNeeded(force=false){
-        const now = Date.now();
-        if (!force && (now - lastCatchUpAt < CATCHUP_COOLDOWN_MS)) return;
-        const liveEnd = getSeekableEnd();
-        if (liveEnd == null || !Number.isFinite(liveEnd)) return;
+      function togglePlayPause() {
+        const v = getInnerVideo();
+        if (!v) return;
 
-        const cur = Number(video.currentTime || 0);
-        const behind = liveEnd - cur;
+        forceNoOverlay();
 
-        if (force || behind > MAX_BEHIND_SEC) {
-          try {
-            video.currentTime = Math.max(0, liveEnd - TARGET_BEHIND_SEC);
-            lastCatchUpAt = now;
-          } catch (e) {}
-        }
-      }
-
-      // hard resync on return
-      let lastHiddenAt = 0;
-      let lastHardResyncAt = 0;
-      const HARD_RESYNC_COOLDOWN_MS = 8000;
-
-      function hardResyncToLive(){
-        const now = Date.now();
-        if (now - lastHardResyncAt < HARD_RESYNC_COOLDOWN_MS) return;
-        lastHardResyncAt = now;
-
-        setReady(false);
-        const wasPaused = video.paused;
-
-        try { video.load(); } catch(e){}
-
-        const onMeta = () => {
-          catchUpToLiveIfNeeded(true);
-          video.removeEventListener('loadedmetadata', onMeta);
-        };
-        video.addEventListener('loadedmetadata', onMeta);
-
-        if (!wasPaused) {
-          video.play().catch(()=>{});
-          setTimeout(() => catchUpToLiveIfNeeded(true), 900);
-        }
-      }
-
-      document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'hidden') { lastHiddenAt = Date.now(); return; }
-        const hiddenFor = Date.now() - (lastHiddenAt || Date.now());
-        if (!video.paused && hiddenFor > 1200) hardResyncToLive();
-        else setTimeout(() => catchUpToLiveIfNeeded(true), 250);
-      });
-
-      window.addEventListener('focus', () => setTimeout(hardResyncToLive, 150));
-      window.addEventListener('pageshow', (e) => { if (e.persisted) hardResyncToLive(); });
-
-      // play/pause only via osd button
-      function setPausedUI(){ wrapper.classList.toggle('is-paused', !!video.paused); }
-      function togglePlayPause(){
-        catchUpToLiveIfNeeded(true);
-        if (video.paused) {
+        if (v.paused) {
           setReady(false);
-          video.play().catch(()=>{});
-          setTimeout(() => catchUpToLiveIfNeeded(true), 900);
+          v.play().catch(()=>{});
         } else {
-          video.pause();
+          v.pause();
         }
         showControls();
+        setPausedUI();
       }
-      osdBtn?.addEventListener('click', (e) => { e.stopPropagation(); togglePlayPause(); });
 
-      video.addEventListener('loadedmetadata', () => { setPausedUI(); setTimeout(() => catchUpToLiveIfNeeded(true), 300); });
-      video.addEventListener('playing', () => { setPausedUI(); setReady(true); bumpControlsTimer(); });
-      video.addEventListener('pause', () => { setPausedUI(); showControls(); });
-      video.addEventListener('error', () => {
-        setReady(false);
-        setTimeout(() => {
-          try {
-            video.load();
-            video.play().catch(()=>{});
-            setTimeout(() => catchUpToLiveIfNeeded(true), 900);
-          } catch(e){}
-        }, 1500);
+      osdBtn?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        togglePlayPause();
       });
 
-      // particles
+      // PREWARM: appena il video è pronto/parte, scalda i layer blur una volta
+      let didPrewarm = false;
+      function prewarmBlurOnce() {
+        if (didPrewarm) return;
+        didPrewarm = true;
+
+        wrapper.classList.add('prewarm');
+        wrapper.classList.add('controls-visible');
+
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            wrapper.classList.remove('prewarm');
+            wrapper.classList.remove('controls-visible');
+          });
+        });
+      }
+
+      // eventi video interno
+      function hookInnerVideoEvents() {
+        const v = getInnerVideo();
+        if (!v) return;
+
+        // evita doppio hook
+        if (v.__hwHooked) return;
+        v.__hwHooked = true;
+
+        v.addEventListener('loadedmetadata', () => {
+          forceNoOverlay();
+          setPausedUI();
+        });
+
+        v.addEventListener('playing', () => {
+          forceNoOverlay();
+          setReady(true);
+          setPausedUI();
+          prewarmBlurOnce();
+        });
+
+        v.addEventListener('pause', () => {
+          setPausedUI();
+          showControls();
+        });
+
+        v.addEventListener('error', () => {
+          setReady(false);
+          setTimeout(() => {
+            forceNoOverlay();
+            try {
+              // se va in errore, ricarica il custom element
+              hlsEl.load?.();
+            } catch(e){}
+            const vv = getInnerVideo();
+            vv?.play?.().catch(()=>{});
+          }, 1200);
+        });
+      }
+
+      // prova subito e poi dopo un attimo (in alcuni casi il video nasce dopo)
+      hookInnerVideoEvents();
+      setTimeout(hookInnerVideoEvents, 200);
+      setTimeout(hookInnerVideoEvents, 800);
+
+      // particelle
       function createParticles() {
         const container = document.getElementById('particlesContainer');
         if (!container) return;
@@ -561,10 +600,11 @@
       const prefersReducedMotion = !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
       if (!prefersReducedMotion) createParticles();
 
+      // init UI
+      setReady(false);
       setPausedUI();
       hideControls();
     })();
   </script>
 </body>
 </html>
-
