@@ -14,7 +14,7 @@
   <meta property="og:image" content="https://www.webcammontefalconedivalfortore.it/p.png">
   <meta name="robots" content="index, follow">
 
-  <!-- hls.js (versione LTS stabile) -->
+  <!-- hls.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.6.6/hls.min.js"></script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -23,8 +23,7 @@
 
   <style>
     :root{
-      --ui-blur: 4px;        /* blur badge + fullscreen */
-      --play-blur: 22px;     /* ✅ blur play/pause (ORA FUNZIONA DAVVERO) */
+      --ui-blur: 4px; /* ✅ BLUR LIVE e PLAY identici */
       --ui-bg: rgba(0,0,0,.35);
       --ui-border: rgba(255,255,255,.20);
     }
@@ -37,7 +36,6 @@
       }
     }
 
-    /* --- BLOCCO TOTALE SCORRIMENTO / ZOOM --- */
     html, body {
       margin: 0; padding: 0;
       width: 100%; height: 100%;
@@ -45,18 +43,16 @@
       position: fixed;
       top: 0; left: 0;
       overscroll-behavior: none;
-      touch-action: none;
+      touch-action: none; /* niente zoom/gesture */
       background-color: #000;
     }
 
-    /* --- FONT --- */
     @font-face {
       font-family: 'MerryChristmasFont';
       src: url('last.otf') format('opentype');
       font-display: swap;
     }
 
-    /* --- LAYOUT PRINCIPALE --- */
     #main-container {
       width: 100%; height: 100%;
       display: flex; flex-direction: column;
@@ -65,7 +61,6 @@
       transition: all 0.5s ease;
     }
 
-    /* --- SFONDO (Satinato) --- */
     #bg-static {
       position: absolute;
       top: -10%; left: -10%; width: 120%; height: 120%;
@@ -81,21 +76,18 @@
       100% { transform: translate(-2%, 2%) scale(1.05); }
     }
 
-    /* --- ELEMENTI UI COMUNI --- */
     .municipality-logo, .festive-message, .warm-flicker, .vignette, .particles-container {
       transition: opacity 0.5s ease;
       opacity: 1;
       pointer-events: none;
     }
 
-    /* --- LOGO --- */
     .municipality-logo {
       width: 110px; height: auto;
       margin-bottom: 15px; z-index: 30;
       filter: brightness(1.1) drop-shadow(0 0 15px rgba(255, 215, 0, 0.5));
     }
 
-    /* --- MESSAGGIO --- */
     .festive-message {
       font-family: 'MerryChristmasFont', serif;
       color: #ffffff; text-align: center;
@@ -104,7 +96,6 @@
       z-index: 30; padding: 0 20px; width: 100%; box-sizing: border-box;
     }
 
-    /* --- VIDEO WRAPPER --- */
     .video-wrapper {
       position: relative;
       width: auto; height: 60%;
@@ -127,31 +118,22 @@
       height: 100% !important;
     }
 
-    /* ✅ VIDEO NATIVO: forza compositing e toglie overlay (risolve blur + ritardo) */
-    #liveVideo {
-      width: 100%;
-      height: 100%;
-      display: block;
-      background: #000;
-      object-fit: contain;
+    /* video nativo */
+    #liveVideo{
+      width:100%; height:100%;
+      display:block;
+      background:#000;
+      object-fit:contain;
 
-      /* chiave: “spezzare” l’overlay */
-      filter: opacity(0.9999);
+      /* compositing stabile */
       transform: translateZ(0);
-      will-change: transform, filter;
+      will-change: transform;
     }
 
-    /* layer click */
-    .tap-layer {
-      position: absolute; inset: 0;
-      z-index: 10;
-      cursor: default;
-    }
-
-    /* --- Loading overlay --- */
+    /* LOADING overlay */
     .loading-overlay{
       position:absolute; inset:0;
-      z-index: 80;
+      z-index: 90;
       display:flex; align-items:center; justify-content:center;
       background:#000;
       opacity:1;
@@ -183,55 +165,19 @@
       to   { transform: translateZ(0) rotate(360deg); }
     }
 
-    /* --- Control bar (solo fullscreen) --- */
-    .control-bar {
-      position: absolute; left: 0; right: 0; bottom: 0;
-      z-index: 30;
-      padding: 12px 12px;
-      display: flex; align-items: center; justify-content: flex-end;
-      gap: 10px;
-      background: linear-gradient(to top, rgba(0,0,0,.75), rgba(0,0,0,0));
-      transition: opacity 180ms ease;
-      opacity: 0;
-      pointer-events: none;
-    }
-    .video-wrapper.controls-visible .control-bar {
-      opacity: 1;
-      pointer-events: auto;
+    /* TAP layer sotto i controlli (non deve bloccare i bottoni) */
+    .tap-layer{
+      position:absolute; inset:0;
+      z-index: 10;
+      pointer-events:auto;
     }
 
-    /* Fullscreen button (custom) */
-    .fs-btn{
-      width: 44px; height: 44px;
-      border-radius: 999px;
-      border: 1px solid var(--ui-border);
-      background: var(--ui-bg);
-
-      backdrop-filter: blur(var(--ui-blur));
-      -webkit-backdrop-filter: blur(var(--ui-blur));
-
-      cursor: pointer;
-      display:flex; align-items:center; justify-content:center;
-
-      transform: translateZ(0);
-      will-change: backdrop-filter, transform;
-      backface-visibility: hidden;
-      -webkit-tap-highlight-color: transparent;
-      outline: none;
-    }
-    .fs-icon{
-      width: 22px; height: 22px;
-      fill: #fff; opacity:.95;
-    }
-
-    /* LIVE Badge */
+    /* LIVE badge */
     .live-badge {
-      position: absolute; left: 14px; bottom: 14px; z-index: 31;
+      position: absolute; left: 14px; bottom: 14px; z-index: 60;
       display: inline-flex; align-items: center; gap: 8px;
-
       padding: 8px 12px;
       border-radius: 999px;
-
       color: #fff;
       font-family: "Poppins", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
       font-weight: 700;
@@ -249,7 +195,9 @@
 
       pointer-events: none;
       transform: translateZ(0);
+      will-change: backdrop-filter, opacity;
     }
+
     .live-dot {
       width: 8px; height: 8px;
       border-radius: 50%;
@@ -259,53 +207,92 @@
     }
     @keyframes livePulse { 0%{opacity:1} 50%{opacity:.45} 100%{opacity:1} }
 
-    /* OSD centrale */
-    .osd {
-      position: absolute; inset: 0; z-index: 20;
-      display: flex; align-items: center; justify-content: center;
+    /* CONTROL BAR (fullscreen) - IMPORTANT: mai opacity 0, ma 0.001 (anti-ritardo blur) */
+    .control-bar{
+      position:absolute; left:0; right:0; bottom:0;
+      z-index: 70;
+      padding: 12px 12px;
+      display:flex; align-items:center; justify-content:flex-end;
+      gap:10px;
+      background: linear-gradient(to top, rgba(0,0,0,.75), rgba(0,0,0,0));
+      transition: opacity 180ms ease;
+      opacity: 0.001;            /* ✅ NO ritardo blur */
       pointer-events: none;
-      opacity: 0;
-      transform: translateZ(0) scale(.98);
-      transition: opacity 140ms ease, transform 140ms ease;
+      will-change: opacity;
+      transform: translateZ(0);
     }
-    .video-wrapper.controls-visible .osd {
+    .video-wrapper.controls-visible .control-bar{
       opacity: 1;
-      transform: translateZ(0) scale(1);
+      pointer-events:auto;
     }
 
-    .osd-chip {
-      width: 84px; height: 84px; border-radius: 999px;
-      display: flex; align-items: center; justify-content: center;
+    .fs-btn{
+      width:44px; height:44px;
+      border-radius:999px;
+      border:1px solid var(--ui-border);
+      background: var(--ui-bg);
+
+      backdrop-filter: blur(var(--ui-blur));
+      -webkit-backdrop-filter: blur(var(--ui-blur));
+
+      cursor:pointer;
+      display:flex; align-items:center; justify-content:center;
+      outline:none;
+      -webkit-tap-highlight-color: transparent;
+
+      transform: translateZ(0);
+      will-change: backdrop-filter, opacity, transform;
+      backface-visibility:hidden;
+    }
+    .fs-icon{ width:22px; height:22px; fill:#fff; opacity:.95; }
+
+    /* OSD (play/pause) - IMPORTANT: mai opacity 0, ma 0.001 (anti-ritardo blur) */
+    .osd{
+      position:absolute; inset:0;
+      z-index: 65;
+      display:flex; align-items:center; justify-content:center;
+      pointer-events:none;
+      opacity: 0.001;            /* ✅ NO ritardo blur */
+      transform: translateZ(0) scale(1);
+      transition: opacity 140ms ease;
+      will-change: opacity;
+    }
+    .video-wrapper.controls-visible .osd{
+      opacity: 1;
+      pointer-events: none; /* il click lo prende il bottone, non il layer */
+    }
+
+    .osd-chip{
+      width:84px; height:84px;
+      border-radius:999px;
+      display:flex; align-items:center; justify-content:center;
 
       background: rgba(0,0,0,.35);
       border: 1px solid rgba(255,255,255,.22);
 
-      /* ✅ BLUR DIRETTO */
-      backdrop-filter: blur(var(--play-blur));
-      -webkit-backdrop-filter: blur(var(--play-blur));
+      /* ✅ BLUR UGUALE A LIVE */
+      backdrop-filter: blur(var(--ui-blur));
+      -webkit-backdrop-filter: blur(var(--ui-blur));
 
-      pointer-events: auto;
-      cursor: pointer;
-
-      appearance: none;
-      -webkit-appearance: none;
-      padding: 0;
-      margin: 0;
+      pointer-events:auto;
+      cursor:pointer;
+      appearance:none;
+      -webkit-appearance:none;
+      padding:0; margin:0;
+      outline:none;
+      -webkit-tap-highlight-color: transparent;
 
       transform: translateZ(0);
-      will-change: backdrop-filter, transform;
-      backface-visibility: hidden;
-
-      outline: none;
-      -webkit-tap-highlight-color: transparent;
+      will-change: backdrop-filter, opacity, transform;
+      backface-visibility:hidden;
     }
 
-    .osd-icon { width: 40px; height: 40px; fill: #fff; opacity: .95; }
-    .osd-icon.play { display: none; }
-    .video-wrapper.is-paused .osd-icon.play { display: block; }
-    .video-wrapper.is-paused .osd-icon.pause { display: none; }
+    .osd-icon{ width:40px; height:40px; fill:#fff; opacity:.95; }
+    .osd-icon.play{ display:none; }
+    .video-wrapper.is-paused .osd-icon.play{ display:block; }
+    .video-wrapper.is-paused .osd-icon.pause{ display:none; }
 
-    /* --- MOBILE MEDIA QUERIES --- */
+    /* --- MOBILE --- */
     @media (max-width: 768px) and (orientation: portrait) {
       #main-container { justify-content: flex-start; padding-top: 18vh; }
       .municipality-logo { width: 75px; margin-bottom: 10px; }
@@ -316,17 +303,12 @@
     @keyframes driftingWorldMobile { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(-3%, 0) scale(1.15); } }
 
     @media screen and (orientation: landscape) and (max-height: 600px) {
-      .municipality-logo, .festive-message, #bg-static, .warm-flicker, .vignette, .particles-container {
-        display: none !important;
-      }
+      .municipality-logo, .festive-message, #bg-static, .warm-flicker, .vignette, .particles-container { display: none !important; }
       #main-container { padding: 0 !important; justify-content: center !important; background: #000; }
-      .video-wrapper {
-        width: 100vw; height: 100vh;
-        border: none; border-radius: 0;
-      }
+      .video-wrapper { width: 100vw; height: 100vh; border: none; border-radius: 0; }
     }
 
-    /* --- EFFETTI --- */
+    /* Effetti */
     .warm-flicker { position: absolute; inset: 0; background: radial-gradient(circle, rgba(255, 180, 50, 0.15), transparent 80%); z-index: 2; pointer-events: none; mix-blend-mode: overlay; animation: firePulse 4s ease-in-out infinite alternate; }
     @keyframes firePulse { 0% { opacity: 0.1; } 100% { opacity: 0.5; } }
     .particles-container { position: absolute; inset: 0; pointer-events: none; z-index: 5; overflow: hidden; }
@@ -392,7 +374,6 @@
 
       <div class="control-bar" aria-hidden="true">
         <button class="fs-btn" id="fsBtn" type="button" aria-label="Fullscreen">
-          <!-- icona fullscreen -->
           <svg class="fs-icon" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M7 14H5v5h5v-2H7v-3zm0-4h2V7h3V5H5v5zm12 9h-3v2h5v-5h-2v3zm0-14V5h-5v2h3v3h2V5z"/>
           </svg>
@@ -402,21 +383,19 @@
   </div>
 
   <script>
-    // --- BLOCCO SCORRIMENTO (Prevent Default) ---
-    document.addEventListener('touchmove', function(e) { e.preventDefault(); }, { passive: false });
+    // blocco scroll
+    document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
 
-    // blocca zoom su desktop (CTRL + rotella / CTRL +/-)
+    // blocco zoom desktop (ctrl + wheel / ctrl +/-)
     document.addEventListener('wheel', (e) => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
     document.addEventListener('keydown', (e) => {
       if (e.ctrlKey && (e.key === '+' || e.key === '-' || e.key === '=' || e.key === '0')) e.preventDefault();
     }, { passive: false });
-
-    // iOS gesture zoom
     ['gesturestart','gesturechange','gestureend'].forEach(evt => {
       document.addEventListener(evt, (e) => e.preventDefault(), { passive: false });
     });
 
-    // --- PARTICELLE ---
+    // particelle
     function createParticles() {
       const container = document.getElementById('particlesContainer');
       if (!container) return;
@@ -454,7 +433,7 @@
     }
     if (!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) createParticles();
 
-    // --- PLAYER LOGIC ---
+    // player
     (function () {
       const VIDEO_SRC = "https://live.webcammontefalconedivalfortore.it/memfs/58e0bcbe-f1bd-4c8b-85f7-b4566a3e5392.m3u8";
 
@@ -470,11 +449,11 @@
       function setReady(ready){ wrapper.classList.toggle('is-ready', !!ready); }
       function setPausedUI(){ wrapper.classList.toggle('is-paused', !!video.paused); }
 
-      // click 1/2 show/hide + autohide
+      // show/hide controls + autohide
       const AUTOHIDE_MS = 4000;
       let autoHideTimer = null;
 
-      function clearAutoHide(){ if (autoHideTimer) clearTimeout(autoHideTimer); autoHideTimer=null; }
+      function clearAutoHide(){ if (autoHideTimer) clearTimeout(autoHideTimer); autoHideTimer = null; }
       function scheduleAutoHide(){
         clearAutoHide();
         autoHideTimer = setTimeout(() => wrapper.classList.remove('controls-visible'), AUTOHIDE_MS);
@@ -483,15 +462,23 @@
       function hideControls(){ wrapper.classList.remove('controls-visible'); clearAutoHide(); }
       function toggleControls(){ wrapper.classList.contains('controls-visible') ? hideControls() : showControls(); }
 
-      tapLayer.addEventListener('click', toggleControls, { passive: true });
+      tapLayer.addEventListener('click', () => toggleControls(), { passive: true });
+      wrapper.addEventListener('pointermove', () => { if (wrapper.classList.contains('controls-visible')) scheduleAutoHide(); }, { passive:true });
+      wrapper.addEventListener('touchstart', () => { if (wrapper.classList.contains('controls-visible')) scheduleAutoHide(); }, { passive:true });
+      wrapper.addEventListener('mousemove', () => { if (wrapper.classList.contains('controls-visible')) scheduleAutoHide(); }, { passive:true });
 
-      // play/pause SOLO dal bottone centrale
-      osdBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
+      // IMPORTANT: impedisci al tap-layer di interferire con i bottoni
+      function stopAll(e){ e.stopPropagation(); }
+      ['pointerdown','mousedown','touchstart','click'].forEach(evt => {
+        fsBtn.addEventListener(evt, stopAll, { passive: evt !== 'click' });
+        osdBtn.addEventListener(evt, stopAll, { passive: evt !== 'click' });
+      });
+
+      // play/pause solo dal bottone
+      osdBtn.addEventListener('click', () => {
         if (video.paused) {
-          // sempre vicino al live edge prima di play
-          snapToLiveEdge(true);
           setReady(false);
+          snapToLiveEdge(true);
           video.play().catch(()=>{});
         } else {
           video.pause();
@@ -499,57 +486,43 @@
         showControls();
       });
 
-      // fullscreen custom
+      // FULLSCREEN (fix robusto + fallback iOS)
       function isFullscreen(){
         return document.fullscreenElement || document.webkitFullscreenElement;
       }
+      async function enterFullscreen(){
+        const el = wrapper;
 
-      async function lockOrientationLandscape(){
-        try {
-          if (screen.orientation && screen.orientation.lock) {
-            await screen.orientation.lock('landscape');
-          }
-        } catch(e){}
-      }
-      async function unlockOrientation(){
-        try {
-          if (screen.orientation && screen.orientation.unlock) {
-            screen.orientation.unlock();
-          }
-        } catch(e){}
-      }
-
-      async function toggleFullscreen(){
-        try {
-          if (!isFullscreen()) {
-            const el = wrapper;
-            if (el.requestFullscreen) await el.requestFullscreen();
-            else if (el.webkitRequestFullscreen) await el.webkitRequestFullscreen();
-
-            // lock dopo l'entrata (più pulito)
-            setTimeout(lockOrientationLandscape, 120);
-          } else {
-            if (document.exitFullscreen) await document.exitFullscreen();
-            else if (document.webkitExitFullscreen) await document.webkitExitFullscreen();
-            setTimeout(unlockOrientation, 120);
-          }
-        } catch(e){}
-      }
-
-      fsBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleFullscreen(); showControls(); });
-
-      // --- LIVE: hls.js + resync ---
-      let hls = null;
-
-      function destroyHls(){
-        if (hls) {
-          try { hls.destroy(); } catch(e){}
-          hls = null;
+        // iOS Safari: full screen nativo solo sul video
+        if (video.webkitEnterFullscreen && /iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+          try { video.webkitEnterFullscreen(); return; } catch(e){}
         }
+
+        try {
+          if (el.requestFullscreen) await el.requestFullscreen();
+          else if (el.webkitRequestFullscreen) await el.webkitRequestFullscreen();
+        } catch(e){}
+      }
+      async function exitFullscreen(){
+        try {
+          if (document.exitFullscreen) await document.exitFullscreen();
+          else if (document.webkitExitFullscreen) await document.webkitExitFullscreen();
+        } catch(e){}
+      }
+      async function toggleFullscreen(){
+        if (!isFullscreen()) await enterFullscreen();
+        else await exitFullscreen();
+        showControls();
       }
 
+      fsBtn.addEventListener('click', () => toggleFullscreen());
+
+      // HLS
+      let hls = null;
+      function destroyHls(){
+        if (hls) { try { hls.destroy(); } catch(e){} hls = null; }
+      }
       function isNativeHls(){
-        // Safari/iOS
         return video.canPlayType('application/vnd.apple.mpegurl');
       }
 
@@ -575,11 +548,11 @@
 
       function initStream(){
         setReady(false);
+        setPausedUI();
 
         destroyHls();
-        video.pause();
-        video.removeAttribute('src');
-        try { video.load(); } catch(e){}
+        try { video.pause(); } catch(e){}
+        try { video.removeAttribute('src'); video.load(); } catch(e){}
 
         if (window.Hls && Hls.isSupported() && !isNativeHls()) {
           hls = new Hls({
@@ -591,36 +564,16 @@
             maxLiveSyncPlaybackRate: 1.5,
             enableWorker: true
           });
-
           hls.attachMedia(video);
-
-          hls.on(Hls.Events.MEDIA_ATTACHED, () => {
-            hls.loadSource(VIDEO_SRC);
-          });
-
-          hls.on(Hls.Events.MANIFEST_PARSED, () => {
-            // parte già sul live edge
-            video.play().catch(()=>{});
-          });
-
+          hls.on(Hls.Events.MEDIA_ATTACHED, () => hls.loadSource(VIDEO_SRC));
+          hls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(()=>{}));
           hls.on(Hls.Events.ERROR, (evt, data) => {
             if (!data || !data.fatal) return;
-            switch (data.type) {
-              case Hls.ErrorTypes.NETWORK_ERROR:
-                try { hls.startLoad(-1); } catch(e){}
-                break;
-              case Hls.ErrorTypes.MEDIA_ERROR:
-                try { hls.recoverMediaError(); } catch(e){}
-                break;
-              default:
-                // ripartenza pulita
-                setTimeout(initStream, 800);
-                break;
-            }
+            if (data.type === Hls.ErrorTypes.NETWORK_ERROR) { try { hls.startLoad(-1); } catch(e){} }
+            else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) { try { hls.recoverMediaError(); } catch(e){} }
+            else { setTimeout(initStream, 800); }
           });
-
         } else {
-          // native HLS (Safari/iOS)
           video.src = VIDEO_SRC;
           try { video.load(); } catch(e){}
           video.play().catch(()=>{});
@@ -628,44 +581,37 @@
       }
 
       // eventi video
-      video.addEventListener('loadedmetadata', () => { setPausedUI(); });
+      video.addEventListener('loadedmetadata', () => setPausedUI());
       video.addEventListener('playing', () => {
         setReady(true);
         setPausedUI();
 
-        // prewarm: fa “montare” i layer subito => niente ritardi al primo tap
+        // prewarm: attiva per 1 frame i controlli (ma siccome non vanno mai a opacity 0, non “lagga”)
         wrapper.classList.add('controls-visible');
         requestAnimationFrame(() => requestAnimationFrame(() => wrapper.classList.remove('controls-visible')));
       });
       video.addEventListener('pause', () => { setPausedUI(); showControls(); });
       video.addEventListener('error', () => { setReady(false); setTimeout(initStream, 1200); });
 
-      // controllo live: ogni 8s se drift > 20s, snap
-      setInterval(() => {
-        if (!video.paused) snapToLiveEdge(false);
-      }, 8000);
+      // drift check
+      setInterval(() => { if (!video.paused) snapToLiveEdge(false); }, 8000);
 
-      // RESYNC HARD quando rientri da home/tab
+      // resync quando torni da background
       let hiddenAt = 0;
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'hidden') {
           hiddenAt = Date.now();
-          // stop network
           if (hls) { try { hls.stopLoad(); } catch(e){} }
           return;
         }
         const dt = Date.now() - (hiddenAt || Date.now());
-        // se sei stato via “un po’”, riparti pulito e vai in diretta
         if (dt > 1200) initStream();
         else setTimeout(() => snapToLiveEdge(true), 200);
       });
 
-      window.addEventListener('pageshow', (e) => {
-        if (e.persisted) initStream();
-      });
+      window.addEventListener('pageshow', (e) => { if (e.persisted) initStream(); });
 
       // init
-      setPausedUI();
       hideControls();
       initStream();
     })();
