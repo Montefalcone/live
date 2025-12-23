@@ -32,8 +32,8 @@
 
   <style>
     :root{
-      --ui-blur: 3.5px;   /* blur controlli (fullscreen + badge live) */
-      --play-blur: 8px;   /* ✅ aumentato: blur SOLO tasto play/pause */
+      --ui-blur: 12px;    /* blur controlli (fullscreen + badge live) */
+      --play-blur: 20px;  /* blur SOLO tasto play/pause - AUMENTATO */
     }
 
     /* Desktop: rimpicciolisci leggermente tutto per non dare fastidio con taskbar Windows */
@@ -188,7 +188,7 @@
       to   { transform: translateZ(0) rotate(360deg); }
     }
 
-    /* Control bar */
+    /* Control bar - SEMPRE RENDERIZZATA, solo visualmente nascosta */
     #videoWrapper media-control-bar {
       position: absolute; left: 0; right: 0; bottom: 0;
       z-index: 30;
@@ -196,29 +196,43 @@
       display: flex; align-items: center; justify-content: flex-end;
       gap: 10px;
       background: linear-gradient(to top, rgba(0,0,0,.75), rgba(0,0,0,0));
-      transition: opacity 180ms ease;
+      transition: opacity 180ms ease, visibility 0ms linear 180ms;
       opacity: 0;
+      visibility: hidden;
       pointer-events: none;
     }
     #videoWrapper.controls-visible media-control-bar {
       opacity: 1;
+      visibility: visible;
       pointer-events: auto;
+      transition: opacity 180ms ease, visibility 0ms linear 0ms;
     }
 
+    /* Fullscreen button - BLUR SEMPRE ATTIVO tramite pseudo-elemento */
     #videoWrapper media-fullscreen-button {
+      position: relative;
       width: 44px; height: 44px;
       border-radius: 999px;
       border: 1px solid rgba(255,255,255,.20);
+      background: transparent;
+      cursor: pointer;
+      transform: translateZ(0);
+      -webkit-transform: translateZ(0);
+      isolation: isolate;
+    }
+
+    /* Pseudo-elemento per il blur - sempre presente e renderizzato */
+    #videoWrapper media-fullscreen-button::before {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      border-radius: inherit;
       background: rgba(0,0,0,.35);
       backdrop-filter: blur(var(--ui-blur));
       -webkit-backdrop-filter: blur(var(--ui-blur));
-      cursor: pointer;
-
+      z-index: -1;
       transform: translateZ(0);
       -webkit-transform: translateZ(0);
-      backface-visibility: hidden;
-      -webkit-backface-visibility: hidden;
-      will-change: transform, backdrop-filter;
     }
 
     #videoWrapper .live-badge {
@@ -246,7 +260,7 @@
 
       transform: translateZ(0);
       -webkit-transform: translateZ(0);
-      will-change: transform, backdrop-filter;
+      will-change: transform;
     }
 
     #videoWrapper .live-dot {
@@ -258,27 +272,26 @@
     }
     @keyframes livePulse { 0%{opacity:1} 50%{opacity:.45} 100%{opacity:1} }
 
-    /* OSD centrale */
+    /* OSD centrale - SEMPRE RENDERIZZATO, solo visualmente nascosto */
     #videoWrapper .osd {
       position: absolute; inset: 0; z-index: 20;
       display: flex; align-items: center; justify-content: center;
       opacity: 0;
+      visibility: hidden;
       transform: translateZ(0) scale(.98);
       -webkit-transform: translateZ(0) scale(.98);
-      transition: opacity 140ms ease, transform 140ms ease;
+      transition: opacity 140ms ease, transform 140ms ease, visibility 0ms linear 140ms;
       pointer-events: none;
-      will-change: opacity, transform;
     }
 
+    /* OSD chip - usa pseudo-elemento per blur sempre attivo */
     #videoWrapper .osd-chip {
+      position: relative;
       width: 84px; height: 84px; border-radius: 999px;
       display: flex; align-items: center; justify-content: center;
 
-      background: rgba(0,0,0,.35);
+      background: transparent;
       border: 1px solid rgba(255,255,255,.22);
-
-      backdrop-filter: blur(var(--play-blur));
-      -webkit-backdrop-filter: blur(var(--play-blur));
 
       pointer-events: none;
       cursor: pointer;
@@ -291,13 +304,29 @@
 
       transform: translateZ(0);
       -webkit-transform: translateZ(0);
-      will-change: transform, backdrop-filter;
+      isolation: isolate;
+    }
+
+    /* Pseudo-elemento per il blur del play button - sempre renderizzato */
+    #videoWrapper .osd-chip::before {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      border-radius: inherit;
+      background: rgba(0,0,0,.40);
+      backdrop-filter: blur(var(--play-blur));
+      -webkit-backdrop-filter: blur(var(--play-blur));
+      z-index: -1;
+      transform: translateZ(0);
+      -webkit-transform: translateZ(0);
     }
 
     #videoWrapper.controls-visible .osd {
       opacity: 1;
+      visibility: visible;
       transform: translateZ(0) scale(1);
       -webkit-transform: translateZ(0) scale(1);
+      transition: opacity 140ms ease, transform 140ms ease, visibility 0ms linear 0ms;
     }
     #videoWrapper.controls-visible .osd-chip { pointer-events: auto; }
 
@@ -369,25 +398,33 @@
       }
     }
 
-    /* ✅ BLUR GHOST: mantiene caldo il compositor (risolve delay blur su desktop+mobile) */
-    .blur-ghost{
-      position: fixed;
-      left: 10px; top: 10px;
-      width: 2px; height: 2px;
-      opacity: 0.01;
+    /* BLUR PRIMER LAYERS - Forza il compositor a mantenere i layer blur sempre attivi */
+    .blur-primer {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0.001;
       pointer-events: none;
-      z-index: 1; /* sopra lo sfondo, sotto tutto il resto */
-      background: rgba(0,0,0,0.01);
       transform: translateZ(0);
       -webkit-transform: translateZ(0);
-      will-change: backdrop-filter;
     }
-    #blurGhostUI{
+
+    /* Primer dentro il video wrapper per UI blur */
+    #videoWrapper .blur-primer-ui {
+      bottom: 12px;
+      right: 12px;
+      border-radius: 999px;
+      background: rgba(0,0,0,.01);
       backdrop-filter: blur(var(--ui-blur));
       -webkit-backdrop-filter: blur(var(--ui-blur));
     }
-    #blurGhostPlay{
-      left: 14px; top: 14px;
+
+    /* Primer per play blur */
+    #videoWrapper .blur-primer-play {
+      top: 50%;
+      left: 50%;
+      border-radius: 999px;
+      background: rgba(0,0,0,.01);
       backdrop-filter: blur(var(--play-blur));
       -webkit-backdrop-filter: blur(var(--play-blur));
     }
@@ -395,10 +432,6 @@
 </head>
 
 <body>
-  <!-- blur ghost: invisibili ma sempre presenti -->
-  <div id="blurGhostUI" class="blur-ghost" aria-hidden="true"></div>
-  <div id="blurGhostPlay" class="blur-ghost" aria-hidden="true"></div>
-
   <div id="bg-static"></div>
   <div class="warm-flicker"></div>
   <div class="vignette"></div>
@@ -413,6 +446,10 @@
     </div>
 
     <div class="video-wrapper" id="videoWrapper">
+      <!-- Blur primer layers - invisibili ma mantengono il compositor attivo -->
+      <div class="blur-primer blur-primer-ui" aria-hidden="true"></div>
+      <div class="blur-primer blur-primer-play" aria-hidden="true"></div>
+
       <media-controller
         id="mc"
         autohide="-1"
@@ -763,4 +800,3 @@
   </script>
 </body>
 </html>
-
