@@ -408,7 +408,7 @@
 
     /* =====================================================
        FULLSCREEN BUTTON
-       Sempre leggermente visibile per mantenere blur attivo
+       Inizia visibile per warmup blur, poi JS lo nasconde
        ===================================================== */
     #videoWrapper media-fullscreen-button {
       width: 44px;
@@ -419,12 +419,16 @@
       backdrop-filter: blur(var(--blur-ui));
       -webkit-backdrop-filter: blur(var(--blur-ui));
       cursor: pointer;
-      opacity: 0.02;
+      opacity: 1;
       transition: opacity var(--transition-fast);
       will-change: opacity;
     }
 
-    #videoWrapper.controls-visible media-fullscreen-button {
+    #videoWrapper.blur-ready media-fullscreen-button {
+      opacity: 0.02;
+    }
+
+    #videoWrapper.blur-ready.controls-visible media-fullscreen-button {
       opacity: 1;
     }
 
@@ -500,7 +504,6 @@
       margin: 0;
       font: inherit;
       color: inherit;
-      opacity: 0.02;
       transform: scale(0.98);
       transition: opacity 140ms ease, transform 140ms ease;
       will-change: opacity, transform;
@@ -511,9 +514,17 @@
       backdrop-filter: blur(var(--blur-play)) brightness(1.05) saturate(1.1);
       -webkit-backdrop-filter: blur(var(--blur-play)) brightness(1.05) saturate(1.1);
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+      
+      /* Inizia visibile per warmup */
+      opacity: 1;
     }
 
-    #videoWrapper.controls-visible .osd-chip {
+    #videoWrapper.blur-ready .osd-chip {
+      opacity: 0.02;
+      transform: scale(0.98);
+    }
+
+    #videoWrapper.blur-ready.controls-visible .osd-chip {
       opacity: 1;
       transform: scale(1);
       pointer-events: auto;
@@ -827,38 +838,17 @@
         };
 
         /* =====================================================
-           WARM UP BLUR - Forza il primo render del blur
-           Più aggressivo per mobile
+           WARM UP BLUR
+           Gli elementi iniziano visibili (opacity:1 in CSS)
+           Dopo che il blur è renderizzato, aggiungiamo .blur-ready
+           che li nasconde (opacity:0.02)
            ===================================================== */
-        const warmUpBlur = () => {
-          const els = [elements.osdBtn, elements.fsBtn].filter(Boolean);
+        const activateBlurReady = () => {
+          // Forza un reflow per assicurarsi che il blur sia renderizzato
+          void elements.wrapper.offsetHeight;
           
-          els.forEach(el => {
-            // Forza opacity visibile per attivare il blur
-            el.style.opacity = '0.04';
-            el.style.transform = 'scale(1)';
-          });
-          
-          // Forza reflow
-          void document.body.offsetHeight;
-          
-          // Dopo 2 frame, ripristina
-          requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-              els.forEach(el => {
-                el.style.opacity = '';
-                el.style.transform = '';
-              });
-            });
-          });
-        };
-        
-        // Warm up multipli per sicurezza (specialmente su mobile)
-        const scheduleWarmUps = () => {
-          warmUpBlur();
-          setTimeout(warmUpBlur, 50);
-          setTimeout(warmUpBlur, 150);
-          setTimeout(warmUpBlur, 300);
+          // Ora nascondi gli elementi
+          elements.wrapper.classList.add('blur-ready');
         };
 
         /* =====================================================
@@ -1201,12 +1191,10 @@
         setPausedUI();
         hideControls();
         
-        // Warm up blur - multipli tentativi per mobile
-        scheduleWarmUps();
-        
-        // Warm up anche quando il video carica
-        elements.video.addEventListener('loadeddata', scheduleWarmUps, { once: true });
-        elements.video.addEventListener('canplay', warmUpBlur, { once: true });
+        // Blur warmup: aspetta che il blur sia renderizzato (elementi visibili)
+        // poi aggiungi .blur-ready per nasconderli
+        // 400ms è abbastanza per mobile lenti
+        setTimeout(activateBlurReady, 400);
       };
 
       // Avvia quando il DOM è pronto
