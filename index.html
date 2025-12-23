@@ -3,6 +3,8 @@
 <head>
   <meta name="google-site-verification" content="DLjKDn5UupGNdRgZXo9CuMc0Sg1S1aULxDJfIHT9tYo" />
   <meta charset="UTF-8">
+
+  <!-- Zoom disabilitato -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 
   <title>Webcam Montefalcone di Val Fortore - LIVE</title>
@@ -14,7 +16,8 @@
   <meta property="og:image" content="https://www.webcammontefalconedivalfortore.it/p.png">
   <meta name="robots" content="index, follow">
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.6.6/hls.min.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/media-chrome@4/+esm"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/hls-video-element@1/+esm"></script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -22,12 +25,16 @@
 
   <style>
     :root{
-      /* ✅ AUMENTA/DECREMENTA QUI: vale uguale per LIVE + PLAY + FULLSCREEN */
-      --ui-blur: 18px;
+      --ui-blur: 3.5px;   /* blur controlli (fullscreen + badge live) */
+      --play-blur: 8px;   /* ✅ aumentato: blur SOLO tasto play/pause */
+    }
 
-      --glass-bg: rgba(0,0,0,.18);
-      --glass-border: rgba(255,255,255,.22);
-      --glass-shadow: 0 12px 30px rgba(0,0,0,.24);
+    /* Desktop: rimpicciolisci leggermente tutto per non dare fastidio con taskbar Windows */
+    @media (min-width: 1024px) {
+      #main-container{
+        transform: scale(0.965);
+        transform-origin: center top;
+      }
     }
 
     html, body {
@@ -37,7 +44,6 @@
       position: fixed;
       top: 0; left: 0;
       overscroll-behavior: none;
-      touch-action: none;
       background-color: #000;
     }
 
@@ -100,7 +106,6 @@
       pointer-events: auto;
       transition: all 0.3s ease-out;
       will-change: width, height;
-      isolation: isolate;
     }
 
     .video-wrapper:fullscreen,
@@ -113,50 +118,53 @@
       height: 100% !important;
     }
 
-    /* ✅ IL VIDEO NON DEVE RICEVERE TAP/CLICK (così sparisce overlay nativo play/pause) */
-    #liveVideo{
-      width:100%; height:100%;
-      display:block;
-      background:#000;
-      object-fit:contain;
-
-      pointer-events: none; /* <<< CHIAVE */
-      user-select: none;
-
-      /* compositing stabile */
-      filter: opacity(0.9999);
-      -webkit-filter: opacity(0.9999);
-      transform: translateZ(0);
-      will-change: transform, filter;
+    #videoWrapper:fullscreen #mc,
+    #videoWrapper:-webkit-full-screen #mc,
+    #videoWrapper:-moz-full-screen #mc {
+      width: 100% !important;
+      height: 100% !important;
     }
 
-    /* ✅ Nasconde controlli nativi WebKit (extra sicurezza) */
-    #liveVideo::-webkit-media-controls { display:none !important; }
-    #liveVideo::-webkit-media-controls-enclosure { display:none !important; }
-    #liveVideo::-webkit-media-controls-panel { display:none !important; }
-    #liveVideo::-webkit-media-controls-overlay-play-button { display:none !important; }
-    #liveVideo::-webkit-media-controls-start-playback-button { display:none !important; }
+    #videoWrapper media-controller {
+      width: 100%; height: 100%;
+      display: block; position: relative;
+      background: #000;
+      --media-tooltip-display: none; /* niente "Enter Fullscreen" */
+    }
 
-    /* Loading */
-    .loading-overlay{
+    #videoWrapper hls-video {
+      width: 100%; height: 100%;
+      display: block; background: #000;
+      object-fit: contain;
+    }
+
+    #videoWrapper .tap-layer {
+      position: absolute; inset: 0; z-index: 10;
+      cursor: default;
+    }
+
+    /* LOADING overlay (anteprima + spinner) */
+    #videoWrapper .loading-overlay{
       position:absolute; inset:0;
-      z-index: 90;
+      z-index: 80;
       display:flex; align-items:center; justify-content:center;
       background:#000;
       opacity:1;
       transition: opacity 260ms ease;
       pointer-events:none;
     }
-    .video-wrapper.is-ready .loading-overlay{ opacity:0; }
+    #videoWrapper.is-ready .loading-overlay{ opacity:0; }
 
-    .loading-overlay .preview{
+    #videoWrapper .loading-overlay .preview{
       position:absolute; inset:0;
       width:100%; height:100%;
       object-fit:cover;
       filter: brightness(.82) contrast(1.08);
       opacity:.85;
     }
-    .loading-overlay .spinner{
+
+    /* Spinner robusto */
+    #videoWrapper .loading-overlay .spinner{
       position:relative;
       width:46px; height:46px;
       border-radius:999px;
@@ -165,6 +173,7 @@
       animation: spin .9s linear infinite;
       box-shadow: 0 10px 28px rgba(0,0,0,.35);
       transform: translateZ(0) rotate(0deg);
+      -webkit-transform: translateZ(0) rotate(0deg);
       will-change: transform;
     }
     @keyframes spin {
@@ -172,77 +181,45 @@
       to   { transform: translateZ(0) rotate(360deg); }
     }
 
-    /* Tap layer sopra al video */
-    .tap-layer{
-      position:absolute; inset:0;
-      z-index: 10;
-      pointer-events:auto;
+    /* Control bar */
+    #videoWrapper media-control-bar {
+      position: absolute; left: 0; right: 0; bottom: 0;
+      z-index: 30;
+      padding: 12px 12px;
+      display: flex; align-items: center; justify-content: flex-end;
+      gap: 10px;
+      background: linear-gradient(to top, rgba(0,0,0,.75), rgba(0,0,0,0));
+      transition: opacity 180ms ease;
+      opacity: 0;
+      pointer-events: none;
+    }
+    #videoWrapper.controls-visible media-control-bar {
+      opacity: 1;
+      pointer-events: auto;
     }
 
-    /* ====== BOTTONI GLASS "HARD" (ANTI BUG) ====== */
-    .glass-btn{
-      position: relative;
-      border: 0;
-      padding: 0;
-      margin: 0;
-      line-height: 0;
-      font-size: 0;
-      -webkit-appearance: none;
-      appearance: none;
-      -webkit-tap-highlight-color: transparent;
-
-      width: 46px;
-      height: 46px;
-      aspect-ratio: 1 / 1;
-
+    #videoWrapper media-fullscreen-button {
+      width: 44px; height: 44px;
       border-radius: 999px;
-      display: grid;
-      place-items: center;
-      overflow: hidden;
+      border: 1px solid rgba(255,255,255,.20);
+      background: rgba(0,0,0,.35);
+      backdrop-filter: blur(var(--ui-blur));
+      -webkit-backdrop-filter: blur(var(--ui-blur));
       cursor: pointer;
-      user-select: none;
 
-      /* anti alias / anti “storto” su Chrome */
       transform: translateZ(0);
+      -webkit-transform: translateZ(0);
       backface-visibility: hidden;
-      -webkit-font-smoothing: antialiased;
-      -webkit-mask-image: -webkit-radial-gradient(white, black);
-      box-shadow: var(--glass-shadow);
+      -webkit-backface-visibility: hidden;
+      will-change: transform, backdrop-filter;
     }
 
-    .glass-btn::before{
-      content:"";
-      position:absolute; inset:0;
-      background: var(--glass-bg);
-      backdrop-filter: blur(var(--ui-blur)) saturate(1.15);
-      -webkit-backdrop-filter: blur(var(--ui-blur)) saturate(1.15);
-    }
-
-    .glass-btn::after{
-      content:"";
-      position:absolute; inset:0;
-      border-radius: inherit;
-      box-shadow: inset 0 0 0 1px var(--glass-border);
-      pointer-events:none;
-    }
-
-    .glass-btn svg{
-      position: relative;
-      z-index: 1;
-      display: block;
-      width: 22px;
-      height: 22px;
-      fill: #fff;
-      opacity: .95;
-    }
-
-    /* LIVE badge */
-    .live-badge {
-      position: absolute; left: 14px; bottom: 14px; z-index: 60;
+    #videoWrapper .live-badge {
+      position: absolute; left: 14px; bottom: 14px; z-index: 31;
       display: inline-flex; align-items: center; gap: 8px;
+
       padding: 8px 12px;
       border-radius: 999px;
-      pointer-events: none;
 
       color: #fff;
       font-family: "Poppins", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
@@ -252,81 +229,87 @@
       letter-spacing: .14em;
       text-transform: uppercase;
 
-      background: var(--glass-bg);
-      box-shadow: var(--glass-shadow);
+      background: rgba(0, 0, 0, 0.18);
+      border: 1px solid rgba(255,255,255,.18);
+      box-shadow: 0 10px 28px rgba(0,0,0,.28);
 
-      backdrop-filter: blur(var(--ui-blur)) saturate(1.15);
-      -webkit-backdrop-filter: blur(var(--ui-blur)) saturate(1.15);
+      backdrop-filter: blur(var(--ui-blur));
+      -webkit-backdrop-filter: blur(var(--ui-blur));
+      pointer-events: none;
 
       transform: translateZ(0);
-      -webkit-mask-image: -webkit-radial-gradient(white, black);
-    }
-    .live-badge::after{
-      content:"";
-      position:absolute; inset:0;
-      border-radius: inherit;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.18);
-      pointer-events:none;
+      -webkit-transform: translateZ(0);
+      will-change: transform, backdrop-filter;
     }
 
-    .live-dot {
+    #videoWrapper .live-dot {
       width: 8px; height: 8px;
       border-radius: 50%;
       background: #ff2b2b;
       box-shadow: 0 0 12px rgba(255, 43, 43, .95);
       animation: livePulse 1.6s infinite;
-      flex: 0 0 auto;
     }
     @keyframes livePulse { 0%{opacity:1} 50%{opacity:.45} 100%{opacity:1} }
 
-    /* OSD (Play/Pause) */
-    .osd{
-      position:absolute; inset:0;
-      z-index: 65;
-      display:flex; align-items:center; justify-content:center;
-      pointer-events:none;
-
-      opacity: 0.001; /* warm */
-      transition: opacity 140ms ease;
-      transform: translateZ(0);
-    }
-
-    /* ✅ in pausa deve SEMPRE rimanere visibile (altrimenti torna overlay nativo) */
-    .video-wrapper.controls-visible .osd,
-    .video-wrapper.is-paused .osd {
-      opacity: 1;
-    }
-
-    .osd-btn{
-      width: 84px;
-      height: 84px;
-    }
-    .osd-btn svg{
-      width: 40px;
-      height: 40px;
-    }
-
-    .osd-icon.play { display:none; }
-    .video-wrapper.is-paused .osd-icon.play { display:block; }
-    .video-wrapper.is-paused .osd-icon.pause { display:none; }
-
-    /* Fullscreen button visibility */
-    .fs-btn{
-      position:absolute;
-      right: 14px;
-      bottom: 14px;
-      z-index: 80;
-
-      opacity: 0.001;   /* warm */
+    /* OSD centrale */
+    #videoWrapper .osd {
+      position: absolute; inset: 0; z-index: 20;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0;
+      transform: translateZ(0) scale(.98);
+      -webkit-transform: translateZ(0) scale(.98);
+      transition: opacity 140ms ease, transform 140ms ease;
       pointer-events: none;
-      transition: opacity 180ms ease;
-    }
-    .video-wrapper.controls-visible .fs-btn{
-      opacity: 1;
-      pointer-events: auto;
+      will-change: opacity, transform;
     }
 
-    /* Mobile */
+    #videoWrapper .osd-chip {
+      width: 84px; height: 84px; border-radius: 999px;
+      display: flex; align-items: center; justify-content: center;
+
+      background: rgba(0,0,0,.35);
+      border: 1px solid rgba(255,255,255,.22);
+
+      backdrop-filter: blur(var(--play-blur));
+      -webkit-backdrop-filter: blur(var(--play-blur));
+
+      pointer-events: none;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      padding: 0;
+      margin: 0;
+      font: inherit;
+      color: inherit;
+
+      transform: translateZ(0);
+      -webkit-transform: translateZ(0);
+      will-change: transform, backdrop-filter;
+    }
+
+    #videoWrapper.controls-visible .osd {
+      opacity: 1;
+      transform: translateZ(0) scale(1);
+      -webkit-transform: translateZ(0) scale(1);
+    }
+    #videoWrapper.controls-visible .osd-chip { pointer-events: auto; }
+
+    #videoWrapper .osd-icon { width: 40px; height: 40px; fill: #fff; opacity: .95; }
+    #videoWrapper .osd-icon.play { display: none; }
+    #videoWrapper.is-paused .osd-icon.play { display: block; }
+    #videoWrapper.is-paused .osd-icon.pause { display: none; }
+
+    /* Curtain transizione fullscreen */
+    #pageCurtain, #fsCurtain {
+      background: #000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 220ms ease;
+    }
+    #pageCurtain { position: fixed; inset: 0; z-index: 9999; }
+    #fsCurtain { position: absolute; inset: 0; z-index: 200; border-radius: inherit; }
+    #pageCurtain.on, #fsCurtain.on { opacity: 1; }
+
     @media (max-width: 768px) and (orientation: portrait) {
       #main-container { justify-content: flex-start; padding-top: 18vh; }
       .municipality-logo { width: 75px; margin-bottom: 10px; }
@@ -334,36 +317,81 @@
       .video-wrapper { width: 95%; height: auto; }
       #bg-static { animation: driftingWorldMobile 35s ease-in-out infinite alternate; }
     }
-    @keyframes driftingWorldMobile { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(-3%, 0) scale(1.15); } }
+    @keyframes driftingWorldMobile {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(-3%, 0) scale(1.15); }
+    }
 
     @media screen and (orientation: landscape) and (max-height: 600px) {
-      .municipality-logo, .festive-message, #bg-static, .warm-flicker, .vignette, .particles-container { display: none !important; }
+      .municipality-logo, .festive-message, #bg-static, .warm-flicker, .vignette, .particles-container {
+        display: none !important;
+      }
       #main-container { padding: 0 !important; justify-content: center !important; background: #000; }
       .video-wrapper { width: 100vw; height: 100vh; border: none; border-radius: 0; }
     }
 
-    /* Effetti */
-    .warm-flicker { position: absolute; inset: 0; background: radial-gradient(circle, rgba(255, 180, 50, 0.15), transparent 80%); z-index: 2; pointer-events: none; mix-blend-mode: overlay; animation: firePulse 4s ease-in-out infinite alternate; }
+    .warm-flicker {
+      position: absolute; inset: 0;
+      background: radial-gradient(circle, rgba(255, 180, 50, 0.15), transparent 80%);
+      z-index: 2; pointer-events: none;
+      mix-blend-mode: overlay;
+      animation: firePulse 4s ease-in-out infinite alternate;
+    }
     @keyframes firePulse { 0% { opacity: 0.1; } 100% { opacity: 0.5; } }
+
     .particles-container { position: absolute; inset: 0; pointer-events: none; z-index: 5; overflow: hidden; }
     .snowflake { position: absolute; top: -10px; background: white; border-radius: 50%; opacity: 0.9; box-shadow: 0 0 3px white; }
     .ember { position: absolute; bottom: -20px; background: #ffcc00; border-radius: 50%; opacity: 0; filter: blur(2px); }
-    .vignette { position: absolute; inset: 0; background: radial-gradient(circle at center, transparent 40%, rgba(0,0,0,0.7) 85%, black 100%); z-index: 6; pointer-events: none; }
+    .vignette {
+      position: absolute; inset: 0;
+      background: radial-gradient(circle at center, transparent 40%, rgba(0,0,0,0.7) 85%, black 100%);
+      z-index: 6; pointer-events: none;
+    }
 
     @keyframes fall { 0% { transform: translate(0, -10vh); } 100% { transform: translate(15vw, 110vh); } }
     @keyframes riseRight { 0% { transform: translateY(0) translateX(0); opacity: 0; } 20% { opacity: 0.8; } 100% { transform: translateY(-90vh) translateX(15vw); opacity: 0; } }
     @keyframes riseLeft { 0% { transform: translateY(0) translateX(0); opacity: 0; } 20% { opacity: 0.8; } 100% { transform: translateY(-90vh) translateX(-15vw); opacity: 0; } }
     @keyframes riseZigZag { 0% { transform: translateY(0) translateX(0); opacity: 0; } 25% { transform: translateY(-20vh) translateX(5vw); opacity: 0.8; } 75% { transform: translateY(-60vh) translateX(-5vw); opacity: 0.4; } 100% { transform: translateY(-90vh) translateX(0); opacity: 0; } }
 
+    /* Riduzione movimento: non bloccare lo spinner */
     @media (prefers-reduced-motion: reduce) {
       * { animation: none !important; transition: none !important; }
       .particles-container { display: none !important; }
-      .loading-overlay .spinner{ animation: spin .9s linear infinite !important; }
+      #videoWrapper .loading-overlay .spinner{
+        animation: spin .9s linear infinite !important;
+      }
+    }
+
+    /* ✅ BLUR GHOST: mantiene caldo il compositor (risolve delay blur su desktop+mobile) */
+    .blur-ghost{
+      position: fixed;
+      left: 10px; top: 10px;
+      width: 2px; height: 2px;
+      opacity: 0.01;
+      pointer-events: none;
+      z-index: 1; /* sopra lo sfondo, sotto tutto il resto */
+      background: rgba(0,0,0,0.01);
+      transform: translateZ(0);
+      -webkit-transform: translateZ(0);
+      will-change: backdrop-filter;
+    }
+    #blurGhostUI{
+      backdrop-filter: blur(var(--ui-blur));
+      -webkit-backdrop-filter: blur(var(--ui-blur));
+    }
+    #blurGhostPlay{
+      left: 14px; top: 14px;
+      backdrop-filter: blur(var(--play-blur));
+      -webkit-backdrop-filter: blur(var(--play-blur));
     }
   </style>
 </head>
 
 <body>
+  <!-- blur ghost: invisibili ma sempre presenti -->
+  <div id="blurGhostUI" class="blur-ghost" aria-hidden="true"></div>
+  <div id="blurGhostPlay" class="blur-ghost" aria-hidden="true"></div>
+
   <div id="bg-static"></div>
   <div class="warm-flicker"></div>
   <div class="vignette"></div>
@@ -378,254 +406,352 @@
     </div>
 
     <div class="video-wrapper" id="videoWrapper">
-      <video id="liveVideo" muted autoplay playsinline preload="auto" crossorigin="anonymous"></video>
+      <media-controller
+        id="mc"
+        autohide="-1"
+        gesturesdisabled
+        fullscreenelement="videoWrapper"
+      >
+        <hls-video
+          id="liveVideo"
+          slot="media"
+          src="https://live.webcammontefalconedivalfortore.it/memfs/58e0bcbe-f1bd-4c8b-85f7-b4566a3e5392.m3u8"
+          autoplay
+          muted
+          playsinline
+          preload="auto"
+          crossorigin="anonymous">
+        </hls-video>
 
-      <div class="loading-overlay" aria-hidden="true">
-        <img class="preview" src="https://www.webcammontefalconedivalfortore.it/p.png" alt="">
-        <div class="spinner"></div>
-      </div>
+        <!-- Loading overlay -->
+        <div class="loading-overlay" id="loadingOverlay" aria-hidden="true">
+          <img class="preview" src="https://www.webcammontefalconedivalfortore.it/p.png" alt="">
+          <div class="spinner"></div>
+        </div>
 
-      <div class="tap-layer" id="tapLayer" aria-hidden="true"></div>
+        <div class="tap-layer" id="tapLayer" aria-hidden="true"></div>
 
-      <div class="live-badge" aria-hidden="true">
-        <span class="live-dot"></span><span>LIVE</span>
-      </div>
+        <div class="live-badge" aria-hidden="true">
+          <span class="live-dot"></span>
+          <span>LIVE</span>
+        </div>
 
-      <div class="osd" aria-hidden="true">
-        <button class="glass-btn osd-btn" id="osdBtn" type="button" aria-label="Play/Pausa">
-          <svg class="osd-icon play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>
-          <svg class="osd-icon pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>
-        </button>
-      </div>
+        <div class="osd" aria-hidden="true">
+          <button class="osd-chip" id="osdBtn" type="button" aria-label="Play/Pausa">
+            <svg class="osd-icon play" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M8 5v14l11-7z"></path>
+            </svg>
+            <svg class="osd-icon pause" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path>
+            </svg>
+          </button>
+        </div>
 
-      <button class="glass-btn fs-btn" id="fsBtn" type="button" aria-label="Fullscreen">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M7 14H5v5h5v-2H7v-3zm0-4h2V7h3V5H5v5zm12 9h-3v2h5v-5h-2v3zm0-14V5h-5v2h3v3h2V5z"/>
-        </svg>
-      </button>
+        <media-control-bar>
+          <media-fullscreen-button id="fsBtn" notooltip tooltipplacement="none"></media-fullscreen-button>
+        </media-control-bar>
+      </media-controller>
+
+      <div id="fsCurtain" aria-hidden="true"></div>
     </div>
   </div>
 
-  <script>
-    // blocco scroll/zoom
-    document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
-    document.addEventListener('wheel', (e) => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
-    document.addEventListener('keydown', (e) => {
-      if (e.ctrlKey && (e.key === '+' || e.key === '-' || e.key === '=' || e.key === '0')) e.preventDefault();
-    }, { passive: false });
-    ['gesturestart','gesturechange','gestureend'].forEach(evt => {
-      document.addEventListener(evt, (e) => e.preventDefault(), { passive: false });
-    });
+  <div id="pageCurtain" aria-hidden="true"></div>
 
-    // particelle
-    function createParticles() {
-      const container = document.getElementById('particlesContainer');
-      if (!container) return;
-
-      const isMobile = window.innerWidth < 768;
-      const snowCount = isMobile ? 35 : 70;
-      const emberCount = isMobile ? 15 : 30;
-      const speedModifier = isMobile ? 1.5 : 1;
-
-      for (let i = 0; i < snowCount; i++) {
-        const flake = document.createElement('div');
-        flake.classList.add('snowflake');
-        const size = Math.random() * 3 + 2;
-        flake.style.width = size + 'px';
-        flake.style.height = size + 'px';
-        flake.style.left = (Math.random() * 120 - 10) + 'vw';
-        const duration = (Math.random() * 4 + 4) * speedModifier;
-        flake.style.animation = `fall ${duration}s linear infinite`;
-        flake.style.animationDelay = '-' + (Math.random() * 5) + 's';
-        container.appendChild(flake);
-      }
-
-      const animations = ['riseRight', 'riseLeft', 'riseZigZag'];
-      for (let i = 0; i < emberCount; i++) {
-        const ember = document.createElement('div');
-        ember.classList.add('ember');
-        const size = Math.random() * 4 + 3;
-        ember.style.width = size + 'px';
-        ember.style.height = size + 'px';
-        ember.style.left = Math.random() * 100 + 'vw';
-        const duration = (Math.random() * 6 + 6) * speedModifier;
-        const randomAnim = animations[Math.floor(Math.random() * animations.length)];
-        ember.style.animation = `${randomAnim} ${duration}s linear infinite`;
-        ember.style.animationDelay = '-' + (Math.random() * 10) + 's';
-        container.appendChild(ember);
-      }
-    }
-    if (!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) createParticles();
-
-    (function () {
-      const VIDEO_SRC = "https://live.webcammontefalconedivalfortore.it/memfs/58e0bcbe-f1bd-4c8b-85f7-b4566a3e5392.m3u8";
+  <script type="module">
+    (async () => {
+      const when = (tag) => {
+        try { return customElements.whenDefined(tag); }
+        catch { return Promise.resolve(); }
+      };
+      await Promise.all([when('media-controller'), when('media-fullscreen-button'), when('hls-video')]);
 
       const wrapper = document.getElementById('videoWrapper');
-      const video = document.getElementById('liveVideo');
-      const tapLayer = document.getElementById('tapLayer');
-      const osdBtn = document.getElementById('osdBtn');
-      const fsBtn = document.getElementById('fsBtn');
+      const video   = document.getElementById('liveVideo');
+      const tapLayer= document.getElementById('tapLayer');
+      const osdBtn  = document.getElementById('osdBtn');
+      const fsBtn   = document.getElementById('fsBtn');
+      const fsCurtain = document.getElementById('fsCurtain');
+      const pageCurtain = document.getElementById('pageCurtain');
 
       if (!wrapper || !video) return;
 
-      // extra: evita che chrome tenti robe tipo PiP
-      video.controls = false;
-      video.disablePictureInPicture = true;
-      video.setAttribute('controlslist', 'nodownload noplaybackrate noremoteplayback');
-
-      function setReady(ready){ wrapper.classList.toggle('is-ready', !!ready); }
-      function setPausedUI(){ wrapper.classList.toggle('is-paused', !!video.paused); }
-
-      // controls: tap 1 show/hide + autohide
-      const AUTOHIDE_MS = 4000;
-      let t = null;
-
-      function clearHide(){ if (t) clearTimeout(t); t = null; }
-      function scheduleHide(){
-        clearHide();
-        t = setTimeout(() => wrapper.classList.remove('controls-visible'), AUTOHIDE_MS);
+      function setReady(ready) {
+        wrapper.classList.toggle('is-ready', !!ready);
       }
-      function showControls(){ wrapper.classList.add('controls-visible'); scheduleHide(); }
-      function hideControls(){ wrapper.classList.remove('controls-visible'); clearHide(); }
-      function toggleControls(){ wrapper.classList.contains('controls-visible') ? hideControls() : showControls(); }
+      setReady(false);
 
-      tapLayer.addEventListener('click', toggleControls, { passive:true });
-      wrapper.addEventListener('pointermove', () => wrapper.classList.contains('controls-visible') && scheduleHide(), { passive:true });
-      wrapper.addEventListener('touchstart', () => wrapper.classList.contains('controls-visible') && scheduleHide(), { passive:true });
-      wrapper.addEventListener('mousemove', () => wrapper.classList.contains('controls-visible') && scheduleHide(), { passive:true });
+      // CLICK 1 / CLICK 2 + AUTOHIDE
+      const AUTOHIDE_MS = 4000;
+      let autoHideTimer = null;
 
-      // blocca propagazione sui bottoni
-      function stop(e){ e.stopPropagation(); }
-      ['pointerdown','mousedown','touchstart','click'].forEach(evt => {
-        osdBtn.addEventListener(evt, stop, { passive: evt !== 'click' });
-        fsBtn.addEventListener(evt, stop, { passive: evt !== 'click' });
-      });
+      function clearAutoHide() {
+        if (autoHideTimer) clearTimeout(autoHideTimer);
+        autoHideTimer = null;
+      }
+      function scheduleAutoHide() {
+        clearAutoHide();
+        autoHideTimer = setTimeout(() => {
+          wrapper.classList.remove('controls-visible');
+        }, AUTOHIDE_MS);
+      }
 
-      // live edge helpers
-      function getSeekableEnd(){
+      function showControls() {
+        wrapper.classList.add('controls-visible');
+        scheduleAutoHide();
+      }
+      function hideControls() {
+        wrapper.classList.remove('controls-visible');
+        clearAutoHide();
+      }
+      function toggleControls() {
+        if (wrapper.classList.contains('controls-visible')) hideControls();
+        else showControls();
+      }
+      function bumpControlsTimer() {
+        if (!wrapper.classList.contains('controls-visible')) return;
+        scheduleAutoHide();
+      }
+
+      tapLayer?.addEventListener('click', () => toggleControls());
+
+      wrapper.addEventListener('pointermove', bumpControlsTimer, { passive: true });
+      wrapper.addEventListener('touchstart', bumpControlsTimer, { passive: true });
+      wrapper.addEventListener('mousemove', bumpControlsTimer, { passive: true });
+      wrapper.addEventListener('keydown', bumpControlsTimer);
+
+      // LIVE catch-up (non aggressivo)
+      const MAX_BEHIND_SEC = 20;
+      const TARGET_BEHIND_SEC = 2.5;
+      const CATCHUP_COOLDOWN_MS = 12000;
+      let lastCatchUpAt = 0;
+
+      function getSeekableEnd() {
         try {
           const s = video.seekable;
           if (s && s.length) return s.end(s.length - 1);
-        } catch(e){}
+        } catch (e) {}
         return null;
       }
-      const MAX_BEHIND_SEC = 20;
-      const TARGET_BEHIND_SEC = 2.5;
 
-      function snapToLive(force=false){
-        const end = getSeekableEnd();
-        if (end == null) return;
-        const behind = end - (video.currentTime || 0);
-        if (force || behind > MAX_BEHIND_SEC || behind < 0) {
-          try { video.currentTime = Math.max(0, end - TARGET_BEHIND_SEC); } catch(e){}
+      function catchUpToLiveIfNeeded(force = false) {
+        const now = Date.now();
+        if (!force && (now - lastCatchUpAt < CATCHUP_COOLDOWN_MS)) return false;
+
+        const liveEnd = getSeekableEnd();
+        if (liveEnd == null || !Number.isFinite(liveEnd)) return false;
+
+        const cur = Number(video.currentTime || 0);
+        const behind = liveEnd - cur;
+
+        if (force || behind > MAX_BEHIND_SEC) {
+          const target = Math.max(0, liveEnd - TARGET_BEHIND_SEC);
+          try {
+            video.currentTime = target;
+            lastCatchUpAt = now;
+            return true;
+          } catch (e) {}
+        }
+        return false;
+      }
+
+      // HARD RESYNC quando torni da Home / background
+      let lastHiddenAt = 0;
+      let lastHardResyncAt = 0;
+      const HARD_RESYNC_COOLDOWN_MS = 8000;
+
+      function hardResyncToLive() {
+        const now = Date.now();
+        if (now - lastHardResyncAt < HARD_RESYNC_COOLDOWN_MS) return;
+        lastHardResyncAt = now;
+
+        setReady(false);
+
+        const wasPaused = video.paused;
+
+        try { video.load(); } catch (e) {}
+
+        const onMeta = () => {
+          catchUpToLiveIfNeeded(true);
+          video.removeEventListener('loadedmetadata', onMeta);
+        };
+        video.addEventListener('loadedmetadata', onMeta);
+
+        if (!wasPaused) {
+          video.play().catch(() => {});
+          setTimeout(() => catchUpToLiveIfNeeded(true), 900);
         }
       }
 
-      // play/pause SOLO bottone
-      osdBtn.addEventListener('click', () => {
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') {
+          lastHiddenAt = Date.now();
+          return;
+        }
+        const hiddenFor = Date.now() - (lastHiddenAt || Date.now());
+        if (!video.paused && hiddenFor > 1200) hardResyncToLive();
+        else setTimeout(() => catchUpToLiveIfNeeded(true), 250);
+      });
+
+      window.addEventListener('focus', () => {
+        setTimeout(() => hardResyncToLive(), 150);
+      });
+
+      window.addEventListener('pageshow', (e) => {
+        if (e.persisted) hardResyncToLive();
+      });
+
+      // Play/pause SOLO dal bottone centrale
+      function setPausedUI() {
+        wrapper.classList.toggle('is-paused', !!video.paused);
+        osdBtn?.setAttribute('aria-label', video.paused ? 'Play' : 'Pausa');
+      }
+
+      function togglePlayPause() {
+        catchUpToLiveIfNeeded(true);
+
         if (video.paused) {
           setReady(false);
-          snapToLive(true);
-          video.play().catch(()=>{});
+          video.play().catch(() => {});
+          setTimeout(() => catchUpToLiveIfNeeded(true), 900);
         } else {
           video.pause();
         }
         showControls();
+      }
+
+      osdBtn?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        togglePlayPause();
       });
 
-      // fullscreen
-      function isFs(){ return document.fullscreenElement || document.webkitFullscreenElement; }
+      // Video events: overlay e UI
+      video.addEventListener('loadedmetadata', () => {
+        setPausedUI();
+        setTimeout(() => catchUpToLiveIfNeeded(true), 300);
+      });
 
-      async function enterFs(){
-        if (video.webkitEnterFullscreen && /iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-          try { video.webkitEnterFullscreen(); return; } catch(e){}
-        }
-        try {
-          if (wrapper.requestFullscreen) await wrapper.requestFullscreen();
-          else if (wrapper.webkitRequestFullscreen) await wrapper.webkitRequestFullscreen();
-        } catch(e){}
-      }
+      video.addEventListener('playing', () => {
+        setPausedUI();
+        setReady(true);
+        bumpControlsTimer();
+      });
 
-      async function exitFs(){
-        try {
-          if (document.exitFullscreen) await document.exitFullscreen();
-          else if (document.webkitExitFullscreen) await document.webkitExitFullscreen();
-        } catch(e){}
-      }
-
-      fsBtn.addEventListener('click', async () => {
-        if (!isFs()) await enterFs();
-        else await exitFs();
+      video.addEventListener('pause', () => {
+        setPausedUI();
         showControls();
       });
 
-      // HLS
-      let hls = null;
-      function destroyHls(){ if (hls){ try{hls.destroy();}catch(e){} hls=null; } }
-      function isNativeHls(){ return video.canPlayType('application/vnd.apple.mpegurl'); }
-
-      function initStream(){
+      video.addEventListener('error', () => {
         setReady(false);
-        setPausedUI();
+        setTimeout(() => {
+          try {
+            video.load();
+            video.play().catch(() => {});
+            setTimeout(() => catchUpToLiveIfNeeded(true), 900);
+          } catch (e) {}
+        }, 1500);
+      });
 
-        destroyHls();
-        try { video.pause(); } catch(e){}
-        try { video.removeAttribute('src'); video.load(); } catch(e){}
+      // Fullscreen + curtain
+      function isFullscreen() {
+        return document.fullscreenElement || document.webkitFullscreenElement;
+      }
+      function curtainOn(el) { if (el) el.classList.add('on'); }
+      function curtainOff(el) { if (el) el.classList.remove('on'); }
 
-        if (window.Hls && Hls.isSupported() && !isNativeHls()) {
-          hls = new Hls({
-            lowLatencyMode: true,
-            backBufferLength: 30,
-            maxBufferLength: 30,
-            liveSyncDuration: 3,
-            liveMaxLatencyDuration: 20,
-            maxLiveSyncPlaybackRate: 1.5,
-            enableWorker: true
-          });
+      async function lockOrientation(mode) {
+        try {
+          if (screen.orientation && screen.orientation.lock) {
+            await screen.orientation.lock(mode);
+          }
+        } catch (e) {}
+      }
+      function unlockOrientation() {
+        try {
+          if (screen.orientation && screen.orientation.unlock) {
+            screen.orientation.unlock();
+          }
+        } catch (e) {}
+      }
 
-          hls.attachMedia(video);
-          hls.on(Hls.Events.MEDIA_ATTACHED, () => hls.loadSource(VIDEO_SRC));
-          hls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(()=>{}));
-          hls.on(Hls.Events.ERROR, (evt, data) => {
-            if (!data || !data.fatal) return;
-            if (data.type === Hls.ErrorTypes.NETWORK_ERROR) { try { hls.startLoad(-1); } catch(e){} }
-            else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) { try { hls.recoverMediaError(); } catch(e){} }
-            else { setTimeout(initStream, 800); }
-          });
+      const isTouchLike = () => (
+        !!window.matchMedia?.('(hover: none) and (pointer: coarse)').matches ||
+        (navigator.maxTouchPoints && navigator.maxTouchPoints > 0) ||
+        window.innerWidth < 768
+      );
+      const touchMode = isTouchLike();
+
+      fsBtn?.addEventListener('click', () => {
+        showControls();
+        if (touchMode) {
+          curtainOn(fsCurtain);
+          curtainOn(pageCurtain);
+        }
+      }, { capture: true });
+
+      async function onFullscreenChange() {
+        if (!touchMode) return;
+
+        if (isFullscreen()) {
+          curtainOn(fsCurtain);
+          await lockOrientation('landscape');
         } else {
-          video.src = VIDEO_SRC;
-          try { video.load(); } catch(e){}
-          video.play().catch(()=>{});
+          curtainOn(pageCurtain);
+          unlockOrientation();
+        }
+        setTimeout(() => {
+          curtainOff(fsCurtain);
+          curtainOff(pageCurtain);
+        }, 220);
+      }
+
+      document.addEventListener('fullscreenchange', onFullscreenChange);
+      document.addEventListener('webkitfullscreenchange', onFullscreenChange);
+
+      // Particelle
+      function createParticles() {
+        const container = document.getElementById('particlesContainer');
+        if (!container) return;
+
+        const isMobile = window.innerWidth < 768;
+        const snowCount = isMobile ? 35 : 70;
+        const emberCount = isMobile ? 15 : 30;
+        const speedModifier = isMobile ? 1.5 : 1;
+
+        for (let i = 0; i < snowCount; i++) {
+          const flake = document.createElement('div');
+          flake.classList.add('snowflake');
+          const size = Math.random() * 3 + 2;
+          flake.style.width = size + 'px'; flake.style.height = size + 'px';
+          flake.style.left = (Math.random() * 120 - 10) + 'vw';
+          const duration = (Math.random() * 4 + 4) * speedModifier;
+          flake.style.animation = `fall ${duration}s linear infinite`;
+          flake.style.animationDelay = '-' + (Math.random() * 5) + 's';
+          container.appendChild(flake);
+        }
+
+        const animations = ['riseRight', 'riseLeft', 'riseZigZag'];
+        for (let i = 0; i < emberCount; i++) {
+          const ember = document.createElement('div');
+          ember.classList.add('ember');
+          const size = Math.random() * 4 + 3;
+          ember.style.width = size + 'px'; ember.style.height = size + 'px';
+          ember.style.left = Math.random() * 100 + 'vw';
+          const duration = (Math.random() * 6 + 6) * speedModifier;
+          const randomAnim = animations[Math.floor(Math.random() * animations.length)];
+          ember.style.animation = `${randomAnim} ${duration}s linear infinite`;
+          ember.style.animationDelay = '-' + (Math.random() * 10) + 's';
+          container.appendChild(ember);
         }
       }
 
-      video.addEventListener('loadedmetadata', setPausedUI);
-      video.addEventListener('playing', () => { setReady(true); setPausedUI(); });
-      video.addEventListener('pause', () => { setPausedUI(); showControls(); });
-      video.addEventListener('play', setPausedUI);
-      video.addEventListener('error', () => { setReady(false); setTimeout(initStream, 1200); });
+      const prefersReducedMotion = !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+      if (!prefersReducedMotion) createParticles();
 
-      // resync periodico
-      setInterval(() => { if (!video.paused) snapToLive(false); }, 8000);
-
-      // rientro da background = riparti in diretta
-      let hiddenAt = 0;
-      document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'hidden') {
-          hiddenAt = Date.now();
-          if (hls) { try { hls.stopLoad(); } catch(e){} }
-          return;
-        }
-        const dt = Date.now() - (hiddenAt || Date.now());
-        if (dt > 1200) initStream();
-        else setTimeout(() => snapToLive(true), 200);
-      });
-
-      window.addEventListener('pageshow', (e) => { if (e.persisted) initStream(); });
-
-      hideControls();
-      initStream();
+      // init
       setPausedUI();
+      hideControls();
     })();
   </script>
 </body>
