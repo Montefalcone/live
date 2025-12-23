@@ -18,8 +18,8 @@
   
   <!-- SEO -->
   <title>Webcam Montefalcone di Val Fortore - LIVE</title>
-  <meta name="description" content="Webcam in diretta dal Comune di Montefalcone di Val Fortore. Vista panoramica e condizioni meteo in diretta.">
-  <meta name="keywords" content="webcam montefalcone, meteo montefalcone, comune di montefalcone live, diretta">
+  <meta name="description" content="Guarda la webcam in diretta dal Comune di Montefalcone. Vista panoramica live, condizioni meteo attuali e immagini in tempo reale dal centro storico.">
+  <meta name="keywords" content="webcam montefalcone, meteo montefalcone, comune di montefalcone live, telecamera diretta">
   <meta name="robots" content="index, follow">
   <meta name="google-site-verification" content="DLjKDn5UupGNdRgZXo9CuMc0Sg1S1aULxDJfIHT9tYo">
   <link rel="canonical" href="https://www.webcammontefalconedivalfortore.it/">
@@ -28,7 +28,7 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://www.webcammontefalconedivalfortore.it/">
   <meta property="og:title" content="Webcam Montefalcone di Val Fortore - LIVE">
-  <meta property="og:description" content="Montefalcone di Val Fortore - LIVE">
+  <meta property="og:description" content="Guarda cosa succede ora a Montefalcone. Clicca per la diretta.">
   <meta property="og:image" content="https://www.webcammontefalconedivalfortore.it/p.png">
   <meta property="og:locale" content="it_IT">
   <meta property="og:site_name" content="Webcam Montefalcone">
@@ -36,7 +36,7 @@
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Webcam Montefalcone di Val Fortore - LIVE">
-  <meta name="twitter:description" content="Montefalcone di Val Fortore - LIVE">
+  <meta name="twitter:description" content="Guarda cosa succede ora a Montefalcone. Clicca per la diretta.">
   <meta name="twitter:image" content="https://www.webcammontefalconedivalfortore.it/p.png">
 
   <!-- Preconnect per performance -->
@@ -63,7 +63,7 @@
     :root {
       /* Blur */
       --blur-ui: 12px;
-      --blur-play: 20px;
+      --blur-play: 10px;
       
       /* Colors */
       --color-bg: #000;
@@ -415,11 +415,11 @@
       height: 44px;
       border-radius: var(--radius-pill);
       border: 1px solid rgba(255, 255, 255, 0.20);
-      background: var(--color-overlay);
+      background: rgba(0, 0, 0, 0.35);
       backdrop-filter: blur(var(--blur-ui));
       -webkit-backdrop-filter: blur(var(--blur-ui));
       cursor: pointer;
-      opacity: 0.015;
+      opacity: 0.02;
       transition: opacity var(--transition-fast);
       will-change: opacity;
     }
@@ -473,7 +473,7 @@
 
     /* =====================================================
        OSD PLAY/PAUSE
-       Sempre leggermente visibile per mantenere blur attivo
+       Migliorato con effetto glass più luminoso
        ===================================================== */
     #videoWrapper .osd {
       position: absolute;
@@ -486,16 +486,13 @@
     }
 
     #videoWrapper .osd-chip {
+      position: relative;
       width: 84px;
       height: 84px;
       border-radius: var(--radius-pill);
       display: flex;
       align-items: center;
       justify-content: center;
-      background: rgba(0, 0, 0, 0.40);
-      border: 1px solid rgba(255, 255, 255, 0.22);
-      backdrop-filter: blur(var(--blur-play));
-      -webkit-backdrop-filter: blur(var(--blur-play));
       cursor: pointer;
       appearance: none;
       -webkit-appearance: none;
@@ -503,10 +500,17 @@
       margin: 0;
       font: inherit;
       color: inherit;
-      opacity: 0.015;
+      opacity: 0.02;
       transform: scale(0.98);
       transition: opacity 140ms ease, transform 140ms ease;
       will-change: opacity, transform;
+      
+      /* Glass effect bilanciato */
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      backdrop-filter: blur(var(--blur-play)) brightness(1.05) saturate(1.1);
+      -webkit-backdrop-filter: blur(var(--blur-play)) brightness(1.05) saturate(1.1);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
     }
 
     #videoWrapper.controls-visible .osd-chip {
@@ -520,6 +524,7 @@
       height: 40px;
       fill: var(--color-white);
       opacity: 0.95;
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
     }
 
     #videoWrapper .osd-icon.play {
@@ -792,6 +797,29 @@
           lastHiddenAt: 0,
           lastHardResyncAt: 0,
           touchMode: isTouchDevice(),
+        };
+
+        /* =====================================================
+           WARM UP BLUR - Forza il primo render del blur
+           ===================================================== */
+        const warmUpBlur = () => {
+          // Mostra brevemente gli elementi per forzare il render del blur
+          if (elements.osdBtn) {
+            elements.osdBtn.style.opacity = '0.03';
+            void elements.osdBtn.offsetHeight; // Forza reflow
+          }
+          if (elements.fsBtn) {
+            elements.fsBtn.style.opacity = '0.03';
+            void elements.fsBtn.offsetHeight; // Forza reflow
+          }
+          
+          // Dopo un frame, riporta a opacity minima
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              if (elements.osdBtn) elements.osdBtn.style.opacity = '';
+              if (elements.fsBtn) elements.fsBtn.style.opacity = '';
+            });
+          });
         };
 
         /* =====================================================
@@ -1133,6 +1161,12 @@
         setReady(false);
         setPausedUI();
         hideControls();
+        
+        // Warm up blur dopo un breve delay per assicurarsi che tutto sia renderizzato
+        setTimeout(warmUpBlur, 100);
+        
+        // Secondo warm up dopo che il video inizia (per sicurezza)
+        elements.video.addEventListener('loadeddata', warmUpBlur, { once: true });
       };
 
       // Avvia quando il DOM è pronto
