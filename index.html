@@ -11,7 +11,6 @@
   <meta name="google-site-verification" content="DLjKDn5UupGNdRgZXo9CuMc0Sg1S1aULxDJfIHT9tYo" />
   <meta charset="UTF-8">
 
-  <!-- Zoom disabilitato -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 
   <title>Webcam Montefalcone di Val Fortore - LIVE</title>
@@ -31,14 +30,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&display=swap" rel="stylesheet">
 
   <style>
-    :root{
-      --ui-blur: 12px;    /* blur controlli (fullscreen + badge live) */
-      --play-blur: 20px;  /* blur SOLO tasto play/pause - AUMENTATO */
+    :root {
+      --ui-blur: 12px;
+      --play-blur: 20px;
     }
 
-    /* Desktop: rimpicciolisci leggermente tutto per non dare fastidio con taskbar Windows */
     @media (min-width: 1024px) {
-      #main-container{
+      #main-container {
         transform: scale(0.965);
         transform-origin: center top;
       }
@@ -112,7 +110,6 @@
       border: 1px solid rgba(255, 255, 255, 0.15); z-index: 30;
       pointer-events: auto;
       transition: all 0.3s ease-out;
-      will-change: width, height;
     }
 
     .video-wrapper:fullscreen,
@@ -136,7 +133,7 @@
       width: 100%; height: 100%;
       display: block; position: relative;
       background: #000;
-      --media-tooltip-display: none; /* niente "Enter Fullscreen" */
+      --media-tooltip-display: none;
     }
 
     #videoWrapper hls-video {
@@ -150,45 +147,41 @@
       cursor: default;
     }
 
-    /* LOADING overlay (anteprima + spinner) */
-    #videoWrapper .loading-overlay{
-      position:absolute; inset:0;
+    /* LOADING overlay */
+    #videoWrapper .loading-overlay {
+      position: absolute; inset: 0;
       z-index: 80;
-      display:flex; align-items:center; justify-content:center;
-      background:#000;
-      opacity:1;
+      display: flex; align-items: center; justify-content: center;
+      background: #000;
+      opacity: 1;
       transition: opacity 260ms ease;
-      pointer-events:none;
+      pointer-events: none;
     }
-    #videoWrapper.is-ready .loading-overlay{ opacity:0; }
+    #videoWrapper.is-ready .loading-overlay { opacity: 0; }
 
-    #videoWrapper .loading-overlay .preview{
-      position:absolute; inset:0;
-      width:100%; height:100%;
-      object-fit:cover;
+    #videoWrapper .loading-overlay .preview {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
       filter: brightness(.82) contrast(1.08);
-      opacity:.85;
+      opacity: .85;
     }
 
-    /* Spinner robusto */
-    #videoWrapper .loading-overlay .spinner{
-      position:relative;
-      width:46px; height:46px;
-      border-radius:999px;
-      border:3px solid rgba(255,255,255,.25);
+    #videoWrapper .loading-overlay .spinner {
+      position: relative;
+      width: 46px; height: 46px;
+      border-radius: 999px;
+      border: 3px solid rgba(255,255,255,.25);
       border-top-color: rgba(255,255,255,.92);
       animation: spin .9s linear infinite;
       box-shadow: 0 10px 28px rgba(0,0,0,.35);
-      transform: translateZ(0) rotate(0deg);
-      -webkit-transform: translateZ(0) rotate(0deg);
-      will-change: transform;
     }
     @keyframes spin {
-      from { transform: translateZ(0) rotate(0deg); }
-      to   { transform: translateZ(0) rotate(360deg); }
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
     }
 
-    /* Control bar - SEMPRE RENDERIZZATA, solo visualmente nascosta */
+    /* Control bar - sempre renderizzata */
     #videoWrapper media-control-bar {
       position: absolute; left: 0; right: 0; bottom: 0;
       z-index: 30;
@@ -196,52 +189,41 @@
       display: flex; align-items: center; justify-content: flex-end;
       gap: 10px;
       background: linear-gradient(to top, rgba(0,0,0,.75), rgba(0,0,0,0));
-      transition: opacity 180ms ease, visibility 0ms linear 180ms;
-      opacity: 0;
-      visibility: hidden;
       pointer-events: none;
     }
+
     #videoWrapper.controls-visible media-control-bar {
-      opacity: 1;
-      visibility: visible;
       pointer-events: auto;
-      transition: opacity 180ms ease, visibility 0ms linear 0ms;
     }
 
-    /* Fullscreen button - BLUR SEMPRE ATTIVO tramite pseudo-elemento */
+    /* =====================================================
+       FULLSCREEN BUTTON - SEMPRE LEGGERMENTE VISIBILE
+       opacity: 0.015 quando nascosto (blur SEMPRE attivo)
+       ===================================================== */
     #videoWrapper media-fullscreen-button {
-      position: relative;
       width: 44px; height: 44px;
       border-radius: 999px;
       border: 1px solid rgba(255,255,255,.20);
-      background: transparent;
-      cursor: pointer;
-      transform: translateZ(0);
-      -webkit-transform: translateZ(0);
-      isolation: isolate;
-    }
-
-    /* Pseudo-elemento per il blur - sempre presente e renderizzato */
-    #videoWrapper media-fullscreen-button::before {
-      content: '';
-      position: absolute;
-      inset: -1px;
-      border-radius: inherit;
       background: rgba(0,0,0,.35);
       backdrop-filter: blur(var(--ui-blur));
       -webkit-backdrop-filter: blur(var(--ui-blur));
-      z-index: -1;
-      transform: translateZ(0);
-      -webkit-transform: translateZ(0);
+      cursor: pointer;
+      
+      /* CHIAVE: mai completamente invisibile */
+      opacity: 0.015;
+      transition: opacity 150ms ease;
     }
 
+    #videoWrapper.controls-visible media-fullscreen-button {
+      opacity: 1;
+    }
+
+    /* Live badge */
     #videoWrapper .live-badge {
       position: absolute; left: 14px; bottom: 14px; z-index: 31;
       display: inline-flex; align-items: center; gap: 8px;
-
       padding: 8px 12px;
       border-radius: 999px;
-
       color: #fff;
       font-family: "Poppins", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
       font-weight: 700;
@@ -249,18 +231,12 @@
       line-height: 1;
       letter-spacing: .14em;
       text-transform: uppercase;
-
       background: rgba(0, 0, 0, 0.18);
       border: 1px solid rgba(255,255,255,.18);
       box-shadow: 0 10px 28px rgba(0,0,0,.28);
-
       backdrop-filter: blur(var(--ui-blur));
       -webkit-backdrop-filter: blur(var(--ui-blur));
       pointer-events: none;
-
-      transform: translateZ(0);
-      -webkit-transform: translateZ(0);
-      will-change: transform;
     }
 
     #videoWrapper .live-dot {
@@ -272,28 +248,24 @@
     }
     @keyframes livePulse { 0%{opacity:1} 50%{opacity:.45} 100%{opacity:1} }
 
-    /* OSD centrale - SEMPRE RENDERIZZATO, solo visualmente nascosto */
+    /* =====================================================
+       OSD PLAY/PAUSE - SEMPRE LEGGERMENTE VISIBILE
+       opacity: 0.015 quando nascosto (blur SEMPRE attivo)
+       ===================================================== */
     #videoWrapper .osd {
       position: absolute; inset: 0; z-index: 20;
       display: flex; align-items: center; justify-content: center;
-      opacity: 0;
-      visibility: hidden;
-      transform: translateZ(0) scale(.98);
-      -webkit-transform: translateZ(0) scale(.98);
-      transition: opacity 140ms ease, transform 140ms ease, visibility 0ms linear 140ms;
       pointer-events: none;
     }
 
-    /* OSD chip - usa pseudo-elemento per blur sempre attivo */
     #videoWrapper .osd-chip {
-      position: relative;
-      width: 84px; height: 84px; border-radius: 999px;
+      width: 84px; height: 84px;
+      border-radius: 999px;
       display: flex; align-items: center; justify-content: center;
-
-      background: transparent;
+      background: rgba(0,0,0,.40);
       border: 1px solid rgba(255,255,255,.22);
-
-      pointer-events: none;
+      backdrop-filter: blur(var(--play-blur));
+      -webkit-backdrop-filter: blur(var(--play-blur));
       cursor: pointer;
       appearance: none;
       -webkit-appearance: none;
@@ -301,41 +273,29 @@
       margin: 0;
       font: inherit;
       color: inherit;
-
-      transform: translateZ(0);
-      -webkit-transform: translateZ(0);
-      isolation: isolate;
+      
+      /* CHIAVE: mai completamente invisibile */
+      opacity: 0.015;
+      transform: scale(0.98);
+      transition: opacity 140ms ease, transform 140ms ease;
     }
 
-    /* Pseudo-elemento per il blur del play button - sempre renderizzato */
-    #videoWrapper .osd-chip::before {
-      content: '';
-      position: absolute;
-      inset: -1px;
-      border-radius: inherit;
-      background: rgba(0,0,0,.40);
-      backdrop-filter: blur(var(--play-blur));
-      -webkit-backdrop-filter: blur(var(--play-blur));
-      z-index: -1;
-      transform: translateZ(0);
-      -webkit-transform: translateZ(0);
-    }
-
-    #videoWrapper.controls-visible .osd {
+    #videoWrapper.controls-visible .osd-chip {
       opacity: 1;
-      visibility: visible;
-      transform: translateZ(0) scale(1);
-      -webkit-transform: translateZ(0) scale(1);
-      transition: opacity 140ms ease, transform 140ms ease, visibility 0ms linear 0ms;
+      transform: scale(1);
+      pointer-events: auto;
     }
-    #videoWrapper.controls-visible .osd-chip { pointer-events: auto; }
 
-    #videoWrapper .osd-icon { width: 40px; height: 40px; fill: #fff; opacity: .95; }
+    #videoWrapper .osd-icon {
+      width: 40px; height: 40px;
+      fill: #fff;
+      opacity: .95;
+    }
     #videoWrapper .osd-icon.play { display: none; }
     #videoWrapper.is-paused .osd-icon.play { display: block; }
     #videoWrapper.is-paused .osd-icon.pause { display: none; }
 
-    /* Curtain transizione fullscreen */
+    /* Curtain */
     #pageCurtain, #fsCurtain {
       background: #000;
       opacity: 0;
@@ -389,44 +349,12 @@
     @keyframes riseLeft { 0% { transform: translateY(0) translateX(0); opacity: 0; } 20% { opacity: 0.8; } 100% { transform: translateY(-90vh) translateX(-15vw); opacity: 0; } }
     @keyframes riseZigZag { 0% { transform: translateY(0) translateX(0); opacity: 0; } 25% { transform: translateY(-20vh) translateX(5vw); opacity: 0.8; } 75% { transform: translateY(-60vh) translateX(-5vw); opacity: 0.4; } 100% { transform: translateY(-90vh) translateX(0); opacity: 0; } }
 
-    /* Riduzione movimento: non bloccare lo spinner */
     @media (prefers-reduced-motion: reduce) {
       * { animation: none !important; transition: none !important; }
       .particles-container { display: none !important; }
-      #videoWrapper .loading-overlay .spinner{
+      #videoWrapper .loading-overlay .spinner {
         animation: spin .9s linear infinite !important;
       }
-    }
-
-    /* BLUR PRIMER LAYERS - Forza il compositor a mantenere i layer blur sempre attivi */
-    .blur-primer {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      opacity: 0.001;
-      pointer-events: none;
-      transform: translateZ(0);
-      -webkit-transform: translateZ(0);
-    }
-
-    /* Primer dentro il video wrapper per UI blur */
-    #videoWrapper .blur-primer-ui {
-      bottom: 12px;
-      right: 12px;
-      border-radius: 999px;
-      background: rgba(0,0,0,.01);
-      backdrop-filter: blur(var(--ui-blur));
-      -webkit-backdrop-filter: blur(var(--ui-blur));
-    }
-
-    /* Primer per play blur */
-    #videoWrapper .blur-primer-play {
-      top: 50%;
-      left: 50%;
-      border-radius: 999px;
-      background: rgba(0,0,0,.01);
-      backdrop-filter: blur(var(--play-blur));
-      -webkit-backdrop-filter: blur(var(--play-blur));
     }
   </style>
 </head>
@@ -446,10 +374,6 @@
     </div>
 
     <div class="video-wrapper" id="videoWrapper">
-      <!-- Blur primer layers - invisibili ma mantengono il compositor attivo -->
-      <div class="blur-primer blur-primer-ui" aria-hidden="true"></div>
-      <div class="blur-primer blur-primer-play" aria-hidden="true"></div>
-
       <media-controller
         id="mc"
         autohide="-1"
@@ -467,7 +391,6 @@
           crossorigin="anonymous">
         </hls-video>
 
-        <!-- Loading overlay -->
         <div class="loading-overlay" id="loadingOverlay" aria-hidden="true">
           <img class="preview" src="https://www.webcammontefalconedivalfortore.it/p.png" alt="">
           <div class="spinner"></div>
@@ -511,10 +434,10 @@
       await Promise.all([when('media-controller'), when('media-fullscreen-button'), when('hls-video')]);
 
       const wrapper = document.getElementById('videoWrapper');
-      const video   = document.getElementById('liveVideo');
-      const tapLayer= document.getElementById('tapLayer');
-      const osdBtn  = document.getElementById('osdBtn');
-      const fsBtn   = document.getElementById('fsBtn');
+      const video = document.getElementById('liveVideo');
+      const tapLayer = document.getElementById('tapLayer');
+      const osdBtn = document.getElementById('osdBtn');
+      const fsBtn = document.getElementById('fsBtn');
       const fsCurtain = document.getElementById('fsCurtain');
       const pageCurtain = document.getElementById('pageCurtain');
 
@@ -525,7 +448,6 @@
       }
       setReady(false);
 
-      // CLICK 1 / CLICK 2 + AUTOHIDE
       const AUTOHIDE_MS = 4000;
       let autoHideTimer = null;
 
@@ -564,7 +486,6 @@
       wrapper.addEventListener('mousemove', bumpControlsTimer, { passive: true });
       wrapper.addEventListener('keydown', bumpControlsTimer);
 
-      // LIVE catch-up (non aggressivo)
       const MAX_BEHIND_SEC = 20;
       const TARGET_BEHIND_SEC = 2.5;
       const CATCHUP_COOLDOWN_MS = 12000;
@@ -599,7 +520,6 @@
         return false;
       }
 
-      // HARD RESYNC quando torni da Home / background
       let lastHiddenAt = 0;
       let lastHardResyncAt = 0;
       const HARD_RESYNC_COOLDOWN_MS = 8000;
@@ -610,7 +530,6 @@
         lastHardResyncAt = now;
 
         setReady(false);
-
         const wasPaused = video.paused;
 
         try { video.load(); } catch (e) {}
@@ -645,7 +564,6 @@
         if (e.persisted) hardResyncToLive();
       });
 
-      // Play/pause SOLO dal bottone centrale
       function setPausedUI() {
         wrapper.classList.toggle('is-paused', !!video.paused);
         osdBtn?.setAttribute('aria-label', video.paused ? 'Play' : 'Pausa');
@@ -669,7 +587,6 @@
         togglePlayPause();
       });
 
-      // Video events: overlay e UI
       video.addEventListener('loadedmetadata', () => {
         setPausedUI();
         setTimeout(() => catchUpToLiveIfNeeded(true), 300);
@@ -697,7 +614,6 @@
         }, 1500);
       });
 
-      // Fullscreen + curtain
       function isFullscreen() {
         return document.fullscreenElement || document.webkitFullscreenElement;
       }
@@ -753,7 +669,6 @@
       document.addEventListener('fullscreenchange', onFullscreenChange);
       document.addEventListener('webkitfullscreenchange', onFullscreenChange);
 
-      // Particelle
       function createParticles() {
         const container = document.getElementById('particlesContainer');
         if (!container) return;
@@ -793,7 +708,6 @@
       const prefersReducedMotion = !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
       if (!prefersReducedMotion) createParticles();
 
-      // init
       setPausedUI();
       hideControls();
     })();
