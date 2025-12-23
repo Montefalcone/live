@@ -597,6 +597,33 @@
       #bg-static {
         animation: driftingWorldMobile 35s ease-in-out infinite alternate;
       }
+
+      /* Tasti più piccoli su mobile */
+      #videoWrapper .osd-chip {
+        width: 68px;
+        height: 68px;
+      }
+
+      #videoWrapper .osd-icon {
+        width: 32px;
+        height: 32px;
+      }
+
+      #videoWrapper media-fullscreen-button {
+        width: 38px;
+        height: 38px;
+      }
+
+      #videoWrapper .live-badge {
+        padding: 6px 10px;
+        font-size: 10px;
+        gap: 6px;
+      }
+
+      #videoWrapper .live-dot {
+        width: 6px;
+        height: 6px;
+      }
     }
 
     @keyframes driftingWorldMobile {
@@ -801,25 +828,37 @@
 
         /* =====================================================
            WARM UP BLUR - Forza il primo render del blur
+           Più aggressivo per mobile
            ===================================================== */
         const warmUpBlur = () => {
-          // Mostra brevemente gli elementi per forzare il render del blur
-          if (elements.osdBtn) {
-            elements.osdBtn.style.opacity = '0.03';
-            void elements.osdBtn.offsetHeight; // Forza reflow
-          }
-          if (elements.fsBtn) {
-            elements.fsBtn.style.opacity = '0.03';
-            void elements.fsBtn.offsetHeight; // Forza reflow
-          }
+          const els = [elements.osdBtn, elements.fsBtn].filter(Boolean);
           
-          // Dopo un frame, riporta a opacity minima
+          els.forEach(el => {
+            // Forza opacity visibile per attivare il blur
+            el.style.opacity = '0.04';
+            el.style.transform = 'scale(1)';
+          });
+          
+          // Forza reflow
+          void document.body.offsetHeight;
+          
+          // Dopo 2 frame, ripristina
           requestAnimationFrame(() => {
             requestAnimationFrame(() => {
-              if (elements.osdBtn) elements.osdBtn.style.opacity = '';
-              if (elements.fsBtn) elements.fsBtn.style.opacity = '';
+              els.forEach(el => {
+                el.style.opacity = '';
+                el.style.transform = '';
+              });
             });
           });
+        };
+        
+        // Warm up multipli per sicurezza (specialmente su mobile)
+        const scheduleWarmUps = () => {
+          warmUpBlur();
+          setTimeout(warmUpBlur, 50);
+          setTimeout(warmUpBlur, 150);
+          setTimeout(warmUpBlur, 300);
         };
 
         /* =====================================================
@@ -1162,11 +1201,12 @@
         setPausedUI();
         hideControls();
         
-        // Warm up blur dopo un breve delay per assicurarsi che tutto sia renderizzato
-        setTimeout(warmUpBlur, 100);
+        // Warm up blur - multipli tentativi per mobile
+        scheduleWarmUps();
         
-        // Secondo warm up dopo che il video inizia (per sicurezza)
-        elements.video.addEventListener('loadeddata', warmUpBlur, { once: true });
+        // Warm up anche quando il video carica
+        elements.video.addEventListener('loadeddata', scheduleWarmUps, { once: true });
+        elements.video.addEventListener('canplay', warmUpBlur, { once: true });
       };
 
       // Avvia quando il DOM è pronto
