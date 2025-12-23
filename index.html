@@ -63,7 +63,7 @@
     :root {
       /* Blur */
       --blur-ui: 12px;
-      --blur-play: 7px;
+      --blur-play: 5px;
       
       /* Colors */
       --color-bg: #000;
@@ -333,6 +333,33 @@
       inset: 0;
       z-index: 10;
       cursor: default;
+    }
+
+    /* =====================================================
+       BLUR PRIMERS - Elementi sempre visibili per mantenere
+       il blur "caldo" su mobile. Sono trasparenti ma opacity:1
+       ===================================================== */
+    .blur-primer {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 1;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .blur-primer-play {
+      top: 50%;
+      left: 50%;
+      backdrop-filter: blur(var(--blur-play)) brightness(1.05) saturate(1.1);
+      -webkit-backdrop-filter: blur(var(--blur-play)) brightness(1.05) saturate(1.1);
+    }
+
+    .blur-primer-ui {
+      bottom: 12px;
+      right: 12px;
+      backdrop-filter: blur(var(--blur-ui));
+      -webkit-backdrop-filter: blur(var(--blur-ui));
     }
 
     /* =====================================================
@@ -710,6 +737,10 @@
         gesturesdisabled
         fullscreenelement="videoWrapper"
       >
+        <!-- Blur primers: elementi invisibili ma opacity:1 per tenere il blur sempre attivo -->
+        <div class="blur-primer blur-primer-play" aria-hidden="true"></div>
+        <div class="blur-primer blur-primer-ui" aria-hidden="true"></div>
+        
         <hls-video
           id="liveVideo"
           slot="media"
@@ -1177,4 +1208,3 @@
   </script>
 </body>
 </html>
-
