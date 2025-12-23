@@ -22,17 +22,12 @@
 
   <style>
     :root{
-      /* ✅ BLUR PIÙ FORTE (PLAY + FS + LIVE) */
-      --ui-blur: 14px;
+      /* ✅ AUMENTA/DECREMENTA QUI: vale uguale per LIVE + PLAY + FULLSCREEN */
+      --ui-blur: 18px;
 
-      /* vetro */
       --glass-bg: rgba(0,0,0,.18);
       --glass-border: rgba(255,255,255,.22);
       --glass-shadow: 0 12px 30px rgba(0,0,0,.24);
-    }
-
-    @media (min-width: 1024px) {
-      #main-container{ transform: scale(0.965); transform-origin: center top; }
     }
 
     html, body {
@@ -105,6 +100,7 @@
       pointer-events: auto;
       transition: all 0.3s ease-out;
       will-change: width, height;
+      isolation: isolate;
     }
 
     .video-wrapper:fullscreen,
@@ -117,20 +113,24 @@
       height: 100% !important;
     }
 
-    /* ✅ forza compositing (riduce glitch blur su Chrome) */
+    /* ✅ IL VIDEO NON DEVE RICEVERE TAP/CLICK (così sparisce overlay nativo play/pause) */
     #liveVideo{
       width:100%; height:100%;
       display:block;
       background:#000;
       object-fit:contain;
 
+      pointer-events: none; /* <<< CHIAVE */
+      user-select: none;
+
+      /* compositing stabile */
       filter: opacity(0.9999);
       -webkit-filter: opacity(0.9999);
       transform: translateZ(0);
       will-change: transform, filter;
     }
 
-    /* ✅ BLOCCA CONTROLLI/OVERLAY NATIVI (PLAY TRIANGLE) */
+    /* ✅ Nasconde controlli nativi WebKit (extra sicurezza) */
     #liveVideo::-webkit-media-controls { display:none !important; }
     #liveVideo::-webkit-media-controls-enclosure { display:none !important; }
     #liveVideo::-webkit-media-controls-panel { display:none !important; }
@@ -172,132 +172,152 @@
       to   { transform: translateZ(0) rotate(360deg); }
     }
 
+    /* Tap layer sopra al video */
     .tap-layer{
       position:absolute; inset:0;
       z-index: 10;
       pointer-events:auto;
     }
 
-    /* ===== GLASS STABILE (PLAY + FS + LIVE) ===== */
-    .glass{
+    /* ====== BOTTONI GLASS "HARD" (ANTI BUG) ====== */
+    .glass-btn{
+      position: relative;
+      border: 0;
+      padding: 0;
+      margin: 0;
+      line-height: 0;
+      font-size: 0;
+      -webkit-appearance: none;
+      appearance: none;
+      -webkit-tap-highlight-color: transparent;
+
+      width: 46px;
+      height: 46px;
+      aspect-ratio: 1 / 1;
+
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      cursor: pointer;
+      user-select: none;
+
+      /* anti alias / anti “storto” su Chrome */
+      transform: translateZ(0);
+      backface-visibility: hidden;
+      -webkit-font-smoothing: antialiased;
+      -webkit-mask-image: -webkit-radial-gradient(white, black);
+      box-shadow: var(--glass-shadow);
+    }
+
+    .glass-btn::before{
+      content:"";
+      position:absolute; inset:0;
       background: var(--glass-bg);
       backdrop-filter: blur(var(--ui-blur)) saturate(1.15);
       -webkit-backdrop-filter: blur(var(--ui-blur)) saturate(1.15);
-      box-shadow: var(--glass-shadow);
-      transform: translateZ(0);
-      will-change: opacity, transform;
-      backface-visibility: hidden;
     }
-    .glass-border{
-      box-shadow:
-        var(--glass-shadow),
-        inset 0 0 0 1px var(--glass-border);
+
+    .glass-btn::after{
+      content:"";
+      position:absolute; inset:0;
+      border-radius: inherit;
+      box-shadow: inset 0 0 0 1px var(--glass-border);
+      pointer-events:none;
+    }
+
+    .glass-btn svg{
+      position: relative;
+      z-index: 1;
+      display: block;
+      width: 22px;
+      height: 22px;
+      fill: #fff;
+      opacity: .95;
     }
 
     /* LIVE badge */
-    .live-badge{
-      position:absolute; left:14px; bottom:14px;
-      z-index: 60;
-      display:inline-flex; align-items:center; gap:8px;
-      padding:8px 12px;
-      border-radius:999px;
-      pointer-events:none;
+    .live-badge {
+      position: absolute; left: 14px; bottom: 14px; z-index: 60;
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      pointer-events: none;
 
-      color:#fff;
-      font-family:"Poppins", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      font-weight:700;
-      font-size:12px;
-      line-height:1;
-      letter-spacing:.14em;
-      text-transform:uppercase;
+      color: #fff;
+      font-family: "Poppins", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      font-weight: 700;
+      font-size: 12px;
+      line-height: 1;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+
+      background: var(--glass-bg);
+      box-shadow: var(--glass-shadow);
+
+      backdrop-filter: blur(var(--ui-blur)) saturate(1.15);
+      -webkit-backdrop-filter: blur(var(--ui-blur)) saturate(1.15);
+
+      transform: translateZ(0);
+      -webkit-mask-image: -webkit-radial-gradient(white, black);
+    }
+    .live-badge::after{
+      content:"";
+      position:absolute; inset:0;
+      border-radius: inherit;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.18);
+      pointer-events:none;
     }
 
-    .live-dot{
-      width:8px; height:8px;
-      border-radius:50%;
-      background:#ff2b2b;
-      box-shadow: 0 0 12px rgba(255,43,43,.95);
+    .live-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #ff2b2b;
+      box-shadow: 0 0 12px rgba(255, 43, 43, .95);
       animation: livePulse 1.6s infinite;
-      flex:0 0 auto;
+      flex: 0 0 auto;
     }
     @keyframes livePulse { 0%{opacity:1} 50%{opacity:.45} 100%{opacity:1} }
 
-    /* OSD (play/pause) */
+    /* OSD (Play/Pause) */
     .osd{
       position:absolute; inset:0;
       z-index: 65;
       display:flex; align-items:center; justify-content:center;
       pointer-events:none;
 
-      /* warm: mai 0 per evitare ritardi */
-      opacity: 0.001;
+      opacity: 0.001; /* warm */
       transition: opacity 140ms ease;
-      will-change: opacity;
       transform: translateZ(0);
     }
 
-    /* ✅ Visibile se controlli visibili OPPURE se in pausa (così non torna il play nativo) */
+    /* ✅ in pausa deve SEMPRE rimanere visibile (altrimenti torna overlay nativo) */
     .video-wrapper.controls-visible .osd,
-    .video-wrapper.is-paused .osd{
+    .video-wrapper.is-paused .osd {
       opacity: 1;
     }
 
-    .osd-chip{
-      width:84px; height:84px;
-      border-radius:999px;
-      display:grid;
-      place-items:center;
-
-      pointer-events:auto;
-      cursor:pointer;
-
-      border: 0;
-      padding: 0;
-      margin: 0;
-      line-height: 0;
-      font-size: 0;
-      -webkit-appearance:none;
-      appearance:none;
-      -webkit-tap-highlight-color: transparent;
-      user-select:none;
-      -webkit-user-select:none;
-      overflow:hidden; /* clip vetro */
+    .osd-btn{
+      width: 84px;
+      height: 84px;
+    }
+    .osd-btn svg{
+      width: 40px;
+      height: 40px;
     }
 
-    .osd-icon{ width:40px; height:40px; fill:#fff; opacity:.95; display:block; }
-    .osd-icon.play{ display:none; }
-    .video-wrapper.is-paused .osd-icon.play{ display:block; }
-    .video-wrapper.is-paused .osd-icon.pause{ display:none; }
+    .osd-icon.play { display:none; }
+    .video-wrapper.is-paused .osd-icon.play { display:block; }
+    .video-wrapper.is-paused .osd-icon.pause { display:none; }
 
-    /* FULLSCREEN (stabile, non storto) */
+    /* Fullscreen button visibility */
     .fs-btn{
       position:absolute;
-      right:14px; bottom:14px;
+      right: 14px;
+      bottom: 14px;
       z-index: 80;
 
-      width:46px; height:46px;
-      border-radius:999px;
-
-      display:grid;
-      place-items:center;
-
-      cursor:pointer;
-
-      border:0;
-      padding:0;
-      margin:0;
-      line-height:0;
-      font-size:0;
-      -webkit-appearance:none;
-      appearance:none;
-      -webkit-tap-highlight-color: transparent;
-      user-select:none;
-      -webkit-user-select:none;
-
-      overflow:hidden;
-
-      /* warm */
-      opacity: 0.001;
+      opacity: 0.001;   /* warm */
       pointer-events: none;
       transition: opacity 180ms ease;
     }
@@ -305,8 +325,6 @@
       opacity: 1;
       pointer-events: auto;
     }
-
-    .fs-icon{ width:22px; height:22px; fill:#fff; opacity:.95; display:block; }
 
     /* Mobile */
     @media (max-width: 768px) and (orientation: portrait) {
@@ -316,10 +334,7 @@
       .video-wrapper { width: 95%; height: auto; }
       #bg-static { animation: driftingWorldMobile 35s ease-in-out infinite alternate; }
     }
-    @keyframes driftingWorldMobile {
-      0% { transform: translate(0, 0) scale(1); }
-      100% { transform: translate(-3%, 0) scale(1.15); }
-    }
+    @keyframes driftingWorldMobile { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(-3%, 0) scale(1.15); } }
 
     @media screen and (orientation: landscape) and (max-height: 600px) {
       .municipality-logo, .festive-message, #bg-static, .warm-flicker, .vignette, .particles-container { display: none !important; }
@@ -372,19 +387,19 @@
 
       <div class="tap-layer" id="tapLayer" aria-hidden="true"></div>
 
-      <div class="live-badge glass glass-border" aria-hidden="true">
+      <div class="live-badge" aria-hidden="true">
         <span class="live-dot"></span><span>LIVE</span>
       </div>
 
       <div class="osd" aria-hidden="true">
-        <button class="osd-chip glass glass-border" id="osdBtn" type="button" aria-label="Play/Pausa">
+        <button class="glass-btn osd-btn" id="osdBtn" type="button" aria-label="Play/Pausa">
           <svg class="osd-icon play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>
           <svg class="osd-icon pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>
         </button>
       </div>
 
-      <button class="fs-btn glass glass-border" id="fsBtn" type="button" aria-label="Fullscreen">
-        <svg class="fs-icon" viewBox="0 0 24 24" aria-hidden="true">
+      <button class="glass-btn fs-btn" id="fsBtn" type="button" aria-label="Fullscreen">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M7 14H5v5h5v-2H7v-3zm0-4h2V7h3V5H5v5zm12 9h-3v2h5v-5h-2v3zm0-14V5h-5v2h3v3h2V5z"/>
         </svg>
       </button>
@@ -453,7 +468,10 @@
 
       if (!wrapper || !video) return;
 
+      // extra: evita che chrome tenti robe tipo PiP
       video.controls = false;
+      video.disablePictureInPicture = true;
+      video.setAttribute('controlslist', 'nodownload noplaybackrate noremoteplayback');
 
       function setReady(ready){ wrapper.classList.toggle('is-ready', !!ready); }
       function setPausedUI(){ wrapper.classList.toggle('is-paused', !!video.paused); }
@@ -465,7 +483,6 @@
       function clearHide(){ if (t) clearTimeout(t); t = null; }
       function scheduleHide(){
         clearHide();
-        // se è in pausa NON nascondo l'OSD (è gestito via CSS con .is-paused)
         t = setTimeout(() => wrapper.classList.remove('controls-visible'), AUTOHIDE_MS);
       }
       function showControls(){ wrapper.classList.add('controls-visible'); scheduleHide(); }
@@ -504,7 +521,7 @@
         }
       }
 
-      // play/pause solo bottone
+      // play/pause SOLO bottone
       osdBtn.addEventListener('click', () => {
         if (video.paused) {
           setReady(false);
@@ -516,11 +533,10 @@
         showControls();
       });
 
-      // fullscreen robusto
+      // fullscreen
       function isFs(){ return document.fullscreenElement || document.webkitFullscreenElement; }
 
       async function enterFs(){
-        // iOS Safari: fullscreen solo sul video
         if (video.webkitEnterFullscreen && /iPhone|iPad|iPod/i.test(navigator.userAgent)) {
           try { video.webkitEnterFullscreen(); return; } catch(e){}
         }
@@ -583,21 +599,16 @@
         }
       }
 
-      video.addEventListener('loadedmetadata', () => setPausedUI());
-      video.addEventListener('playing', () => {
-        setReady(true);
-        setPausedUI();
-
-        // warm 1 frame
-        wrapper.classList.add('controls-visible');
-        requestAnimationFrame(() => requestAnimationFrame(() => wrapper.classList.remove('controls-visible')));
-      });
+      video.addEventListener('loadedmetadata', setPausedUI);
+      video.addEventListener('playing', () => { setReady(true); setPausedUI(); });
       video.addEventListener('pause', () => { setPausedUI(); showControls(); });
-      video.addEventListener('play', () => { setPausedUI(); });
+      video.addEventListener('play', setPausedUI);
       video.addEventListener('error', () => { setReady(false); setTimeout(initStream, 1200); });
 
+      // resync periodico
       setInterval(() => { if (!video.paused) snapToLive(false); }, 8000);
 
+      // rientro da background = riparti in diretta
       let hiddenAt = 0;
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'hidden') {
