@@ -36,16 +36,15 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://live.webcammontefalconedivalfortore.it" crossorigin>
-  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-  
-  <link rel="preload" href="https://cdn.jsdelivr.net/npm/hls.js@1.5.7/dist/hls.min.js" as="script">
+  <link rel="preconnect" href="https://vjs.zencdn.net" crossorigin>
   
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+  
+  <!-- Video.js CSS -->
+  <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet">
 
   <style>
     :root {
-      --blur-ui: 12px;
-      --blur-play: 5px;
       --color-bg: #000;
       --color-live: #ff2b2b;
       --color-live-off: #666;
@@ -53,11 +52,8 @@
       --color-border: rgba(255, 255, 255, 0.18);
       --radius-pill: 999px;
       --radius-video: 15px;
-      --transition-fast: 150ms ease;
-      --transition-medium: 260ms ease;
       --shadow-glow: 0 0 30px rgba(255, 220, 150, 0.2);
       --shadow-deep: 0 40px 80px rgba(0, 0, 0, 0.95);
-      --shadow-button: 0 10px 28px rgba(0, 0, 0, 0.28);
     }
 
     *, *::before, *::after { box-sizing: border-box; }
@@ -118,7 +114,6 @@
         width: 110%;
         height: 110%;
         animation: driftBg 60s ease-in-out infinite alternate;
-        will-change: transform;
       }
     }
 
@@ -175,7 +170,6 @@
       border-radius: 50%;
       opacity: 0.8;
       will-change: transform;
-      backface-visibility: hidden;
       transform: translateZ(0);
     }
 
@@ -191,7 +185,6 @@
       border-radius: 50%;
       opacity: 0;
       will-change: transform, opacity;
-      backface-visibility: hidden;
       transform: translateZ(0);
     }
 
@@ -201,7 +194,7 @@
       100% { transform: translate3d(10vw, -100vh, 0); opacity: 0; }
     }
 
-    /* Video Player */
+    /* Video Wrapper */
     .video-wrapper {
       position: relative;
       width: auto;
@@ -213,67 +206,68 @@
       box-shadow: var(--shadow-glow), var(--shadow-deep);
       border: 1px solid var(--color-border);
       z-index: 30;
-      pointer-events: auto;
     }
 
-    .video-wrapper:fullscreen,
-    .video-wrapper:-webkit-full-screen {
-      border-radius: 0 !important;
-      border: none !important;
-      box-shadow: none !important;
-      width: 100vw !important;
-      height: 100vh !important;
-    }
-
-    #liveVideo {
+    /* === VIDEO.JS CUSTOM STYLING === */
+    .video-js {
       width: 100%;
       height: 100%;
-      display: block;
-      background: var(--color-bg);
-      object-fit: contain;
+      border-radius: var(--radius-video);
+      overflow: hidden;
     }
 
-    .tap-layer {
-      position: absolute;
-      inset: 0;
-      z-index: 10;
-      cursor: default;
+    /* Nascondi UI default di video.js, usiamo la nostra */
+    .video-js .vjs-control-bar {
+      display: none !important;
     }
 
-    /* Loading Overlay con preview MOLTO BLURRATA */
-    .loading-overlay {
+    .video-js .vjs-big-play-button {
+      display: none !important;
+    }
+
+    .video-js .vjs-loading-spinner {
+      display: none !important;
+    }
+
+    .video-js .vjs-poster {
+      background-size: cover;
+      filter: blur(20px) brightness(0.5);
+      transform: scale(1.1);
+    }
+
+    /* Custom Loading Overlay */
+    .custom-loading {
       position: absolute;
       inset: 0;
-      z-index: 80;
+      z-index: 100;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       background: var(--color-bg);
-      pointer-events: none;
       opacity: 1;
       visibility: visible;
       transition: opacity 300ms ease, visibility 0ms linear 0ms;
+      pointer-events: none;
     }
 
-    .video-wrapper.is-ready .loading-overlay {
+    .custom-loading.hidden {
       opacity: 0;
       visibility: hidden;
       transition: opacity 300ms ease, visibility 0ms linear 300ms;
     }
 
-    .loading-overlay .preview {
+    .custom-loading .preview {
       position: absolute;
       inset: 0;
       width: 100%;
       height: 100%;
       object-fit: cover;
       filter: blur(20px) brightness(0.5) saturate(0.8);
-      transform: scale(1.1); /* Evita bordi bianchi dal blur */
-      opacity: 1;
+      transform: scale(1.1);
     }
 
-    .loading-overlay .spinner-container {
+    .custom-loading .spinner-box {
       position: relative;
       display: flex;
       flex-direction: column;
@@ -282,7 +276,7 @@
       z-index: 2;
     }
 
-    .loading-overlay .spinner {
+    .custom-loading .spinner {
       width: 42px;
       height: 42px;
       border-radius: 50%;
@@ -291,7 +285,7 @@
       animation: spin 0.8s linear infinite;
     }
 
-    .loading-overlay .status-text {
+    .custom-loading .status {
       font-family: "Poppins", sans-serif;
       font-size: 11px;
       font-weight: 600;
@@ -302,46 +296,66 @@
 
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* Control Bar */
-    .control-bar {
+    /* Custom Controls */
+    .custom-controls {
       position: absolute;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      z-index: 30;
-      padding: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      gap: 10px;
-      background: linear-gradient(to top, rgba(0, 0, 0, 0.75), transparent);
-      pointer-events: none;
+      inset: 0;
+      z-index: 50;
       opacity: 0;
-      transition: opacity var(--transition-fast);
+      transition: opacity 150ms ease;
+      pointer-events: none;
     }
 
-    .video-wrapper.controls-visible .control-bar {
-      pointer-events: auto;
+    .custom-controls.visible {
       opacity: 1;
+      pointer-events: auto;
     }
 
-    .fs-btn {
-      width: 44px;
-      height: 44px;
-      border-radius: var(--radius-pill);
-      border: 1px solid rgba(255, 255, 255, 0.20);
-      background: rgba(0, 0, 0, 0.35);
-      backdrop-filter: blur(var(--blur-ui));
-      -webkit-backdrop-filter: blur(var(--blur-ui));
+    /* Play/Pause centrale */
+    .play-btn {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      background: rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: transform var(--transition-fast);
+    }
+
+    .play-btn:active { transform: translate(-50%, -50%) scale(0.92); }
+    .play-btn svg { width: 36px; height: 36px; fill: white; }
+    .play-btn .icon-pause { display: none; }
+    .video-wrapper.is-playing .play-btn .icon-play { display: none; }
+    .video-wrapper.is-playing .play-btn .icon-pause { display: block; }
+
+    /* Fullscreen btn */
+    .fs-btn {
+      position: absolute;
+      bottom: 12px;
+      right: 12px;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(0, 0, 0, 0.35);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .fs-btn:active { transform: scale(0.92); }
-    .fs-btn svg { width: 20px; height: 20px; fill: var(--color-white); }
+    .fs-btn svg { width: 20px; height: 20px; fill: white; }
     .fs-btn .icon-exit { display: none; }
     .video-wrapper.is-fullscreen .fs-btn .icon-enter { display: none; }
     .video-wrapper.is-fullscreen .fs-btn .icon-exit { display: block; }
@@ -349,9 +363,9 @@
     /* Live Badge */
     .live-badge {
       position: absolute;
-      left: 14px;
-      bottom: 14px;
-      z-index: 31;
+      left: 12px;
+      bottom: 12px;
+      z-index: 60;
       display: inline-flex;
       align-items: center;
       gap: 8px;
@@ -361,13 +375,12 @@
       font-family: "Poppins", sans-serif;
       font-weight: 700;
       font-size: 12px;
-      line-height: 1;
       letter-spacing: 0.14em;
       text-transform: uppercase;
       background: rgba(0, 0, 0, 0.18);
       border: 1px solid var(--color-border);
-      backdrop-filter: blur(var(--blur-ui));
-      -webkit-backdrop-filter: blur(var(--blur-ui));
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
       pointer-events: none;
     }
 
@@ -380,8 +393,7 @@
       animation: livePulse 1.6s infinite;
     }
 
-    .video-wrapper.is-paused .live-dot,
-    .video-wrapper.is-offline .live-dot {
+    .video-wrapper:not(.is-playing) .live-dot {
       background: var(--color-live-off);
       box-shadow: none;
       animation: none;
@@ -392,68 +404,23 @@
       50% { opacity: 0.4; }
     }
 
-    /* OSD */
-    .osd {
+    /* Gradient bottom */
+    .gradient-bottom {
       position: absolute;
-      inset: 0;
-      z-index: 20;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 100px;
+      background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
       pointer-events: none;
-    }
-
-    .osd-chip {
-      width: 84px;
-      height: 84px;
-      border-radius: var(--radius-pill);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      appearance: none;
-      padding: 0;
-      margin: 0;
-      background: rgba(0, 0, 0, 0.3);
-      border: 1px solid rgba(255, 255, 255, 0.22);
-      backdrop-filter: blur(var(--blur-play));
-      -webkit-backdrop-filter: blur(var(--blur-play));
+      z-index: 40;
       opacity: 0;
-      transform: scale(0.9);
-      transition: opacity 120ms ease, transform 120ms ease;
-      pointer-events: none;
+      transition: opacity 150ms ease;
     }
 
-    .video-wrapper.controls-visible .osd-chip {
+    .custom-controls.visible .gradient-bottom {
       opacity: 1;
-      transform: scale(1);
-      pointer-events: auto;
     }
-
-    .osd-chip:active { transform: scale(0.92); }
-
-    .osd-icon {
-      width: 40px;
-      height: 40px;
-      fill: var(--color-white);
-      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
-    }
-
-    .osd-icon.play { display: none; }
-    .video-wrapper.is-paused .osd-icon.play { display: block; }
-    .video-wrapper.is-paused .osd-icon.pause { display: none; }
-
-    /* Curtains */
-    #pageCurtain, .fs-curtain {
-      background: var(--color-bg);
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 200ms ease;
-    }
-
-    #pageCurtain { position: fixed; inset: 0; z-index: 9999; }
-    .fs-curtain { position: absolute; inset: 0; z-index: 200; border-radius: inherit; }
-    #pageCurtain.on, .fs-curtain.on { opacity: 1; }
 
     /* Responsive */
     @media (max-width: 768px) and (orientation: portrait) {
@@ -465,8 +432,8 @@
       .municipality-logo { width: 75px; margin-bottom: 10px; }
       .festive-message { font-size: 6vw; line-height: 1.4; margin-bottom: 20px; }
       .video-wrapper { width: 95%; height: auto; }
-      .osd-chip { width: 68px; height: 68px; }
-      .osd-icon { width: 32px; height: 32px; }
+      .play-btn { width: 65px; height: 65px; }
+      .play-btn svg { width: 30px; height: 30px; }
       .fs-btn { width: 38px; height: 38px; }
       .live-badge { padding: 6px 10px; font-size: 10px; gap: 6px; }
       .live-dot { width: 6px; height: 6px; }
@@ -489,6 +456,23 @@
         border: none;
         border-radius: 0;
       }
+
+      .video-js { border-radius: 0; }
+    }
+
+    /* Fullscreen */
+    .video-wrapper:fullscreen,
+    .video-wrapper:-webkit-full-screen {
+      border-radius: 0 !important;
+      border: none !important;
+      box-shadow: none !important;
+      width: 100vw !important;
+      height: 100vh !important;
+    }
+
+    .video-wrapper:fullscreen .video-js,
+    .video-wrapper:-webkit-full-screen .video-js {
+      border-radius: 0;
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -497,7 +481,7 @@
         transition-duration: 0.01ms !important;
       }
       .particles-container { display: none !important; }
-      .loading-overlay .spinner { animation: spin 0.8s linear infinite !important; }
+      .custom-loading .spinner { animation: spin 0.8s linear infinite !important; }
     }
   </style>
 </head>
@@ -523,352 +507,247 @@
     </div>
 
     <div class="video-wrapper" id="videoWrapper">
+      <!-- Video.js Player -->
       <video
         id="liveVideo"
+        class="video-js"
         playsinline
         muted
         preload="auto"
-      ></video>
-
-      <div class="loading-overlay" id="loadingOverlay">
-        <img 
-          class="preview" 
-          src="https://www.webcammontefalconedivalfortore.it/p.png" 
-          alt=""
-          loading="eager"
+        poster="https://www.webcammontefalconedivalfortore.it/p.png"
+      >
+        <source 
+          src="https://live.webcammontefalconedivalfortore.it/memfs/58e0bcbe-f1bd-4c8b-85f7-b4566a3e5392.m3u8" 
+          type="application/x-mpegURL"
         >
-        <div class="spinner-container">
+      </video>
+
+      <!-- Custom Loading -->
+      <div class="custom-loading" id="customLoading">
+        <img class="preview" src="https://www.webcammontefalconedivalfortore.it/p.png" alt="" loading="eager">
+        <div class="spinner-box">
           <div class="spinner"></div>
-          <div class="status-text" id="statusText">Connessione...</div>
+          <div class="status" id="statusText">Connessione...</div>
         </div>
       </div>
 
-      <div class="tap-layer" id="tapLayer"></div>
-
-      <div class="live-badge">
-        <span class="live-dot" id="liveDot"></span>
-        <span>LIVE</span>
-      </div>
-
-      <div class="osd">
-        <button class="osd-chip" id="osdBtn" type="button" aria-label="Play/Pausa">
-          <svg class="osd-icon play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-          <svg class="osd-icon pause" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+      <!-- Custom Controls -->
+      <div class="custom-controls" id="customControls">
+        <div class="gradient-bottom"></div>
+        
+        <button class="play-btn" id="playBtn" type="button" aria-label="Play/Pausa">
+          <svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          <svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
         </button>
-      </div>
 
-      <div class="control-bar">
         <button class="fs-btn" id="fsBtn" type="button" aria-label="Schermo intero">
           <svg class="icon-enter" viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
           <svg class="icon-exit" viewBox="0 0 24 24"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>
         </button>
       </div>
 
-      <div class="fs-curtain" id="fsCurtain"></div>
+      <!-- Live Badge -->
+      <div class="live-badge">
+        <span class="live-dot"></span>
+        <span>LIVE</span>
+      </div>
     </div>
   </div>
 
-  <div id="pageCurtain"></div>
-
-  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.7/dist/hls.min.js"></script>
+  <!-- Video.js -->
+  <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
 
   <script>
     (() => {
       'use strict';
 
-      const STREAM_URL = 'https://live.webcammontefalconedivalfortore.it/memfs/58e0bcbe-f1bd-4c8b-85f7-b4566a3e5392.m3u8';
-
-      // Config HLS ULTRA-AGGRESSIVA per avvio veloce
-      const HLS_CONFIG = {
-        // === AVVIO IMMEDIATO ===
-        enableWorker: true,
-        lowLatencyMode: false, // Disabilita per stabilità
-        backBufferLength: 0,
-        
-        // === LIVE SYNC ===
-        liveSyncDuration: 3,
-        liveMaxLatencyDuration: 10,
-        liveDurationInfinity: true,
-        liveBackBufferLength: 0,
-        
-        // === BUFFER MINIMO per partire subito ===
-        maxBufferLength: 5,           // Solo 5 sec buffer
-        maxMaxBufferLength: 10,
-        maxBufferSize: 10 * 1000000,  // 10MB
-        maxBufferHole: 0.5,
-        
-        // === STARTUP VELOCE ===
-        startLevel: -1,               // Auto (lascia decidere HLS)
-        autoStartLoad: true,
-        startPosition: -1,            // Live edge
-        
-        // === TIMEOUT BREVI ===
-        manifestLoadingTimeOut: 5000,
-        manifestLoadingMaxRetry: 2,
-        manifestLoadingRetryDelay: 500,
-        levelLoadingTimeOut: 5000,
-        levelLoadingMaxRetry: 2,
-        levelLoadingRetryDelay: 500,
-        fragLoadingTimeOut: 8000,
-        fragLoadingMaxRetry: 3,
-        fragLoadingRetryDelay: 500,
-      };
-
       const $ = id => document.getElementById(id);
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-      class LivePlayer {
+      class WebcamPlayer {
         constructor() {
           this.wrapper = $('videoWrapper');
-          this.video = $('liveVideo');
-          this.tapLayer = $('tapLayer');
-          this.osdBtn = $('osdBtn');
+          this.loading = $('customLoading');
+          this.controls = $('customControls');
+          this.playBtn = $('playBtn');
           this.fsBtn = $('fsBtn');
-          this.fsCurtain = $('fsCurtain');
-          this.pageCurtain = $('pageCurtain');
           this.statusText = $('statusText');
-
-          this.hls = null;
-          this.autoHideTimer = null;
-          this.userPaused = false;
-          this.isPlaying = false;
           
-          // Keep-alive per mobile
-          this.keepAliveInterval = null;
-          this.lastPlayTime = 0;
+          this.player = null;
+          this.hideTimer = null;
+          this.userPaused = false;
 
           this.init();
         }
 
         init() {
-          this.setupPlayer();
+          this.setupVideoJs();
           this.bindEvents();
           this.createParticles();
-          
-          // Avvia keep-alive su mobile
-          if (isMobile) {
-            this.startKeepAlive();
-          }
         }
 
-        /* === HLS SETUP === */
-        setupPlayer() {
-          // Safari/iOS = HLS nativo
-          if (this.video.canPlayType('application/vnd.apple.mpegurl')) {
-            console.log('[Player] Using native HLS');
-            this.setupNativeHLS();
-          } else if (typeof Hls !== 'undefined' && Hls.isSupported()) {
-            console.log('[Player] Using HLS.js');
-            this.setupHlsJs();
-          } else {
-            this.showError('Browser non supportato');
-          }
-        }
-
-        setupNativeHLS() {
-          this.status('Connessione...');
-          this.video.src = STREAM_URL;
-          
-          // Safari: ascolta loadedmetadata per sapere quando è pronto
-          this.video.addEventListener('loadedmetadata', () => {
-            this.status('Avvio...');
-            this.play();
-          }, { once: true });
-        }
-
-        setupHlsJs() {
+        setupVideoJs() {
           this.status('Connessione...');
 
-          if (this.hls) {
-            this.hls.destroy();
-            this.hls = null;
-          }
+          // Configurazione Video.js ottimizzata per live
+          this.player = videojs('liveVideo', {
+            controls: false,
+            autoplay: true,
+            muted: true,
+            preload: 'auto',
+            fluid: false,
+            fill: true,
+            liveui: true,
+            liveTracker: {
+              trackingThreshold: 0,
+              liveTolerance: 10
+            },
+            html5: {
+              vhs: {
+                // Configurazione VHS (Video.js HTTP Streaming)
+                overrideNative: !videojs.browser.IS_SAFARI,
+                enableLowInitialPlaylist: true,
+                smoothQualityChange: true,
+                fastQualityChange: true,
+                allowSeeksWithinUnsafeLiveWindow: true,
+                // Configurazione per live
+                experimentalBufferBasedABR: true,
+                useDevicePixelRatio: true,
+                limitRenditionByPlayerDimensions: true,
+                // Buffer settings
+                bandwidth: 5000000,
+                maxPlaylistRetries: 10,
+                useBandwidthFromLocalStorage: true
+              },
+              nativeAudioTracks: false,
+              nativeVideoTracks: false
+            },
+            sources: [{
+              src: 'https://live.webcammontefalconedivalfortore.it/memfs/58e0bcbe-f1bd-4c8b-85f7-b4566a3e5392.m3u8',
+              type: 'application/x-mpegURL'
+            }]
+          });
 
-          this.hls = new Hls(HLS_CONFIG);
-
-          // Manifest pronto = possiamo iniziare
-          this.hls.on(Hls.Events.MANIFEST_PARSED, (e, data) => {
-            console.log('[HLS] Manifest parsed, levels:', data.levels.length);
+          // Eventi Video.js
+          this.player.ready(() => {
+            console.log('[VideoJS] Ready');
             this.status('Avvio...');
-            this.play();
-          });
-
-          // Primo frammento bufferizzato
-          this.hls.on(Hls.Events.FRAG_BUFFERED, () => {
-            // Controlla se possiamo mostrare il video
-            if (this.video.readyState >= 3) {
-              this.setReady(true);
-            }
-          });
-
-          // Errori
-          this.hls.on(Hls.Events.ERROR, (e, data) => {
-            console.warn('[HLS] Error:', data.type, data.details, data.fatal);
             
-            if (data.fatal) {
-              this.handleFatalError(data);
-            } else {
-              // Errori non fatali: HLS.js recupera da solo
-              if (data.details === 'bufferStalledError') {
-                this.status('Buffering...');
-              }
+            // Tenta autoplay
+            const playPromise = this.player.play();
+            if (playPromise) {
+              playPromise.catch(() => {
+                console.log('[VideoJS] Autoplay blocked');
+                this.status('Tap per avviare');
+                this.showControls();
+              });
             }
           });
 
-          this.hls.loadSource(STREAM_URL);
-          this.hls.attachMedia(this.video);
-        }
+          this.player.on('loadeddata', () => {
+            console.log('[VideoJS] Loaded data');
+          });
 
-        handleFatalError(data) {
-          switch (data.type) {
-            case Hls.ErrorTypes.NETWORK_ERROR:
-              this.status('Riconnessione...');
-              // Riprova a caricare
+          this.player.on('canplay', () => {
+            console.log('[VideoJS] Can play');
+          });
+
+          this.player.on('playing', () => {
+            console.log('[VideoJS] Playing');
+            this.setPlaying(true);
+            this.hideLoading();
+          });
+
+          this.player.on('pause', () => {
+            console.log('[VideoJS] Pause, userPaused:', this.userPaused);
+            this.setPlaying(false);
+            
+            // Se non è stato l'utente, riprova
+            if (!this.userPaused && !document.hidden) {
               setTimeout(() => {
-                if (this.hls) {
-                  this.hls.startLoad();
+                if (this.player.paused() && !this.userPaused) {
+                  console.log('[VideoJS] Auto-resume');
+                  this.player.play();
                 }
-              }, 1000);
-              break;
-              
-            case Hls.ErrorTypes.MEDIA_ERROR:
-              this.status('Recupero...');
-              if (this.hls) {
-                this.hls.recoverMediaError();
-              }
-              break;
-              
-            default:
-              this.status('Errore');
-              // Ricrea tutto il player
-              setTimeout(() => this.setupPlayer(), 2000);
-          }
-        }
-
-        play() {
-          this.userPaused = false;
-          this.lastPlayTime = Date.now();
-          
-          const playPromise = this.video.play();
-          
-          if (playPromise) {
-            playPromise.then(() => {
-              console.log('[Player] Playing');
-              this.isPlaying = true;
-            }).catch(err => {
-              console.warn('[Player] Autoplay blocked:', err.message);
-              this.status('Tap per avviare');
-              this.showControls();
-              this.setPaused(true);
-            });
-          }
-        }
-
-        status(t) {
-          if (this.statusText) this.statusText.textContent = t;
-        }
-
-        showError(msg) {
-          this.status(msg);
-          this.wrapper.classList.add('is-offline');
-        }
-
-        /* === KEEP-ALIVE per Mobile === */
-        startKeepAlive() {
-          // Controlla ogni 2 secondi se il video è ancora in riproduzione
-          this.keepAliveInterval = setInterval(() => {
-            if (this.userPaused || document.hidden) return;
-            
-            // Se il video è in pausa ma non dovrebbe esserlo
-            if (this.video.paused && this.isPlaying) {
-              console.log('[KeepAlive] Video paused unexpectedly, resuming...');
-              this.video.play().catch(() => {});
+              }, 500);
             }
-            
-            // Se il video è bloccato (currentTime non cambia)
-            const now = Date.now();
-            if (!this.video.paused && this.lastPlayTime > 0) {
-              const timeSincePlay = now - this.lastPlayTime;
-              
-              // Se sono passati più di 5 secondi e readyState è basso
-              if (timeSincePlay > 5000 && this.video.readyState < 3) {
-                console.log('[KeepAlive] Video stalled, restarting...');
-                this.restartStream();
-              }
-            }
-          }, 2000);
-        }
+          });
 
-        restartStream() {
-          this.setReady(false);
-          this.status('Riconnessione...');
-          
-          if (this.hls) {
-            this.hls.stopLoad();
+          this.player.on('waiting', () => {
+            console.log('[VideoJS] Waiting/buffering');
+            this.status('Buffering...');
+          });
+
+          this.player.on('error', (e) => {
+            console.error('[VideoJS] Error:', this.player.error());
+            this.status('Riconnessione...');
+            
+            // Riprova dopo 2 secondi
             setTimeout(() => {
-              if (this.hls) {
-                this.hls.startLoad(-1); // -1 = live edge
-                this.play();
-              }
-            }, 500);
-          } else {
-            // Native HLS
-            this.video.load();
-            this.play();
-          }
+              this.player.src({
+                src: 'https://live.webcammontefalconedivalfortore.it/memfs/58e0bcbe-f1bd-4c8b-85f7-b4566a3e5392.m3u8',
+                type: 'application/x-mpegURL'
+              });
+              this.player.play();
+            }, 2000);
+          });
+
+          this.player.on('stalled', () => {
+            console.log('[VideoJS] Stalled');
+          });
         }
 
-        /* === UI === */
-        setReady(ready) {
-          if (ready) {
-            this.wrapper.classList.add('is-ready');
-            this.wrapper.classList.remove('is-offline');
-          } else {
-            this.wrapper.classList.remove('is-ready');
-          }
+        status(text) {
+          if (this.statusText) this.statusText.textContent = text;
         }
 
-        setPaused(paused) {
-          this.wrapper.classList.toggle('is-paused', paused);
-          this.isPlaying = !paused;
+        hideLoading() {
+          this.loading?.classList.add('hidden');
+        }
+
+        showLoading() {
+          this.loading?.classList.remove('hidden');
+        }
+
+        setPlaying(playing) {
+          this.wrapper.classList.toggle('is-playing', playing);
         }
 
         showControls() {
-          this.wrapper.classList.add('controls-visible');
-          clearTimeout(this.autoHideTimer);
-          this.autoHideTimer = setTimeout(() => {
-            if (!this.video.paused) {
-              this.wrapper.classList.remove('controls-visible');
+          this.controls.classList.add('visible');
+          clearTimeout(this.hideTimer);
+          
+          this.hideTimer = setTimeout(() => {
+            if (!this.player.paused()) {
+              this.controls.classList.remove('visible');
             }
           }, 4000);
         }
 
+        hideControls() {
+          this.controls.classList.remove('visible');
+          clearTimeout(this.hideTimer);
+        }
+
         toggleControls() {
-          if (this.wrapper.classList.contains('controls-visible')) {
-            this.wrapper.classList.remove('controls-visible');
-            clearTimeout(this.autoHideTimer);
+          if (this.controls.classList.contains('visible')) {
+            this.hideControls();
           } else {
             this.showControls();
           }
         }
 
-        togglePlayPause() {
-          if (this.video.paused) {
+        togglePlay() {
+          if (this.player.paused()) {
             this.userPaused = false;
-            this.status('Ripresa...');
-            this.play();
+            this.player.play();
           } else {
             this.userPaused = true;
-            this.video.pause();
+            this.player.pause();
           }
           this.showControls();
         }
 
-        /* === Fullscreen === */
         toggleFullscreen() {
-          this.fsCurtain?.classList.add('on');
-          this.pageCurtain?.classList.add('on');
-
           if (document.fullscreenElement || document.webkitFullscreenElement) {
             (document.exitFullscreen || document.webkitExitFullscreen).call(document);
           } else {
@@ -885,126 +764,62 @@
           } else {
             screen.orientation?.unlock?.();
           }
-
-          setTimeout(() => {
-            this.fsCurtain?.classList.remove('on');
-            this.pageCurtain?.classList.remove('on');
-          }, 200);
         }
 
-        /* === Events === */
         bindEvents() {
-          this.tapLayer?.addEventListener('click', () => this.toggleControls());
-          
-          this.osdBtn?.addEventListener('click', e => {
-            e.stopPropagation();
-            this.togglePlayPause();
+          // Tap sul video = toggle controls
+          this.wrapper.addEventListener('click', (e) => {
+            if (e.target === this.playBtn || e.target === this.fsBtn || 
+                e.target.closest('.play-btn') || e.target.closest('.fs-btn')) {
+              return;
+            }
+            this.toggleControls();
           });
 
-          this.fsBtn?.addEventListener('click', e => {
+          // Play button
+          this.playBtn?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.togglePlay();
+          });
+
+          // Fullscreen button
+          this.fsBtn?.addEventListener('click', (e) => {
             e.stopPropagation();
             this.toggleFullscreen();
           });
 
-          // === VIDEO EVENTS ===
-          
-          // canplay = ha abbastanza dati per iniziare
-          this.video.addEventListener('canplay', () => {
-            console.log('[Video] canplay');
-            this.setReady(true);
-          });
+          // Fullscreen change
+          document.addEventListener('fullscreenchange', () => this.onFullscreenChange());
+          document.addEventListener('webkitfullscreenchange', () => this.onFullscreenChange());
 
-          // playing = sta effettivamente riproducendo
-          this.video.addEventListener('playing', () => {
-            console.log('[Video] playing');
-            this.setPaused(false);
-            this.setReady(true);
-            this.lastPlayTime = Date.now();
-          });
-
-          // pause
-          this.video.addEventListener('pause', () => {
-            console.log('[Video] pause, userPaused:', this.userPaused);
-            this.setPaused(true);
-            
-            // Se NON è stato l'utente a mettere in pausa, riprova
-            if (!this.userPaused && !document.hidden) {
-              setTimeout(() => {
-                if (this.video.paused && !this.userPaused) {
-                  console.log('[Video] Auto-resuming...');
-                  this.play();
-                }
-              }, 300);
-            } else {
-              this.showControls();
-            }
-          });
-
-          // waiting = buffering
-          this.video.addEventListener('waiting', () => {
-            console.log('[Video] waiting/buffering');
-            // Non nascondere il video, solo log
-          });
-
-          // stalled = dati non arrivano
-          this.video.addEventListener('stalled', () => {
-            console.log('[Video] stalled');
-          });
-
-          // error
-          this.video.addEventListener('error', (e) => {
-            console.error('[Video] error:', e);
-            this.setReady(false);
-            this.status('Errore');
-            
-            // Riprova
-            setTimeout(() => this.restartStream(), 2000);
-          });
-
-          // === VISIBILITY ===
+          // Visibility change
           document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible') {
-              console.log('[Visibility] Tab visible');
-              
-              if (!this.userPaused) {
-                // Tab tornata visibile: riprendi se necessario
-                if (this.video.paused) {
-                  this.play();
-                }
-                
-                // Su mobile, ricrea lo stream per sicurezza
-                if (isMobile) {
-                  setTimeout(() => {
-                    if (this.video.readyState < 3) {
-                      this.restartStream();
-                    }
-                  }, 1000);
-                }
-              }
+            if (document.visibilityState === 'visible' && !this.userPaused) {
+              console.log('[Visibility] Tab visible, resuming...');
+              this.player.play();
             }
           });
 
           // Online
           window.addEventListener('online', () => {
-            console.log('[Network] Online');
-            this.restartStream();
+            console.log('[Network] Back online');
+            this.player.src({
+              src: 'https://live.webcammontefalconedivalfortore.it/memfs/58e0bcbe-f1bd-4c8b-85f7-b4566a3e5392.m3u8',
+              type: 'application/x-mpegURL'
+            });
+            this.player.play();
           });
-
-          // Fullscreen
-          document.addEventListener('fullscreenchange', () => this.onFullscreenChange());
-          document.addEventListener('webkitfullscreenchange', () => this.onFullscreenChange());
         }
 
-        /* === Particelle === */
         createParticles() {
           if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
 
           const container = $('particlesContainer');
           if (!container) return;
 
-          const isMobileDevice = window.innerWidth < 769;
-          const snowCount = isMobileDevice ? 25 : 45;
-          const emberCount = isMobileDevice ? 10 : 20;
+          const isMobile = window.innerWidth < 769;
+          const snowCount = isMobile ? 25 : 45;
+          const emberCount = isMobile ? 10 : 20;
 
           const fragment = document.createDocumentFragment();
           
@@ -1030,9 +845,9 @@
 
       // Start
       if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => new LivePlayer());
+        document.addEventListener('DOMContentLoaded', () => new WebcamPlayer());
       } else {
-        new LivePlayer();
+        new WebcamPlayer();
       }
     })();
   </script>
