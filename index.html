@@ -38,10 +38,11 @@
   <link rel="preconnect" href="https://live.webcammontefalconedivalfortore.it" crossorigin>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   
-  <!-- Preload HLS.js per caricamento più veloce -->
+  <!-- Preload critico -->
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/hls.js@1.5.7/dist/hls.min.js" as="script">
+  <link rel="preload" href="https://www.webcammontefalconedivalfortore.it/p.png" as="image">
   
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&display=swap" rel="stylesheet">
 
   <style>
     :root {
@@ -49,14 +50,13 @@
       --blur-play: 5px;
       --color-bg: #000;
       --color-live: #ff2b2b;
+      --color-live-off: #666;
       --color-white: #fff;
-      --color-overlay: rgba(0, 0, 0, 0.35);
       --color-border: rgba(255, 255, 255, 0.18);
       --radius-pill: 999px;
       --radius-video: 15px;
       --transition-fast: 150ms ease;
       --transition-medium: 260ms ease;
-      --transition-slow: 500ms ease;
       --shadow-glow: 0 0 30px rgba(255, 220, 150, 0.2);
       --shadow-deep: 0 40px 80px rgba(0, 0, 0, 0.95);
       --shadow-button: 0 10px 28px rgba(0, 0, 0, 0.28);
@@ -76,7 +76,6 @@
       overscroll-behavior: none;
       background-color: var(--color-bg);
       -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
     }
 
     @font-face {
@@ -94,7 +93,6 @@
       align-items: center;
       position: relative;
       z-index: 20;
-      transition: all var(--transition-slow);
     }
 
     @media (min-width: 1024px) {
@@ -104,34 +102,37 @@
       }
     }
 
+    /* Background - SEMPLIFICATO per mobile */
     #bg-static {
       position: absolute;
-      top: -10%;
-      left: -10%;
-      width: 120%;
-      height: 120%;
+      inset: 0;
       background-image: url("1a.webp");
       background-size: cover;
       background-position: center;
       z-index: 0;
-      filter: brightness(0.65) contrast(1.15) saturate(1.1);
-      animation: driftingWorld 80s ease-in-out infinite alternate;
+      filter: brightness(0.65);
       pointer-events: none;
-      will-change: transform;
     }
 
-    @keyframes driftingWorld {
+    /* Animazione BG solo su desktop */
+    @media (min-width: 769px) {
+      #bg-static {
+        top: -5%;
+        left: -5%;
+        width: 110%;
+        height: 110%;
+        animation: driftBg 60s ease-in-out infinite alternate;
+        will-change: transform;
+      }
+    }
+
+    @keyframes driftBg {
       0% { transform: translate(0, 0) scale(1); }
-      100% { transform: translate(-2%, 2%) scale(1.05); }
+      100% { transform: translate(-2%, 1%) scale(1.03); }
     }
 
     .municipality-logo,
-    .festive-message,
-    .warm-flicker,
-    .vignette,
-    .particles-container {
-      transition: opacity var(--transition-slow);
-      opacity: 1;
+    .festive-message {
       pointer-events: none;
     }
 
@@ -156,21 +157,7 @@
       width: 100%;
     }
 
-    .warm-flicker {
-      position: absolute;
-      inset: 0;
-      background: radial-gradient(circle, rgba(255, 180, 50, 0.15), transparent 80%);
-      z-index: 2;
-      pointer-events: none;
-      mix-blend-mode: overlay;
-      animation: firePulse 4s ease-in-out infinite alternate;
-    }
-
-    @keyframes firePulse {
-      0% { opacity: 0.1; }
-      100% { opacity: 0.5; }
-    }
-
+    /* Vignette - SOLO CSS, niente animazioni */
     .vignette {
       position: absolute;
       inset: 0;
@@ -179,12 +166,14 @@
       pointer-events: none;
     }
 
+    /* Particelle - Ottimizzate per mobile */
     .particles-container {
       position: absolute;
       inset: 0;
       pointer-events: none;
       z-index: 5;
       overflow: hidden;
+      contain: strict; /* Isola il rendering */
     }
 
     .snowflake {
@@ -192,46 +181,37 @@
       top: -10px;
       background: white;
       border-radius: 50%;
-      opacity: 0.9;
-      box-shadow: 0 0 3px white;
+      opacity: 0.8;
       will-change: transform;
+      backface-visibility: hidden;
+      transform: translateZ(0); /* Force GPU */
+    }
+
+    @keyframes fall {
+      0% { transform: translate3d(0, -10vh, 0); }
+      100% { transform: translate3d(0, 110vh, 0); }
     }
 
     .ember {
       position: absolute;
       bottom: -20px;
-      background: #ffcc00;
+      background: #ffaa00;
       border-radius: 50%;
       opacity: 0;
-      filter: blur(2px);
       will-change: transform, opacity;
+      backface-visibility: hidden;
+      transform: translateZ(0);
     }
 
-    @keyframes fall {
-      0% { transform: translate(0, -10vh); }
-      100% { transform: translate(15vw, 110vh); }
+    @keyframes rise {
+      0% { transform: translate3d(0, 0, 0); opacity: 0; }
+      15% { opacity: 0.7; }
+      100% { transform: translate3d(10vw, -100vh, 0); opacity: 0; }
     }
 
-    @keyframes riseRight {
-      0% { transform: translateY(0) translateX(0); opacity: 0; }
-      20% { opacity: 0.8; }
-      100% { transform: translateY(-90vh) translateX(15vw); opacity: 0; }
-    }
-
-    @keyframes riseLeft {
-      0% { transform: translateY(0) translateX(0); opacity: 0; }
-      20% { opacity: 0.8; }
-      100% { transform: translateY(-90vh) translateX(-15vw); opacity: 0; }
-    }
-
-    @keyframes riseZigZag {
-      0% { transform: translateY(0) translateX(0); opacity: 0; }
-      25% { transform: translateY(-20vh) translateX(5vw); opacity: 0.8; }
-      75% { transform: translateY(-60vh) translateX(-5vw); opacity: 0.4; }
-      100% { transform: translateY(-90vh) translateX(0); opacity: 0; }
-    }
-
-    /* Video Player */
+    /* =====================================================
+       VIDEO PLAYER
+       ===================================================== */
     .video-wrapper {
       position: relative;
       width: auto;
@@ -244,7 +224,6 @@
       border: 1px solid var(--color-border);
       z-index: 30;
       pointer-events: auto;
-      transition: all 0.3s ease-out;
     }
 
     .video-wrapper:fullscreen,
@@ -271,7 +250,7 @@
       cursor: default;
     }
 
-    /* Loading Overlay */
+    /* Loading Overlay - Usa timeupdate per nascondere, non playing */
     .loading-overlay {
       position: absolute;
       inset: 0;
@@ -281,16 +260,16 @@
       align-items: center;
       justify-content: center;
       background: var(--color-bg);
-      opacity: 1;
-      transition: opacity var(--transition-medium), visibility 0ms linear 0ms;
       pointer-events: none;
+      opacity: 1;
       visibility: visible;
+      transition: opacity 200ms ease, visibility 0ms linear 0ms;
     }
 
     .video-wrapper.is-ready .loading-overlay {
       opacity: 0;
       visibility: hidden;
-      transition: opacity var(--transition-medium), visibility 0ms linear 260ms;
+      transition: opacity 200ms ease, visibility 0ms linear 200ms;
     }
 
     .loading-overlay .preview {
@@ -299,7 +278,7 @@
       width: 100%;
       height: 100%;
       object-fit: cover;
-      filter: brightness(0.82) contrast(1.08);
+      filter: brightness(0.8);
       opacity: 0.85;
     }
 
@@ -312,13 +291,12 @@
     }
 
     .loading-overlay .spinner {
-      width: 46px;
-      height: 46px;
-      border-radius: var(--radius-pill);
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
       border: 3px solid rgba(255, 255, 255, 0.25);
-      border-top-color: rgba(255, 255, 255, 0.92);
-      animation: spin 0.9s linear infinite;
-      box-shadow: var(--shadow-button);
+      border-top-color: rgba(255, 255, 255, 0.9);
+      animation: spin 0.8s linear infinite;
     }
 
     .loading-overlay .status-text {
@@ -331,7 +309,6 @@
     }
 
     @keyframes spin {
-      from { transform: rotate(0deg); }
       to { transform: rotate(360deg); }
     }
 
@@ -371,23 +348,11 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: opacity var(--transition-fast), transform var(--transition-fast);
+      transition: transform var(--transition-fast);
     }
 
-    .fs-btn:hover {
-      transform: scale(1.05);
-    }
-
-    .fs-btn:active {
-      transform: scale(0.95);
-    }
-
-    .fs-btn svg {
-      width: 20px;
-      height: 20px;
-      fill: var(--color-white);
-    }
-
+    .fs-btn:active { transform: scale(0.92); }
+    .fs-btn svg { width: 20px; height: 20px; fill: var(--color-white); }
     .fs-btn .icon-exit { display: none; }
     .video-wrapper.is-fullscreen .fs-btn .icon-enter { display: none; }
     .video-wrapper.is-fullscreen .fs-btn .icon-exit { display: block; }
@@ -412,7 +377,6 @@
       text-transform: uppercase;
       background: rgba(0, 0, 0, 0.18);
       border: 1px solid var(--color-border);
-      box-shadow: var(--shadow-button);
       backdrop-filter: blur(var(--blur-ui));
       -webkit-backdrop-filter: blur(var(--blur-ui));
       pointer-events: none;
@@ -427,17 +391,16 @@
       animation: livePulse 1.6s infinite;
     }
 
-    /* Stato offline/errore */
+    .video-wrapper.is-paused .live-dot,
     .video-wrapper.is-offline .live-dot {
-      background: #888;
+      background: var(--color-live-off);
       box-shadow: none;
       animation: none;
     }
 
     @keyframes livePulse {
-      0% { opacity: 1; }
-      50% { opacity: 0.45; }
-      100% { opacity: 1; }
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
     }
 
     /* OSD Play/Pause */
@@ -452,7 +415,6 @@
     }
 
     .osd-chip {
-      position: relative;
       width: 84px;
       height: 84px;
       border-radius: var(--radius-pill);
@@ -461,17 +423,15 @@
       justify-content: center;
       cursor: pointer;
       appearance: none;
-      -webkit-appearance: none;
       padding: 0;
       margin: 0;
-      background: rgba(0, 0, 0, 0.25);
+      background: rgba(0, 0, 0, 0.3);
       border: 1px solid rgba(255, 255, 255, 0.22);
-      backdrop-filter: blur(var(--blur-play)) brightness(1.05) saturate(1.1);
-      -webkit-backdrop-filter: blur(var(--blur-play)) brightness(1.05) saturate(1.1);
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+      backdrop-filter: blur(var(--blur-play));
+      -webkit-backdrop-filter: blur(var(--blur-play));
       opacity: 0;
       transform: scale(0.9);
-      transition: opacity 140ms ease, transform 140ms ease;
+      transition: opacity 120ms ease, transform 120ms ease;
       pointer-events: none;
     }
 
@@ -481,19 +441,12 @@
       pointer-events: auto;
     }
 
-    .osd-chip:hover {
-      transform: scale(1.05);
-    }
-
-    .osd-chip:active {
-      transform: scale(0.95);
-    }
+    .osd-chip:active { transform: scale(0.92); }
 
     .osd-icon {
       width: 40px;
       height: 40px;
       fill: var(--color-white);
-      opacity: 0.95;
       filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
     }
 
@@ -502,34 +455,20 @@
     .video-wrapper.is-paused .osd-icon.pause { display: none; }
 
     /* Curtains */
-    #pageCurtain,
-    .fs-curtain {
+    #pageCurtain, .fs-curtain {
       background: var(--color-bg);
       opacity: 0;
       pointer-events: none;
-      transition: opacity 220ms ease;
-      will-change: opacity;
+      transition: opacity 200ms ease;
     }
 
-    #pageCurtain {
-      position: fixed;
-      inset: 0;
-      z-index: 9999;
-    }
+    #pageCurtain { position: fixed; inset: 0; z-index: 9999; }
+    .fs-curtain { position: absolute; inset: 0; z-index: 200; border-radius: inherit; }
+    #pageCurtain.on, .fs-curtain.on { opacity: 1; }
 
-    .fs-curtain {
-      position: absolute;
-      inset: 0;
-      z-index: 200;
-      border-radius: inherit;
-    }
-
-    #pageCurtain.on,
-    .fs-curtain.on {
-      opacity: 1;
-    }
-
-    /* Responsive */
+    /* =====================================================
+       RESPONSIVE
+       ===================================================== */
     @media (max-width: 768px) and (orientation: portrait) {
       #main-container {
         justify-content: flex-start;
@@ -552,47 +491,17 @@
         height: auto;
       }
 
-      #bg-static {
-        animation: driftingWorldMobile 35s ease-in-out infinite alternate;
-      }
-
-      .osd-chip {
-        width: 68px;
-        height: 68px;
-      }
-
-      .osd-icon {
-        width: 32px;
-        height: 32px;
-      }
-
-      .fs-btn {
-        width: 38px;
-        height: 38px;
-      }
-
-      .live-badge {
-        padding: 6px 10px;
-        font-size: 10px;
-        gap: 6px;
-      }
-
-      .live-dot {
-        width: 6px;
-        height: 6px;
-      }
-    }
-
-    @keyframes driftingWorldMobile {
-      0% { transform: translate(0, 0) scale(1); }
-      100% { transform: translate(-3%, 0) scale(1.15); }
+      .osd-chip { width: 68px; height: 68px; }
+      .osd-icon { width: 32px; height: 32px; }
+      .fs-btn { width: 38px; height: 38px; }
+      .live-badge { padding: 6px 10px; font-size: 10px; gap: 6px; }
+      .live-dot { width: 6px; height: 6px; }
     }
 
     @media screen and (orientation: landscape) and (max-height: 600px) {
       .municipality-logo,
       .festive-message,
       #bg-static,
-      .warm-flicker,
       .vignette,
       .particles-container {
         display: none !important;
@@ -615,24 +524,16 @@
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
         animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
       }
-
-      .particles-container {
-        display: none !important;
-      }
-
-      .loading-overlay .spinner {
-        animation: spin 0.9s linear infinite !important;
-      }
+      .particles-container { display: none !important; }
+      .loading-overlay .spinner { animation: spin 0.8s linear infinite !important; }
     }
   </style>
 </head>
 
 <body>
   <div id="bg-static"></div>
-  <div class="warm-flicker"></div>
   <div class="vignette"></div>
   <div class="particles-container" id="particlesContainer"></div>
 
@@ -675,29 +576,21 @@
       <div class="tap-layer" id="tapLayer"></div>
 
       <div class="live-badge">
-        <span class="live-dot"></span>
+        <span class="live-dot" id="liveDot"></span>
         <span>LIVE</span>
       </div>
 
       <div class="osd">
         <button class="osd-chip" id="osdBtn" type="button" aria-label="Play/Pausa">
-          <svg class="osd-icon play" viewBox="0 0 24 24">
-            <path d="M8 5v14l11-7z"/>
-          </svg>
-          <svg class="osd-icon pause" viewBox="0 0 24 24">
-            <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
-          </svg>
+          <svg class="osd-icon play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          <svg class="osd-icon pause" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
         </button>
       </div>
 
       <div class="control-bar">
         <button class="fs-btn" id="fsBtn" type="button" aria-label="Schermo intero">
-          <svg class="icon-enter" viewBox="0 0 24 24">
-            <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
-          </svg>
-          <svg class="icon-exit" viewBox="0 0 24 24">
-            <path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/>
-          </svg>
+          <svg class="icon-enter" viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+          <svg class="icon-exit" viewBox="0 0 24 24"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>
         </button>
       </div>
 
@@ -707,71 +600,54 @@
 
   <div id="pageCurtain"></div>
 
-  <!-- HLS.js - Versione stabile -->
   <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.7/dist/hls.min.js"></script>
 
   <script>
     (() => {
       'use strict';
 
-      /* =====================================================
-         CONFIGURAZIONE HLS.js OTTIMIZZATA PER LIVE
-         ===================================================== */
-      const HLS_CONFIG = {
-        // === LIVE SYNC ===
-        // Questi parametri gestiscono AUTOMATICAMENTE la sincronizzazione live
-        // Niente più seek manuali!
-        liveSyncDuration: 3,           // Stai 3 secondi dietro al live edge
-        liveMaxLatencyDuration: 8,     // Se superi 8 sec, HLS.js fa catch-up automatico
-        liveDurationInfinity: true,    // Stream infinito (live)
-        
-        // === BUFFERING OTTIMIZZATO ===
-        maxBufferLength: 10,           // Max 10 sec di buffer (riduce memoria)
-        maxMaxBufferLength: 20,        // Hard limit buffer
-        maxBufferSize: 30 * 1000000,   // 30MB max buffer size
-        maxBufferHole: 0.5,            // Tolleranza buchi nel buffer
-        
-        // === STARTUP VELOCE ===
-        startLevel: -1,                // Auto-detect qualità iniziale
-        autoStartLoad: true,           // Inizia subito a caricare
-        startPosition: -1,             // Parti dal live edge
-        
-        // === LATENZA BASSA ===
-        lowLatencyMode: true,          // Modalità bassa latenza
-        backBufferLength: 0,           // Non tenere buffer passato (risparmia RAM)
-        
-        // === RECOVERY ERRORI ===
-        manifestLoadingTimeOut: 8000,  // 8 sec timeout manifest
-        manifestLoadingMaxRetry: 4,    // 4 tentativi manifest
-        levelLoadingTimeOut: 8000,     // 8 sec timeout levels
-        levelLoadingMaxRetry: 4,       // 4 tentativi levels
-        fragLoadingTimeOut: 15000,     // 15 sec timeout frammenti
-        fragLoadingMaxRetry: 6,        // 6 tentativi frammenti
-        
-        // === PERFORMANCE ===
-        enableWorker: true,            // Usa Web Worker (performance)
-        testBandwidth: true,           // Testa banda per ABR
-      };
-
       const STREAM_URL = 'https://live.webcammontefalconedivalfortore.it/memfs/58e0bcbe-f1bd-4c8b-85f7-b4566a3e5392.m3u8';
 
-      const UI_CONFIG = {
-        AUTOHIDE_MS: 4000,
-        READY_DELAY_MS: 300,
+      // Config HLS ottimizzata
+      const HLS_CONFIG = {
+        // Live sync - HLS.js gestisce automaticamente
+        liveSyncDuration: 2,
+        liveMaxLatencyDuration: 6,
+        liveDurationInfinity: true,
+        liveBackBufferLength: 0,
+        
+        // Buffer ridotto per avvio veloce
+        maxBufferLength: 8,
+        maxMaxBufferLength: 15,
+        maxBufferSize: 20 * 1000000,
+        maxBufferHole: 0.3,
+        
+        // Startup
+        startLevel: 0, // Parti dalla qualità più bassa per avvio veloce
+        autoStartLoad: true,
+        startPosition: -1,
+        
+        // Bassa latenza
+        lowLatencyMode: true,
+        backBufferLength: 0,
+        
+        // Timeout e retry
+        manifestLoadingTimeOut: 6000,
+        manifestLoadingMaxRetry: 3,
+        levelLoadingTimeOut: 6000,
+        levelLoadingMaxRetry: 3,
+        fragLoadingTimeOut: 10000,
+        fragLoadingMaxRetry: 4,
+        
+        // Performance
+        enableWorker: true,
+        testBandwidth: true,
       };
 
-      /* =====================================================
-         UTILITIES
-         ===================================================== */
       const $ = id => document.getElementById(id);
-      const isTouchDevice = () => 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
-      /* =====================================================
-         PLAYER CLASS
-         ===================================================== */
       class LivePlayer {
         constructor() {
-          // Elementi DOM
           this.wrapper = $('videoWrapper');
           this.video = $('liveVideo');
           this.tapLayer = $('tapLayer');
@@ -781,12 +657,10 @@
           this.pageCurtain = $('pageCurtain');
           this.statusText = $('statusText');
 
-          // Stato
           this.hls = null;
           this.autoHideTimer = null;
-          this.isTouch = isTouchDevice();
-          this.retryCount = 0;
-          this.maxRetries = 5;
+          this.hasReceivedFrame = false;
+          this.userPaused = false; // IMPORTANTE: traccia se l'utente ha messo in pausa
 
           this.init();
         }
@@ -795,17 +669,13 @@
           this.setupPlayer();
           this.bindEvents();
           this.createParticles();
-          this.hideControls();
         }
 
-        /* =====================================================
-           SETUP PLAYER HLS.js
-           ===================================================== */
         setupPlayer() {
-          // Safari supporta HLS nativamente
+          // Safari = HLS nativo
           if (this.video.canPlayType('application/vnd.apple.mpegurl')) {
             this.setupNativeHLS();
-          } else if (Hls.isSupported()) {
+          } else if (typeof Hls !== 'undefined' && Hls.isSupported()) {
             this.setupHlsJs();
           } else {
             this.showError('Browser non supportato');
@@ -813,214 +683,124 @@
         }
 
         setupNativeHLS() {
-          // Safari - usa HLS nativo
-          this.updateStatus('Connessione...');
+          this.status('Connessione...');
           this.video.src = STREAM_URL;
-          
-          this.video.addEventListener('loadedmetadata', () => {
-            this.updateStatus('Avvio...');
-            this.startPlayback();
-          });
-
-          this.video.addEventListener('error', () => {
-            this.handlePlaybackError('Errore stream');
-          });
+          this.video.load();
         }
 
         setupHlsJs() {
-          this.updateStatus('Inizializzazione...');
+          this.status('Connessione...');
 
-          // Crea istanza HLS con config ottimizzata
+          if (this.hls) {
+            this.hls.destroy();
+          }
+
           this.hls = new Hls(HLS_CONFIG);
 
-          // === EVENT HANDLERS ===
-          
-          // Manifest caricato
-          this.hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
-            console.log(`[HLS] Manifest parsed, ${data.levels.length} quality levels`);
-            this.updateStatus('Avvio stream...');
-            this.startPlayback();
+          this.hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            this.status('Avvio...');
+            this.play();
           });
 
-          // Primo frammento caricato
-          this.hls.on(Hls.Events.FRAG_LOADED, () => {
-            if (!this.wrapper.classList.contains('is-ready')) {
-              this.updateStatus('Buffering...');
+          this.hls.on(Hls.Events.FRAG_BUFFERED, () => {
+            // Frammento nel buffer = possiamo mostrare
+            if (!this.hasReceivedFrame) {
+              this.status('Buffering...');
             }
           });
 
-          // Cambio livello qualità (ABR)
-          this.hls.on(Hls.Events.LEVEL_SWITCHED, (event, data) => {
-            console.log(`[HLS] Quality: ${this.hls.levels[data.level]?.height || 'auto'}p`);
+          this.hls.on(Hls.Events.ERROR, (_, data) => {
+            if (data.fatal) {
+              console.warn('[HLS] Fatal error:', data.type, data.details);
+              
+              if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+                this.status('Riconnessione...');
+                setTimeout(() => this.hls?.startLoad(), 1500);
+              } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+                this.status('Recupero...');
+                this.hls.recoverMediaError();
+              } else {
+                this.status('Errore stream');
+                this.wrapper.classList.add('is-offline');
+              }
+            }
           });
 
-          // Recupero da ritardo live (catch-up automatico)
-          this.hls.on(Hls.Events.LIVE_BACK_BUFFER_REACHED, () => {
-            console.log('[HLS] Live sync: catching up to live edge');
-          });
-
-          // Errori
-          this.hls.on(Hls.Events.ERROR, (event, data) => {
-            this.handleHlsError(data);
-          });
-
-          // Collega al video element
           this.hls.loadSource(STREAM_URL);
           this.hls.attachMedia(this.video);
         }
 
-        handleHlsError(data) {
-          console.warn('[HLS] Error:', data.type, data.details);
-
-          if (data.fatal) {
-            switch (data.type) {
-              case Hls.ErrorTypes.NETWORK_ERROR:
-                this.updateStatus('Errore rete...');
-                console.log('[HLS] Network error, attempting recovery...');
-                this.hls.startLoad();
-                break;
-
-              case Hls.ErrorTypes.MEDIA_ERROR:
-                this.updateStatus('Errore media...');
-                console.log('[HLS] Media error, attempting recovery...');
-                this.hls.recoverMediaError();
-                break;
-
-              default:
-                this.handlePlaybackError('Errore fatale');
-                break;
-            }
-          }
+        play() {
+          this.userPaused = false;
+          const p = this.video.play();
+          if (p) p.catch(() => {
+            this.status('Tap per avviare');
+            this.showControls();
+            this.setPaused(true);
+          });
         }
 
-        startPlayback() {
-          const playPromise = this.video.play();
-
-          if (playPromise !== undefined) {
-            playPromise
-              .then(() => {
-                console.log('[Player] Playback started');
-              })
-              .catch(err => {
-                console.warn('[Player] Autoplay blocked:', err.message);
-                this.updateStatus('Tap per avviare');
-                this.showControls();
-                this.setPausedUI(true);
-              });
-          }
+        status(t) {
+          if (this.statusText) this.statusText.textContent = t;
         }
 
-        handlePlaybackError(message) {
-          console.error('[Player] Error:', message);
-          this.retryCount++;
-
-          if (this.retryCount <= this.maxRetries) {
-            this.updateStatus(`Riconnessione (${this.retryCount}/${this.maxRetries})...`);
-            
-            setTimeout(() => {
-              if (this.hls) {
-                this.hls.destroy();
-              }
-              this.setupPlayer();
-            }, 2000 * this.retryCount); // Backoff esponenziale
-          } else {
-            this.updateStatus('Stream non disponibile');
-            this.wrapper.classList.add('is-offline');
-          }
-        }
-
-        showError(message) {
-          this.updateStatus(message);
+        showError(msg) {
+          this.status(msg);
           this.wrapper.classList.add('is-offline');
         }
 
-        updateStatus(text) {
-          if (this.statusText) {
-            this.statusText.textContent = text;
-          }
-        }
-
-        /* =====================================================
-           UI CONTROLS
-           ===================================================== */
+        /* === UI === */
         setReady(ready) {
           this.wrapper.classList.toggle('is-ready', ready);
-          if (ready) {
-            this.retryCount = 0;
-            this.wrapper.classList.remove('is-offline');
-          }
+          if (ready) this.wrapper.classList.remove('is-offline');
         }
 
-        setPausedUI(paused) {
+        setPaused(paused) {
           this.wrapper.classList.toggle('is-paused', paused);
-          this.osdBtn?.setAttribute('aria-label', paused ? 'Play' : 'Pausa');
         }
 
         showControls() {
           this.wrapper.classList.add('controls-visible');
-          this.scheduleAutoHide();
-        }
-
-        hideControls() {
-          this.wrapper.classList.remove('controls-visible');
-          this.clearAutoHide();
+          clearTimeout(this.autoHideTimer);
+          this.autoHideTimer = setTimeout(() => {
+            if (!this.video.paused) {
+              this.wrapper.classList.remove('controls-visible');
+            }
+          }, 4000);
         }
 
         toggleControls() {
           if (this.wrapper.classList.contains('controls-visible')) {
-            this.hideControls();
+            this.wrapper.classList.remove('controls-visible');
+            clearTimeout(this.autoHideTimer);
           } else {
             this.showControls();
           }
         }
 
-        clearAutoHide() {
-          if (this.autoHideTimer) {
-            clearTimeout(this.autoHideTimer);
-            this.autoHideTimer = null;
-          }
-        }
-
-        scheduleAutoHide() {
-          this.clearAutoHide();
-          this.autoHideTimer = setTimeout(() => {
-            if (!this.video.paused) {
-              this.hideControls();
-            }
-          }, UI_CONFIG.AUTOHIDE_MS);
-        }
-
-        bumpAutoHide() {
-          if (this.wrapper.classList.contains('controls-visible')) {
-            this.scheduleAutoHide();
-          }
-        }
-
         togglePlayPause() {
           if (this.video.paused) {
+            this.userPaused = false;
             this.setReady(false);
-            this.updateStatus('Ripresa...');
-            this.video.play().catch(() => {});
+            this.hasReceivedFrame = false;
+            this.status('Ripresa...');
+            this.play();
           } else {
+            this.userPaused = true; // L'utente ha VOLUTO mettere in pausa
             this.video.pause();
           }
           this.showControls();
         }
 
-        /* =====================================================
-           FULLSCREEN
-           ===================================================== */
+        /* === Fullscreen === */
         toggleFullscreen() {
-          if (this.isTouch) {
-            this.fsCurtain?.classList.add('on');
-            this.pageCurtain?.classList.add('on');
-          }
+          this.fsCurtain?.classList.add('on');
+          this.pageCurtain?.classList.add('on');
 
           if (document.fullscreenElement || document.webkitFullscreenElement) {
             (document.exitFullscreen || document.webkitExitFullscreen).call(document);
           } else {
-            const requestFs = this.wrapper.requestFullscreen || this.wrapper.webkitRequestFullscreen;
-            requestFs?.call(this.wrapper);
+            (this.wrapper.requestFullscreen || this.wrapper.webkitRequestFullscreen)?.call(this.wrapper);
           }
         }
 
@@ -1028,144 +808,147 @@
           const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
           this.wrapper.classList.toggle('is-fullscreen', isFs);
 
-          if (this.isTouch) {
-            if (isFs) {
-              this.lockOrientation('landscape');
-            } else {
-              this.unlockOrientation();
-            }
-
-            setTimeout(() => {
-              this.fsCurtain?.classList.remove('on');
-              this.pageCurtain?.classList.remove('on');
-            }, 220);
-          }
-        }
-
-        async lockOrientation(mode) {
-          try {
-            await screen.orientation?.lock?.(mode);
-          } catch (e) {}
-        }
-
-        unlockOrientation() {
-          try {
+          if (isFs) {
+            screen.orientation?.lock?.('landscape').catch(() => {});
+          } else {
             screen.orientation?.unlock?.();
-          } catch (e) {}
+          }
+
+          setTimeout(() => {
+            this.fsCurtain?.classList.remove('on');
+            this.pageCurtain?.classList.remove('on');
+          }, 200);
         }
 
-        /* =====================================================
-           EVENT BINDING
-           ===================================================== */
+        /* === Events === */
         bindEvents() {
-          // Tap layer
           this.tapLayer?.addEventListener('click', () => this.toggleControls());
-
-          // Movimento = mostra controlli
-          ['pointermove', 'touchstart'].forEach(evt => {
-            this.wrapper.addEventListener(evt, () => this.bumpAutoHide(), { passive: true });
-          });
-
-          // Play/Pause button
+          
           this.osdBtn?.addEventListener('click', e => {
             e.stopPropagation();
             this.togglePlayPause();
           });
 
-          // Fullscreen button
           this.fsBtn?.addEventListener('click', e => {
             e.stopPropagation();
             this.toggleFullscreen();
           });
 
-          // Video events
+          // === VIDEO EVENTS ===
+          
+          // TIMEUPDATE: il modo più affidabile per sapere che ci sono frame
+          this.video.addEventListener('timeupdate', () => {
+            if (!this.hasReceivedFrame && this.video.currentTime > 0) {
+              this.hasReceivedFrame = true;
+              this.setReady(true);
+              console.log('[Player] First frame received');
+            }
+          });
+
           this.video.addEventListener('playing', () => {
-            this.setPausedUI(false);
-            setTimeout(() => this.setReady(true), UI_CONFIG.READY_DELAY_MS);
+            this.setPaused(false);
           });
 
           this.video.addEventListener('pause', () => {
-            this.setPausedUI(true);
-            this.showControls();
+            this.setPaused(true);
+            
+            // Se l'utente NON ha messo in pausa volontariamente, riprova
+            if (!this.userPaused && !document.hidden) {
+              console.log('[Player] Unexpected pause, resuming...');
+              setTimeout(() => {
+                if (this.video.paused && !this.userPaused) {
+                  this.play();
+                }
+              }, 500);
+            } else {
+              this.showControls();
+            }
           });
 
           this.video.addEventListener('waiting', () => {
-            // Buffering - HLS.js gestisce automaticamente
+            // Il video sta bufferando, ma non nascondere se già ready
             console.log('[Player] Buffering...');
           });
 
           this.video.addEventListener('stalled', () => {
-            console.log('[Player] Stalled, waiting for data...');
+            console.log('[Player] Stalled');
+            // Non fare nulla, HLS.js gestisce
           });
 
-          // Visibility change - riconnetti se necessario
+          this.video.addEventListener('error', () => {
+            console.error('[Player] Video error');
+            this.setReady(false);
+            this.hasReceivedFrame = false;
+            this.status('Riconnessione...');
+            
+            setTimeout(() => {
+              if (this.hls) {
+                this.hls.startLoad();
+              } else {
+                this.video.load();
+              }
+              this.play();
+            }, 2000);
+          });
+
+          // === VISIBILITY ===
           document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible' && !this.video.paused) {
-              // HLS.js gestisce automaticamente il catch-up
-              // Niente da fare qui!
-              console.log('[Player] Tab visible, HLS.js will sync automatically');
+            if (document.visibilityState === 'visible') {
+              // Tab tornata visibile
+              if (!this.userPaused) {
+                console.log('[Player] Tab visible, checking playback...');
+                // Se era in pausa (browser l'ha fermato), riprendi
+                if (this.video.paused) {
+                  this.play();
+                }
+                // HLS.js gestisce il sync automaticamente
+              }
             }
           });
 
-          // Online/Offline
+          // Online
           window.addEventListener('online', () => {
-            console.log('[Player] Back online');
-            if (this.hls) {
-              this.hls.startLoad();
-            }
+            console.log('[Player] Online');
+            if (this.hls) this.hls.startLoad();
           });
 
-          // Fullscreen change
+          // Fullscreen
           document.addEventListener('fullscreenchange', () => this.onFullscreenChange());
           document.addEventListener('webkitfullscreenchange', () => this.onFullscreenChange());
         }
 
-        /* =====================================================
-           PARTICELLE
-           ===================================================== */
+        /* === Particelle ottimizzate === */
         createParticles() {
-          if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
-            return;
-          }
+          if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
 
           const container = $('particlesContainer');
           if (!container) return;
 
-          const isMobile = window.innerWidth < 768;
-          const snowCount = isMobile ? 35 : 70;
-          const emberCount = isMobile ? 15 : 30;
-          const speedMod = isMobile ? 1.5 : 1;
+          const isMobile = window.innerWidth < 769;
+          const snowCount = isMobile ? 25 : 45;
+          const emberCount = isMobile ? 10 : 20;
 
           const fragment = document.createDocumentFragment();
-
-          // Neve
+          
+          // Fiocchi di neve
           for (let i = 0; i < snowCount; i++) {
             const flake = document.createElement('div');
             flake.className = 'snowflake';
-            const size = Math.random() * 3 + 2;
-            flake.style.cssText = `
-              width: ${size}px;
-              height: ${size}px;
-              left: ${Math.random() * 120 - 10}vw;
-              animation: fall ${(Math.random() * 4 + 4) * speedMod}s linear infinite;
-              animation-delay: -${Math.random() * 5}s;
-            `;
+            const size = Math.random() * 2.5 + 1.5;
+            const duration = Math.random() * 6 + 6;
+            const delay = Math.random() * -10;
+            flake.style.cssText = `width:${size}px;height:${size}px;left:${Math.random()*100}vw;animation:fall ${duration}s linear infinite ${delay}s`;
             fragment.appendChild(flake);
           }
 
-          // Embers
-          const anims = ['riseRight', 'riseLeft', 'riseZigZag'];
+          // Embers (braci)
           for (let i = 0; i < emberCount; i++) {
             const ember = document.createElement('div');
             ember.className = 'ember';
-            const size = Math.random() * 4 + 3;
-            ember.style.cssText = `
-              width: ${size}px;
-              height: ${size}px;
-              left: ${Math.random() * 100}vw;
-              animation: ${anims[Math.floor(Math.random() * 3)]} ${(Math.random() * 6 + 6) * speedMod}s linear infinite;
-              animation-delay: -${Math.random() * 10}s;
-            `;
+            const size = Math.random() * 3 + 2;
+            const duration = Math.random() * 8 + 8;
+            const delay = Math.random() * -15;
+            ember.style.cssText = `width:${size}px;height:${size}px;left:${Math.random()*100}vw;animation:rise ${duration}s linear infinite ${delay}s`;
             fragment.appendChild(ember);
           }
 
@@ -1173,9 +956,7 @@
         }
       }
 
-      /* =====================================================
-         INIT
-         ===================================================== */
+      // Start
       if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => new LivePlayer());
       } else {
