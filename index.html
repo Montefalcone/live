@@ -38,9 +38,7 @@
   <link rel="preconnect" href="https://live.webcammontefalconedivalfortore.it" crossorigin>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   
-  <!-- Preload critico -->
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/hls.js@1.5.7/dist/hls.min.js" as="script">
-  <link rel="preload" href="https://www.webcammontefalconedivalfortore.it/p.png" as="image">
   
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&display=swap" rel="stylesheet">
 
@@ -102,7 +100,6 @@
       }
     }
 
-    /* Background - SEMPLIFICATO per mobile */
     #bg-static {
       position: absolute;
       inset: 0;
@@ -114,7 +111,6 @@
       pointer-events: none;
     }
 
-    /* Animazione BG solo su desktop */
     @media (min-width: 769px) {
       #bg-static {
         top: -5%;
@@ -131,10 +127,7 @@
       100% { transform: translate(-2%, 1%) scale(1.03); }
     }
 
-    .municipality-logo,
-    .festive-message {
-      pointer-events: none;
-    }
+    .municipality-logo, .festive-message { pointer-events: none; }
 
     .municipality-logo {
       width: 110px;
@@ -157,7 +150,6 @@
       width: 100%;
     }
 
-    /* Vignette - SOLO CSS, niente animazioni */
     .vignette {
       position: absolute;
       inset: 0;
@@ -166,14 +158,14 @@
       pointer-events: none;
     }
 
-    /* Particelle - Ottimizzate per mobile */
+    /* Particelle */
     .particles-container {
       position: absolute;
       inset: 0;
       pointer-events: none;
       z-index: 5;
       overflow: hidden;
-      contain: strict; /* Isola il rendering */
+      contain: strict;
     }
 
     .snowflake {
@@ -184,7 +176,7 @@
       opacity: 0.8;
       will-change: transform;
       backface-visibility: hidden;
-      transform: translateZ(0); /* Force GPU */
+      transform: translateZ(0);
     }
 
     @keyframes fall {
@@ -209,9 +201,7 @@
       100% { transform: translate3d(10vw, -100vh, 0); opacity: 0; }
     }
 
-    /* =====================================================
-       VIDEO PLAYER
-       ===================================================== */
+    /* Video Player */
     .video-wrapper {
       position: relative;
       width: auto;
@@ -250,7 +240,7 @@
       cursor: default;
     }
 
-    /* Loading Overlay - Usa timeupdate per nascondere, non playing */
+    /* Loading Overlay con preview MOLTO BLURRATA */
     .loading-overlay {
       position: absolute;
       inset: 0;
@@ -263,13 +253,13 @@
       pointer-events: none;
       opacity: 1;
       visibility: visible;
-      transition: opacity 200ms ease, visibility 0ms linear 0ms;
+      transition: opacity 300ms ease, visibility 0ms linear 0ms;
     }
 
     .video-wrapper.is-ready .loading-overlay {
       opacity: 0;
       visibility: hidden;
-      transition: opacity 200ms ease, visibility 0ms linear 200ms;
+      transition: opacity 300ms ease, visibility 0ms linear 300ms;
     }
 
     .loading-overlay .preview {
@@ -278,8 +268,9 @@
       width: 100%;
       height: 100%;
       object-fit: cover;
-      filter: brightness(0.8);
-      opacity: 0.85;
+      filter: blur(20px) brightness(0.5) saturate(0.8);
+      transform: scale(1.1); /* Evita bordi bianchi dal blur */
+      opacity: 1;
     }
 
     .loading-overlay .spinner-container {
@@ -288,6 +279,7 @@
       flex-direction: column;
       align-items: center;
       gap: 12px;
+      z-index: 2;
     }
 
     .loading-overlay .spinner {
@@ -303,14 +295,12 @@
       font-family: "Poppins", sans-serif;
       font-size: 11px;
       font-weight: 600;
-      color: rgba(255, 255, 255, 0.7);
+      color: rgba(255, 255, 255, 0.85);
       text-transform: uppercase;
       letter-spacing: 0.1em;
     }
 
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
     /* Control Bar */
     .control-bar {
@@ -335,7 +325,6 @@
       opacity: 1;
     }
 
-    /* Fullscreen Button */
     .fs-btn {
       width: 44px;
       height: 44px;
@@ -403,7 +392,7 @@
       50% { opacity: 0.4; }
     }
 
-    /* OSD Play/Pause */
+    /* OSD */
     .osd {
       position: absolute;
       inset: 0;
@@ -466,31 +455,16 @@
     .fs-curtain { position: absolute; inset: 0; z-index: 200; border-radius: inherit; }
     #pageCurtain.on, .fs-curtain.on { opacity: 1; }
 
-    /* =====================================================
-       RESPONSIVE
-       ===================================================== */
+    /* Responsive */
     @media (max-width: 768px) and (orientation: portrait) {
       #main-container {
         justify-content: flex-start;
         padding-top: 18vh;
       }
 
-      .municipality-logo {
-        width: 75px;
-        margin-bottom: 10px;
-      }
-
-      .festive-message {
-        font-size: 6vw;
-        line-height: 1.4;
-        margin-bottom: 20px;
-      }
-
-      .video-wrapper {
-        width: 95%;
-        height: auto;
-      }
-
+      .municipality-logo { width: 75px; margin-bottom: 10px; }
+      .festive-message { font-size: 6vw; line-height: 1.4; margin-bottom: 20px; }
+      .video-wrapper { width: 95%; height: auto; }
       .osd-chip { width: 68px; height: 68px; }
       .osd-icon { width: 32px; height: 32px; }
       .fs-btn { width: 38px; height: 38px; }
@@ -499,11 +473,7 @@
     }
 
     @media screen and (orientation: landscape) and (max-height: 600px) {
-      .municipality-logo,
-      .festive-message,
-      #bg-static,
-      .vignette,
-      .particles-container {
+      .municipality-logo, .festive-message, #bg-static, .vignette, .particles-container {
         display: none !important;
       }
 
@@ -608,43 +578,44 @@
 
       const STREAM_URL = 'https://live.webcammontefalconedivalfortore.it/memfs/58e0bcbe-f1bd-4c8b-85f7-b4566a3e5392.m3u8';
 
-      // Config HLS ottimizzata
+      // Config HLS ULTRA-AGGRESSIVA per avvio veloce
       const HLS_CONFIG = {
-        // Live sync - HLS.js gestisce automaticamente
-        liveSyncDuration: 2,
-        liveMaxLatencyDuration: 6,
+        // === AVVIO IMMEDIATO ===
+        enableWorker: true,
+        lowLatencyMode: false, // Disabilita per stabilità
+        backBufferLength: 0,
+        
+        // === LIVE SYNC ===
+        liveSyncDuration: 3,
+        liveMaxLatencyDuration: 10,
         liveDurationInfinity: true,
         liveBackBufferLength: 0,
         
-        // Buffer ridotto per avvio veloce
-        maxBufferLength: 8,
-        maxMaxBufferLength: 15,
-        maxBufferSize: 20 * 1000000,
-        maxBufferHole: 0.3,
+        // === BUFFER MINIMO per partire subito ===
+        maxBufferLength: 5,           // Solo 5 sec buffer
+        maxMaxBufferLength: 10,
+        maxBufferSize: 10 * 1000000,  // 10MB
+        maxBufferHole: 0.5,
         
-        // Startup
-        startLevel: 0, // Parti dalla qualità più bassa per avvio veloce
+        // === STARTUP VELOCE ===
+        startLevel: -1,               // Auto (lascia decidere HLS)
         autoStartLoad: true,
-        startPosition: -1,
+        startPosition: -1,            // Live edge
         
-        // Bassa latenza
-        lowLatencyMode: true,
-        backBufferLength: 0,
-        
-        // Timeout e retry
-        manifestLoadingTimeOut: 6000,
-        manifestLoadingMaxRetry: 3,
-        levelLoadingTimeOut: 6000,
-        levelLoadingMaxRetry: 3,
-        fragLoadingTimeOut: 10000,
-        fragLoadingMaxRetry: 4,
-        
-        // Performance
-        enableWorker: true,
-        testBandwidth: true,
+        // === TIMEOUT BREVI ===
+        manifestLoadingTimeOut: 5000,
+        manifestLoadingMaxRetry: 2,
+        manifestLoadingRetryDelay: 500,
+        levelLoadingTimeOut: 5000,
+        levelLoadingMaxRetry: 2,
+        levelLoadingRetryDelay: 500,
+        fragLoadingTimeOut: 8000,
+        fragLoadingMaxRetry: 3,
+        fragLoadingRetryDelay: 500,
       };
 
       const $ = id => document.getElementById(id);
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
       class LivePlayer {
         constructor() {
@@ -659,8 +630,12 @@
 
           this.hls = null;
           this.autoHideTimer = null;
-          this.hasReceivedFrame = false;
-          this.userPaused = false; // IMPORTANTE: traccia se l'utente ha messo in pausa
+          this.userPaused = false;
+          this.isPlaying = false;
+          
+          // Keep-alive per mobile
+          this.keepAliveInterval = null;
+          this.lastPlayTime = 0;
 
           this.init();
         }
@@ -669,13 +644,21 @@
           this.setupPlayer();
           this.bindEvents();
           this.createParticles();
+          
+          // Avvia keep-alive su mobile
+          if (isMobile) {
+            this.startKeepAlive();
+          }
         }
 
+        /* === HLS SETUP === */
         setupPlayer() {
-          // Safari = HLS nativo
+          // Safari/iOS = HLS nativo
           if (this.video.canPlayType('application/vnd.apple.mpegurl')) {
+            console.log('[Player] Using native HLS');
             this.setupNativeHLS();
           } else if (typeof Hls !== 'undefined' && Hls.isSupported()) {
+            console.log('[Player] Using HLS.js');
             this.setupHlsJs();
           } else {
             this.showError('Browser non supportato');
@@ -685,7 +668,12 @@
         setupNativeHLS() {
           this.status('Connessione...');
           this.video.src = STREAM_URL;
-          this.video.load();
+          
+          // Safari: ascolta loadedmetadata per sapere quando è pronto
+          this.video.addEventListener('loadedmetadata', () => {
+            this.status('Avvio...');
+            this.play();
+          }, { once: true });
         }
 
         setupHlsJs() {
@@ -693,35 +681,36 @@
 
           if (this.hls) {
             this.hls.destroy();
+            this.hls = null;
           }
 
           this.hls = new Hls(HLS_CONFIG);
 
-          this.hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          // Manifest pronto = possiamo iniziare
+          this.hls.on(Hls.Events.MANIFEST_PARSED, (e, data) => {
+            console.log('[HLS] Manifest parsed, levels:', data.levels.length);
             this.status('Avvio...');
             this.play();
           });
 
+          // Primo frammento bufferizzato
           this.hls.on(Hls.Events.FRAG_BUFFERED, () => {
-            // Frammento nel buffer = possiamo mostrare
-            if (!this.hasReceivedFrame) {
-              this.status('Buffering...');
+            // Controlla se possiamo mostrare il video
+            if (this.video.readyState >= 3) {
+              this.setReady(true);
             }
           });
 
-          this.hls.on(Hls.Events.ERROR, (_, data) => {
+          // Errori
+          this.hls.on(Hls.Events.ERROR, (e, data) => {
+            console.warn('[HLS] Error:', data.type, data.details, data.fatal);
+            
             if (data.fatal) {
-              console.warn('[HLS] Fatal error:', data.type, data.details);
-              
-              if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-                this.status('Riconnessione...');
-                setTimeout(() => this.hls?.startLoad(), 1500);
-              } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
-                this.status('Recupero...');
-                this.hls.recoverMediaError();
-              } else {
-                this.status('Errore stream');
-                this.wrapper.classList.add('is-offline');
+              this.handleFatalError(data);
+            } else {
+              // Errori non fatali: HLS.js recupera da solo
+              if (data.details === 'bufferStalledError') {
+                this.status('Buffering...');
               }
             }
           });
@@ -730,14 +719,49 @@
           this.hls.attachMedia(this.video);
         }
 
+        handleFatalError(data) {
+          switch (data.type) {
+            case Hls.ErrorTypes.NETWORK_ERROR:
+              this.status('Riconnessione...');
+              // Riprova a caricare
+              setTimeout(() => {
+                if (this.hls) {
+                  this.hls.startLoad();
+                }
+              }, 1000);
+              break;
+              
+            case Hls.ErrorTypes.MEDIA_ERROR:
+              this.status('Recupero...');
+              if (this.hls) {
+                this.hls.recoverMediaError();
+              }
+              break;
+              
+            default:
+              this.status('Errore');
+              // Ricrea tutto il player
+              setTimeout(() => this.setupPlayer(), 2000);
+          }
+        }
+
         play() {
           this.userPaused = false;
-          const p = this.video.play();
-          if (p) p.catch(() => {
-            this.status('Tap per avviare');
-            this.showControls();
-            this.setPaused(true);
-          });
+          this.lastPlayTime = Date.now();
+          
+          const playPromise = this.video.play();
+          
+          if (playPromise) {
+            playPromise.then(() => {
+              console.log('[Player] Playing');
+              this.isPlaying = true;
+            }).catch(err => {
+              console.warn('[Player] Autoplay blocked:', err.message);
+              this.status('Tap per avviare');
+              this.showControls();
+              this.setPaused(true);
+            });
+          }
         }
 
         status(t) {
@@ -749,14 +773,64 @@
           this.wrapper.classList.add('is-offline');
         }
 
+        /* === KEEP-ALIVE per Mobile === */
+        startKeepAlive() {
+          // Controlla ogni 2 secondi se il video è ancora in riproduzione
+          this.keepAliveInterval = setInterval(() => {
+            if (this.userPaused || document.hidden) return;
+            
+            // Se il video è in pausa ma non dovrebbe esserlo
+            if (this.video.paused && this.isPlaying) {
+              console.log('[KeepAlive] Video paused unexpectedly, resuming...');
+              this.video.play().catch(() => {});
+            }
+            
+            // Se il video è bloccato (currentTime non cambia)
+            const now = Date.now();
+            if (!this.video.paused && this.lastPlayTime > 0) {
+              const timeSincePlay = now - this.lastPlayTime;
+              
+              // Se sono passati più di 5 secondi e readyState è basso
+              if (timeSincePlay > 5000 && this.video.readyState < 3) {
+                console.log('[KeepAlive] Video stalled, restarting...');
+                this.restartStream();
+              }
+            }
+          }, 2000);
+        }
+
+        restartStream() {
+          this.setReady(false);
+          this.status('Riconnessione...');
+          
+          if (this.hls) {
+            this.hls.stopLoad();
+            setTimeout(() => {
+              if (this.hls) {
+                this.hls.startLoad(-1); // -1 = live edge
+                this.play();
+              }
+            }, 500);
+          } else {
+            // Native HLS
+            this.video.load();
+            this.play();
+          }
+        }
+
         /* === UI === */
         setReady(ready) {
-          this.wrapper.classList.toggle('is-ready', ready);
-          if (ready) this.wrapper.classList.remove('is-offline');
+          if (ready) {
+            this.wrapper.classList.add('is-ready');
+            this.wrapper.classList.remove('is-offline');
+          } else {
+            this.wrapper.classList.remove('is-ready');
+          }
         }
 
         setPaused(paused) {
           this.wrapper.classList.toggle('is-paused', paused);
+          this.isPlaying = !paused;
         }
 
         showControls() {
@@ -781,12 +855,10 @@
         togglePlayPause() {
           if (this.video.paused) {
             this.userPaused = false;
-            this.setReady(false);
-            this.hasReceivedFrame = false;
             this.status('Ripresa...');
             this.play();
           } else {
-            this.userPaused = true; // L'utente ha VOLUTO mettere in pausa
+            this.userPaused = true;
             this.video.pause();
           }
           this.showControls();
@@ -836,80 +908,86 @@
 
           // === VIDEO EVENTS ===
           
-          // TIMEUPDATE: il modo più affidabile per sapere che ci sono frame
-          this.video.addEventListener('timeupdate', () => {
-            if (!this.hasReceivedFrame && this.video.currentTime > 0) {
-              this.hasReceivedFrame = true;
-              this.setReady(true);
-              console.log('[Player] First frame received');
-            }
+          // canplay = ha abbastanza dati per iniziare
+          this.video.addEventListener('canplay', () => {
+            console.log('[Video] canplay');
+            this.setReady(true);
           });
 
+          // playing = sta effettivamente riproducendo
           this.video.addEventListener('playing', () => {
+            console.log('[Video] playing');
             this.setPaused(false);
+            this.setReady(true);
+            this.lastPlayTime = Date.now();
           });
 
+          // pause
           this.video.addEventListener('pause', () => {
+            console.log('[Video] pause, userPaused:', this.userPaused);
             this.setPaused(true);
             
-            // Se l'utente NON ha messo in pausa volontariamente, riprova
+            // Se NON è stato l'utente a mettere in pausa, riprova
             if (!this.userPaused && !document.hidden) {
-              console.log('[Player] Unexpected pause, resuming...');
               setTimeout(() => {
                 if (this.video.paused && !this.userPaused) {
+                  console.log('[Video] Auto-resuming...');
                   this.play();
                 }
-              }, 500);
+              }, 300);
             } else {
               this.showControls();
             }
           });
 
+          // waiting = buffering
           this.video.addEventListener('waiting', () => {
-            // Il video sta bufferando, ma non nascondere se già ready
-            console.log('[Player] Buffering...');
+            console.log('[Video] waiting/buffering');
+            // Non nascondere il video, solo log
           });
 
+          // stalled = dati non arrivano
           this.video.addEventListener('stalled', () => {
-            console.log('[Player] Stalled');
-            // Non fare nulla, HLS.js gestisce
+            console.log('[Video] stalled');
           });
 
-          this.video.addEventListener('error', () => {
-            console.error('[Player] Video error');
+          // error
+          this.video.addEventListener('error', (e) => {
+            console.error('[Video] error:', e);
             this.setReady(false);
-            this.hasReceivedFrame = false;
-            this.status('Riconnessione...');
+            this.status('Errore');
             
-            setTimeout(() => {
-              if (this.hls) {
-                this.hls.startLoad();
-              } else {
-                this.video.load();
-              }
-              this.play();
-            }, 2000);
+            // Riprova
+            setTimeout(() => this.restartStream(), 2000);
           });
 
           // === VISIBILITY ===
           document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible') {
-              // Tab tornata visibile
+              console.log('[Visibility] Tab visible');
+              
               if (!this.userPaused) {
-                console.log('[Player] Tab visible, checking playback...');
-                // Se era in pausa (browser l'ha fermato), riprendi
+                // Tab tornata visibile: riprendi se necessario
                 if (this.video.paused) {
                   this.play();
                 }
-                // HLS.js gestisce il sync automaticamente
+                
+                // Su mobile, ricrea lo stream per sicurezza
+                if (isMobile) {
+                  setTimeout(() => {
+                    if (this.video.readyState < 3) {
+                      this.restartStream();
+                    }
+                  }, 1000);
+                }
               }
             }
           });
 
           // Online
           window.addEventListener('online', () => {
-            console.log('[Player] Online');
-            if (this.hls) this.hls.startLoad();
+            console.log('[Network] Online');
+            this.restartStream();
           });
 
           // Fullscreen
@@ -917,38 +995,32 @@
           document.addEventListener('webkitfullscreenchange', () => this.onFullscreenChange());
         }
 
-        /* === Particelle ottimizzate === */
+        /* === Particelle === */
         createParticles() {
           if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
 
           const container = $('particlesContainer');
           if (!container) return;
 
-          const isMobile = window.innerWidth < 769;
-          const snowCount = isMobile ? 25 : 45;
-          const emberCount = isMobile ? 10 : 20;
+          const isMobileDevice = window.innerWidth < 769;
+          const snowCount = isMobileDevice ? 25 : 45;
+          const emberCount = isMobileDevice ? 10 : 20;
 
           const fragment = document.createDocumentFragment();
           
-          // Fiocchi di neve
           for (let i = 0; i < snowCount; i++) {
             const flake = document.createElement('div');
             flake.className = 'snowflake';
             const size = Math.random() * 2.5 + 1.5;
-            const duration = Math.random() * 6 + 6;
-            const delay = Math.random() * -10;
-            flake.style.cssText = `width:${size}px;height:${size}px;left:${Math.random()*100}vw;animation:fall ${duration}s linear infinite ${delay}s`;
+            flake.style.cssText = `width:${size}px;height:${size}px;left:${Math.random()*100}vw;animation:fall ${Math.random()*6+6}s linear infinite ${Math.random()*-10}s`;
             fragment.appendChild(flake);
           }
 
-          // Embers (braci)
           for (let i = 0; i < emberCount; i++) {
             const ember = document.createElement('div');
             ember.className = 'ember';
             const size = Math.random() * 3 + 2;
-            const duration = Math.random() * 8 + 8;
-            const delay = Math.random() * -15;
-            ember.style.cssText = `width:${size}px;height:${size}px;left:${Math.random()*100}vw;animation:rise ${duration}s linear infinite ${delay}s`;
+            ember.style.cssText = `width:${size}px;height:${size}px;left:${Math.random()*100}vw;animation:rise ${Math.random()*8+8}s linear infinite ${Math.random()*-15}s`;
             fragment.appendChild(ember);
           }
 
