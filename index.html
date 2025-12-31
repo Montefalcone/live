@@ -1,569 +1,997 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
+  <!-- Charset DEVE essere primo -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   
+  <!-- Theme color per mobile browsers -->
   <meta name="theme-color" content="#000000">
   <meta name="msapplication-TileColor" content="#000000">
   
+  <!-- Favicons -->
   <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="shortcut icon" href="/favicon.ico">
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
   <link rel="manifest" href="/site.webmanifest">
   
+  <!-- SEO -->
   <title>Webcam Montefalcone di Val Fortore</title>
   <meta name="description" content="Webcam in diretta dal Comune di Montefalcone. Vista panoramica e condizioni meteo attuali">
+  <meta name="keywords" content="webcam montefalcone, meteo montefalcone, comune di montefalcone live, telecamera diretta">
   <meta name="robots" content="index, follow">
   <meta name="google-site-verification" content="DLjKDn5UupGNdRgZXo9CuMc0Sg1S1aULxDJfIHT9tYo">
   <link rel="canonical" href="https://www.webcammontefalconedivalfortore.it/">
   
+  <!-- Open Graph completo -->
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://www.webcammontefalconedivalfortore.it/">
   <meta property="og:title" content="Webcam Montefalcone di Val Fortore - LIVE">
-  <meta property="og:description" content="Guarda cosa succede ora a Montefalcone.">
+  <meta property="og:description" content="Guarda cosa succede ora a Montefalcone. Clicca per la diretta.">
   <meta property="og:image" content="https://www.webcammontefalconedivalfortore.it/p.png">
   <meta property="og:locale" content="it_IT">
+  <meta property="og:site_name" content="Webcam Montefalcone">
   
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Webcam Montefalcone di Val Fortore - LIVE">
+  <meta name="twitter:description" content="Guarda cosa succede ora a Montefalcone. Clicca per la diretta.">
+  <meta name="twitter:image" content="https://www.webcammontefalconedivalfortore.it/p.png">
+
+  <!-- Preconnect per performance -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="preconnect" href="https://live.webcammontefalconedivalfortore.it" crossorigin>
   
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+  <!-- DNS prefetch per risorse secondarie -->
+  <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+  <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+  
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- HLS.js preload -->
+  <link rel="preload" href="https://cdn.jsdelivr.net/npm/hls.js@1.5.7/dist/hls.min.js" as="script">
 
   <style>
+    /* =====================================================
+       CSS VARIABLES - Centralizzate per manutenibilità
+       ===================================================== */
     :root {
+      /* Blur */
+      --blur-ui: 12px;
+      --blur-play: 5px;
+      
+      /* Colors */
       --color-bg: #000;
       --color-live: #ff2b2b;
       --color-white: #fff;
+      --color-overlay: rgba(0, 0, 0, 0.35);
+      --color-border: rgba(255, 255, 255, 0.18);
+      
+      /* Radius */
+      --radius-pill: 999px;
+      --radius-video: 15px;
+      
+      /* Transitions */
+      --transition-fast: 150ms ease;
+      --transition-medium: 260ms ease;
+      --transition-slow: 500ms ease;
+      
+      /* Shadows */
+      --shadow-glow: 0 0 30px rgba(255, 220, 150, 0.2);
+      --shadow-deep: 0 40px 80px rgba(0, 0, 0, 0.95);
+      --shadow-button: 0 10px 28px rgba(0, 0, 0, 0.28);
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    /* =====================================================
+       RESET & BASE
+       ===================================================== */
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
 
     html, body {
+      margin: 0;
+      padding: 0;
       width: 100%;
       height: 100%;
       overflow: hidden;
-      background: var(--color-bg);
-      font-family: "Poppins", sans-serif;
+      position: fixed;
+      top: 0;
+      left: 0;
+      overscroll-behavior: none;
+      background-color: var(--color-bg);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
 
+    /* =====================================================
+       FONTS
+       ===================================================== */
     @font-face {
       font-family: 'MerryChristmasFont';
       src: url('last.otf') format('opentype');
       font-display: swap;
     }
 
-    /* Layout */
-    .page {
+    /* =====================================================
+       LAYOUT PRINCIPALE
+       ===================================================== */
+    #main-container {
       width: 100%;
       height: 100%;
       display: flex;
       flex-direction: column;
-      align-items: center;
       justify-content: center;
+      align-items: center;
       position: relative;
+      z-index: 20;
+      transition: all var(--transition-slow);
     }
 
-    /* Background */
-    .bg {
+    @media (min-width: 1024px) {
+      #main-container {
+        transform: scale(0.965);
+        transform-origin: center top;
+      }
+    }
+
+    /* =====================================================
+       BACKGROUND ANIMATO
+       ===================================================== */
+    #bg-static {
+      position: absolute;
+      top: -10%;
+      left: -10%;
+      width: 120%;
+      height: 120%;
+      background-image: url("1a.webp");
+      background-size: cover;
+      background-position: center;
+      z-index: 0;
+      filter: brightness(0.65) contrast(1.15) saturate(1.1);
+      animation: driftingWorld 80s ease-in-out infinite alternate;
+      pointer-events: none;
+      will-change: transform;
+    }
+
+    @keyframes driftingWorld {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(-2%, 2%) scale(1.05); }
+    }
+
+    /* =====================================================
+       ELEMENTI DECORATIVI
+       ===================================================== */
+    .municipality-logo,
+    .festive-message,
+    .warm-flicker,
+    .vignette,
+    .particles-container {
+      transition: opacity var(--transition-slow);
+      opacity: 1;
+      pointer-events: none;
+    }
+
+    .municipality-logo {
+      width: 110px;
+      height: auto;
+      margin-bottom: 15px;
+      z-index: 30;
+      filter: brightness(1.1) drop-shadow(0 0 15px rgba(255, 215, 0, 0.5));
+    }
+
+    .festive-message {
+      font-family: 'MerryChristmasFont', 'Brush Script MT', cursive, serif;
+      color: var(--color-white);
+      text-align: center;
+      font-size: 3.5rem;
+      line-height: 1.2;
+      margin-bottom: 25px;
+      text-shadow: 2px 2px 4px var(--color-bg), 0 0 25px rgba(255, 255, 255, 0.6);
+      z-index: 30;
+      padding: 0 20px;
+      width: 100%;
+    }
+
+    .warm-flicker {
       position: absolute;
       inset: 0;
-      background: url("1a.webp") center/cover no-repeat;
-      filter: brightness(0.6);
-      z-index: 0;
+      background: radial-gradient(circle, rgba(255, 180, 50, 0.15), transparent 80%);
+      z-index: 2;
+      pointer-events: none;
+      mix-blend-mode: overlay;
+      animation: firePulse 4s ease-in-out infinite alternate;
+    }
+
+    @keyframes firePulse {
+      0% { opacity: 0.1; }
+      100% { opacity: 0.5; }
     }
 
     .vignette {
       position: absolute;
       inset: 0;
-      background: radial-gradient(circle, transparent 30%, rgba(0,0,0,0.8) 100%);
-      z-index: 1;
-    }
-
-    /* Content */
-    .content {
-      position: relative;
-      z-index: 10;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      width: 100%;
-      max-width: 900px;
-      padding: 20px;
-    }
-
-    .logo {
-      width: 100px;
-      margin-bottom: 15px;
-      filter: drop-shadow(0 0 10px rgba(255,215,0,0.5));
-    }
-
-    .title {
-      font-family: 'MerryChristmasFont', cursive;
-      color: var(--color-white);
-      font-size: clamp(1.8rem, 5vw, 3.5rem);
-      text-align: center;
-      margin-bottom: 25px;
-      text-shadow: 2px 2px 8px rgba(0,0,0,0.8);
-    }
-
-    /* Player Container */
-    .player-wrap {
-      position: relative;
-      width: 100%;
-      aspect-ratio: 16/9;
-      background: #000;
-      border-radius: 12px;
-      overflow: hidden;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.8);
-    }
-
-    /* Video - IL CUORE: semplicissimo */
-    #video {
-      width: 100%;
-      height: 100%;
-      background: #000;
-      object-fit: contain;
-    }
-
-    /* Poster/Loading - mostrato SOLO prima del primo frame */
-    .poster {
-      position: absolute;
-      inset: 0;
-      background: url("https://www.webcammontefalconedivalfortore.it/p.png") center/cover;
-      filter: blur(15px) brightness(0.4);
-      transform: scale(1.1);
-      z-index: 5;
-      transition: opacity 0.3s ease;
-    }
-
-    .poster.hidden { opacity: 0; pointer-events: none; }
-
-    .loader {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
+      background: radial-gradient(circle at center, transparent 40%, rgba(0, 0, 0, 0.7) 85%, var(--color-bg) 100%);
       z-index: 6;
-      text-align: center;
-      transition: opacity 0.3s ease;
-    }
-
-    .loader.hidden { opacity: 0; pointer-events: none; }
-
-    .spinner {
-      width: 40px;
-      height: 40px;
-      border: 3px solid rgba(255,255,255,0.2);
-      border-top-color: #fff;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      margin: 0 auto 10px;
-    }
-
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    .loader-text {
-      color: rgba(255,255,255,0.8);
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-    }
-
-    /* Live Badge */
-    .live-badge {
-      position: absolute;
-      bottom: 12px;
-      left: 12px;
-      z-index: 20;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 10px;
-      background: rgba(0,0,0,0.6);
-      border-radius: 20px;
-      backdrop-filter: blur(10px);
-    }
-
-    .live-dot {
-      width: 8px;
-      height: 8px;
-      background: var(--color-live);
-      border-radius: 50%;
-      animation: pulse 1.5s infinite;
-    }
-
-    .paused .live-dot {
-      background: #666;
-      animation: none;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.4; }
-    }
-
-    .live-text {
-      color: #fff;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.1em;
-    }
-
-    /* Controls Overlay */
-    .controls {
-      position: absolute;
-      inset: 0;
-      z-index: 15;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: rgba(0,0,0,0);
-      opacity: 0;
-      transition: opacity 0.2s ease, background 0.2s ease;
-      cursor: pointer;
-    }
-
-    .controls.visible {
-      opacity: 1;
-      background: rgba(0,0,0,0.3);
-    }
-
-    .play-btn {
-      width: 70px;
-      height: 70px;
-      background: rgba(0,0,0,0.5);
-      border: 2px solid rgba(255,255,255,0.3);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      backdrop-filter: blur(5px);
-      transition: transform 0.15s ease;
-    }
-
-    .play-btn:active { transform: scale(0.9); }
-
-    .play-btn svg {
-      width: 28px;
-      height: 28px;
-      fill: #fff;
-      margin-left: 3px;
-    }
-
-    .play-btn .pause-icon { display: none; margin-left: 0; }
-    .playing .play-btn .play-icon { display: none; }
-    .playing .play-btn .pause-icon { display: block; }
-
-    /* Fullscreen Button */
-    .fs-btn {
-      position: absolute;
-      bottom: 12px;
-      right: 12px;
-      width: 40px;
-      height: 40px;
-      background: rgba(0,0,0,0.5);
-      border: none;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      backdrop-filter: blur(10px);
-      z-index: 20;
-      opacity: 0;
-      transition: opacity 0.2s ease;
-    }
-
-    .controls.visible ~ .fs-btn { opacity: 1; }
-
-    .fs-btn svg { width: 18px; height: 18px; fill: #fff; }
-
-    /* Particles */
-    .particles {
-      position: absolute;
-      inset: 0;
-      z-index: 2;
       pointer-events: none;
+    }
+
+    /* =====================================================
+       PARTICELLE (neve + embers)
+       ===================================================== */
+    .particles-container {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 5;
       overflow: hidden;
     }
 
-    .snow {
+    .snowflake {
       position: absolute;
-      background: #fff;
+      top: -10px;
+      background: white;
       border-radius: 50%;
-      opacity: 0.8;
+      opacity: 0.9;
+      box-shadow: 0 0 3px white;
+      will-change: transform;
+    }
+
+    .ember {
+      position: absolute;
+      bottom: -20px;
+      background: #ffcc00;
+      border-radius: 50%;
+      opacity: 0;
+      filter: blur(2px);
+      will-change: transform, opacity;
     }
 
     @keyframes fall {
-      to { transform: translateY(100vh); }
+      0% { transform: translate(0, -10vh); }
+      100% { transform: translate(15vw, 110vh); }
     }
 
-    /* Responsive */
-    @media (max-width: 768px) {
-      .content { padding: 15px; }
-      .logo { width: 70px; margin-bottom: 10px; }
-      .title { margin-bottom: 15px; }
-      .player-wrap { border-radius: 8px; }
-      .play-btn { width: 60px; height: 60px; }
-      .play-btn svg { width: 24px; height: 24px; }
+    @keyframes riseRight {
+      0% { transform: translateY(0) translateX(0); opacity: 0; }
+      20% { opacity: 0.8; }
+      100% { transform: translateY(-90vh) translateX(15vw); opacity: 0; }
     }
 
+    @keyframes riseLeft {
+      0% { transform: translateY(0) translateX(0); opacity: 0; }
+      20% { opacity: 0.8; }
+      100% { transform: translateY(-90vh) translateX(-15vw); opacity: 0; }
+    }
+
+    @keyframes riseZigZag {
+      0% { transform: translateY(0) translateX(0); opacity: 0; }
+      25% { transform: translateY(-20vh) translateX(5vw); opacity: 0.8; }
+      75% { transform: translateY(-60vh) translateX(-5vw); opacity: 0.4; }
+      100% { transform: translateY(-90vh) translateX(0); opacity: 0; }
+    }
+
+    /* =====================================================
+       VIDEO WRAPPER
+       ===================================================== */
+    .video-wrapper {
+      position: relative;
+      width: auto;
+      height: 60%;
+      aspect-ratio: 16 / 9;
+      border-radius: var(--radius-video);
+      overflow: hidden;
+      background: var(--color-bg);
+      box-shadow: var(--shadow-glow), var(--shadow-deep);
+      border: 1px solid var(--color-border);
+      z-index: 30;
+      pointer-events: auto;
+      transition: all 0.3s ease-out;
+    }
+
+    .video-wrapper:fullscreen,
+    .video-wrapper:-webkit-full-screen,
+    .video-wrapper:-moz-full-screen {
+      border-radius: 0 !important;
+      border: none !important;
+      box-shadow: none !important;
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    #liveVideo {
+      width: 100%;
+      height: 100%;
+      display: block;
+      background: var(--color-bg);
+      object-fit: contain;
+    }
+
+    #videoWrapper .tap-layer {
+      position: absolute;
+      inset: 0;
+      z-index: 10;
+      cursor: default;
+    }
+
+    /* =====================================================
+       LOADING OVERLAY
+       ===================================================== */
+    #videoWrapper .loading-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 80;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--color-bg);
+      opacity: 1;
+      transition: opacity var(--transition-medium), visibility 0ms linear 0ms;
+      pointer-events: none;
+      visibility: visible;
+    }
+
+    #videoWrapper.is-ready .loading-overlay {
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity var(--transition-medium), visibility 0ms linear var(--transition-medium);
+    }
+
+    #videoWrapper .loading-overlay .preview {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: blur(20px) brightness(0.5) saturate(0.8);
+      transform: scale(1.1);
+      opacity: 1;
+    }
+
+    #videoWrapper .loading-overlay .spinner {
+      position: relative;
+      width: 46px;
+      height: 46px;
+      border-radius: var(--radius-pill);
+      border: 3px solid rgba(255, 255, 255, 0.25);
+      border-top-color: rgba(255, 255, 255, 0.92);
+      animation: spin 0.9s linear infinite;
+      box-shadow: var(--shadow-button);
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* =====================================================
+       CONTROL BAR
+       ===================================================== */
+    #videoWrapper media-control-bar {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 30;
+      padding: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      background: linear-gradient(to top, rgba(0, 0, 0, 0.75), transparent);
+      pointer-events: none;
+    }
+
+    #videoWrapper.controls-visible media-control-bar {
+      pointer-events: auto;
+    }
+
+    /* =====================================================
+       FULLSCREEN BUTTON
+       ===================================================== */
+    #videoWrapper media-fullscreen-button {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-pill);
+      border: 1px solid rgba(255, 255, 255, 0.20);
+      background: rgba(0, 0, 0, 0.35);
+      backdrop-filter: blur(var(--blur-ui));
+      -webkit-backdrop-filter: blur(var(--blur-ui));
+      cursor: pointer;
+      opacity: 0.05;
+      transition: opacity var(--transition-fast);
+    }
+
+    #videoWrapper.controls-visible media-fullscreen-button {
+      opacity: 1;
+    }
+
+    /* =====================================================
+       LIVE BADGE
+       ===================================================== */
+    #videoWrapper .live-badge {
+      position: absolute;
+      left: 14px;
+      bottom: 14px;
+      z-index: 31;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: var(--radius-pill);
+      color: var(--color-white);
+      font-family: "Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-weight: 700;
+      font-size: 12px;
+      line-height: 1;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      background: rgba(0, 0, 0, 0.18);
+      border: 1px solid var(--color-border);
+      box-shadow: var(--shadow-button);
+      backdrop-filter: blur(var(--blur-ui));
+      -webkit-backdrop-filter: blur(var(--blur-ui));
+      pointer-events: none;
+    }
+
+    #videoWrapper .live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--color-live);
+      box-shadow: 0 0 12px rgba(255, 43, 43, 0.95);
+      animation: livePulse 1.6s infinite;
+    }
+
+    #videoWrapper.is-paused .live-dot {
+      background: #666;
+      box-shadow: none;
+      animation: none;
+    }
+
+    @keyframes livePulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.45; }
+      100% { opacity: 1; }
+    }
+
+    /* =====================================================
+       OSD PLAY/PAUSE
+       ===================================================== */
+    #videoWrapper .osd {
+      position: absolute;
+      inset: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    #videoWrapper .osd-chip {
+      position: relative;
+      width: 84px;
+      height: 84px;
+      border-radius: var(--radius-pill);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      padding: 0;
+      margin: 0;
+      font: inherit;
+      color: inherit;
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      backdrop-filter: blur(var(--blur-play)) brightness(1.05) saturate(1.1);
+      -webkit-backdrop-filter: blur(var(--blur-play)) brightness(1.05) saturate(1.1);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+      opacity: 0.05;
+      transform: scale(0.98);
+      transition: opacity 140ms ease, transform 140ms ease;
+    }
+
+    #videoWrapper.controls-visible .osd-chip {
+      opacity: 1;
+      transform: scale(1);
+      pointer-events: auto;
+    }
+
+    #videoWrapper .osd-icon {
+      width: 40px;
+      height: 40px;
+      fill: var(--color-white);
+      opacity: 0.95;
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+    }
+
+    #videoWrapper .osd-icon.play {
+      display: none;
+    }
+
+    #videoWrapper.is-paused .osd-icon.play {
+      display: block;
+    }
+
+    #videoWrapper.is-paused .osd-icon.pause {
+      display: none;
+    }
+
+    /* =====================================================
+       CURTAINS (transizioni fullscreen)
+       ===================================================== */
+    #pageCurtain,
+    #fsCurtain {
+      background: var(--color-bg);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 220ms ease;
+      will-change: opacity;
+    }
+
+    #pageCurtain {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+    }
+
+    #fsCurtain {
+      position: absolute;
+      inset: 0;
+      z-index: 200;
+      border-radius: inherit;
+    }
+
+    #pageCurtain.on,
+    #fsCurtain.on {
+      opacity: 1;
+    }
+
+    /* =====================================================
+       RESPONSIVE - Mobile Portrait
+       ===================================================== */
     @media (max-width: 768px) and (orientation: portrait) {
-      .page { justify-content: flex-start; padding-top: 15vh; }
+      #main-container {
+        justify-content: flex-start;
+        padding-top: 18vh;
+      }
+
+      .municipality-logo {
+        width: 75px;
+        margin-bottom: 10px;
+      }
+
+      .festive-message {
+        font-size: 6vw;
+        line-height: 1.4;
+        margin-bottom: 20px;
+      }
+
+      .video-wrapper {
+        width: 95%;
+        height: auto;
+      }
+
+      #bg-static {
+        animation: driftingWorldMobile 35s ease-in-out infinite alternate;
+      }
+
+      #videoWrapper .osd-chip {
+        width: 68px;
+        height: 68px;
+      }
+
+      #videoWrapper .osd-icon {
+        width: 32px;
+        height: 32px;
+      }
+
+      #videoWrapper media-fullscreen-button {
+        width: 38px;
+        height: 38px;
+      }
+
+      #videoWrapper .live-badge {
+        padding: 6px 10px;
+        font-size: 10px;
+        gap: 6px;
+      }
+
+      #videoWrapper .live-dot {
+        width: 6px;
+        height: 6px;
+      }
     }
 
-    @media (orientation: landscape) and (max-height: 500px) {
-      .logo, .title, .bg, .vignette, .particles { display: none; }
-      .page { background: #000; }
-      .content { max-width: 100%; padding: 0; height: 100%; }
-      .player-wrap { border-radius: 0; height: 100%; }
+    @keyframes driftingWorldMobile {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(-3%, 0) scale(1.15); }
     }
 
-    /* Fullscreen */
-    .player-wrap:fullscreen,
-    .player-wrap:-webkit-full-screen {
-      border-radius: 0;
-      width: 100vw;
-      height: 100vh;
+    /* =====================================================
+       RESPONSIVE - Landscape compatto
+       ===================================================== */
+    @media screen and (orientation: landscape) and (max-height: 600px) {
+      .municipality-logo,
+      .festive-message,
+      #bg-static,
+      .warm-flicker,
+      .vignette,
+      .particles-container {
+        display: none !important;
+      }
+
+      #main-container {
+        padding: 0 !important;
+        justify-content: center !important;
+        background: var(--color-bg);
+      }
+
+      .video-wrapper {
+        width: 100vw;
+        height: 100vh;
+        border: none;
+        border-radius: 0;
+      }
+    }
+
+    /* =====================================================
+       ACCESSIBILITÀ - Reduced Motion
+       ===================================================== */
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+
+      .particles-container {
+        display: none !important;
+      }
+
+      #videoWrapper .loading-overlay .spinner {
+        animation: spin 0.9s linear infinite !important;
+      }
     }
   </style>
 </head>
+
 <body>
-  <div class="page">
-    <div class="bg"></div>
-    <div class="vignette"></div>
-    <div class="particles" id="particles"></div>
+  <div id="bg-static"></div>
+  <div class="warm-flicker"></div>
+  <div class="vignette"></div>
+  <div class="particles-container" id="particlesContainer"></div>
 
-    <div class="content">
-      <img src="stemma2-removebg-preview.png" alt="Stemma" class="logo" width="100" height="100">
-      
-      <h1 class="title">
-        Il comune di Montefalcone di Val Fortore<br>augura a tutti Buone Feste
-      </h1>
+  <div id="main-container">
+    <img 
+      src="stemma2-removebg-preview.png" 
+      alt="Stemma Comune di Montefalcone di Val Fortore" 
+      class="municipality-logo"
+      width="110"
+      height="110"
+      loading="eager"
+    >
 
-      <div class="player-wrap" id="player">
-        <video id="video" playsinline muted></video>
-        
-        <div class="poster" id="poster"></div>
-        <div class="loader" id="loader">
-          <div class="spinner"></div>
-          <div class="loader-text">Connessione...</div>
-        </div>
+    <div class="festive-message">
+      Il comune di Montefalcone di Val Fortore<br>
+      augura a tutti Buone Feste
+    </div>
 
-        <div class="live-badge">
-          <div class="live-dot"></div>
-          <span class="live-text">LIVE</span>
-        </div>
+    <div class="video-wrapper" id="videoWrapper">
+      <video
+        id="liveVideo"
+        playsinline
+        muted
+        preload="auto"
+      ></video>
 
-        <div class="controls" id="controls">
-          <div class="play-btn" id="playBtn">
-            <svg class="play-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-            <svg class="pause-icon" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-          </div>
-        </div>
+      <div class="loading-overlay" id="loadingOverlay" aria-hidden="true">
+        <img 
+          class="preview" 
+          src="https://www.webcammontefalconedivalfortore.it/p.png" 
+          alt=""
+          loading="eager"
+        >
+        <div class="spinner" role="status" aria-label="Caricamento video in corso"></div>
+      </div>
 
-        <button class="fs-btn" id="fsBtn" aria-label="Fullscreen">
-          <svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+      <div class="tap-layer" id="tapLayer" aria-hidden="true"></div>
+
+      <div class="live-badge" aria-hidden="true">
+        <span class="live-dot"></span>
+        <span>LIVE</span>
+      </div>
+
+      <div class="osd" aria-hidden="true">
+        <button class="osd-chip" id="osdBtn" type="button" aria-label="Play/Pausa">
+          <svg class="osd-icon play" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M8 5v14l11-7z"/>
+          </svg>
+          <svg class="osd-icon pause" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+          </svg>
         </button>
       </div>
+
+      <media-control-bar>
+        <media-fullscreen-button id="fsBtn" notooltip></media-fullscreen-button>
+      </media-control-bar>
+
+      <div id="fsCurtain" aria-hidden="true"></div>
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.7/dist/hls.min.js"></script>
-  <script>
-    (function() {
-      const STREAM = 'https://live.webcammontefalconedivalfortore.it/memfs/58e0bcbe-f1bd-4c8b-85f7-b4566a3e5392.m3u8';
-      
-      const video = document.getElementById('video');
-      const player = document.getElementById('player');
-      const poster = document.getElementById('poster');
-      const loader = document.getElementById('loader');
-      const controls = document.getElementById('controls');
-      const playBtn = document.getElementById('playBtn');
-      const fsBtn = document.getElementById('fsBtn');
-      
-      let hls = null;
-      let hideTimer = null;
-      let firstPlay = true;
+  <div id="pageCurtain" aria-hidden="true"></div>
 
-      // === INIT ===
-      function init() {
-        // Safari/iOS: HLS nativo
+  <!-- Media Chrome per fullscreen button -->
+  <script type="module" src="https://cdn.jsdelivr.net/npm/media-chrome@4/+esm"></script>
+  
+  <!-- HLS.js -->
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.7/dist/hls.min.js"></script>
+
+  <script>
+    (() => {
+      'use strict';
+
+      const STREAM_URL = 'https://live.webcammontefalconedivalfortore.it/memfs/58e0bcbe-f1bd-4c8b-85f7-b4566a3e5392.m3u8';
+
+      const $ = (id) => document.getElementById(id);
+
+      // Elementi
+      const wrapper = $('videoWrapper');
+      const video = $('liveVideo');
+      const tapLayer = $('tapLayer');
+      const osdBtn = $('osdBtn');
+      const fsBtn = $('fsBtn');
+      const fsCurtain = $('fsCurtain');
+      const pageCurtain = $('pageCurtain');
+
+      let hls = null;
+      let autoHideTimer = null;
+      let userPaused = false;
+
+      // ==========================================
+      // INIT PLAYER
+      // ==========================================
+      function initPlayer() {
+        // Safari/iOS = HLS nativo
         if (video.canPlayType('application/vnd.apple.mpegurl')) {
-          video.src = STREAM;
-          video.load();
+          video.src = STREAM_URL;
           tryPlay();
         } 
-        // Altri browser: HLS.js
-        else if (Hls.isSupported()) {
+        // Altri browser = HLS.js
+        else if (typeof Hls !== 'undefined' && Hls.isSupported()) {
           hls = new Hls({
-            // Config MINIMA - lascia i default di HLS.js che sono già ottimizzati
+            // Config minimale - HLS.js ha già buoni default
             enableWorker: true,
-            lowLatencyMode: false,
-            backBufferLength: 30
+            lowLatencyMode: false
           });
-          
-          hls.loadSource(STREAM);
+
+          hls.loadSource(STREAM_URL);
           hls.attachMedia(video);
-          
+
           hls.on(Hls.Events.MANIFEST_PARSED, tryPlay);
-          
-          hls.on(Hls.Events.ERROR, function(e, data) {
+
+          hls.on(Hls.Events.ERROR, function(event, data) {
             if (data.fatal) {
-              console.error('HLS Error:', data.type);
-              // Unico recovery: ricarica tutto
-              hls.destroy();
-              setTimeout(init, 3000);
+              switch (data.type) {
+                case Hls.ErrorTypes.NETWORK_ERROR:
+                  hls.startLoad();
+                  break;
+                case Hls.ErrorTypes.MEDIA_ERROR:
+                  hls.recoverMediaError();
+                  break;
+                default:
+                  // Reload completo
+                  hls.destroy();
+                  hls = null;
+                  setTimeout(initPlayer, 2000);
+                  break;
+              }
             }
           });
-        } else {
-          loader.querySelector('.loader-text').textContent = 'Browser non supportato';
         }
-
-        bindEvents();
-        createSnow();
       }
 
       function tryPlay() {
-        video.play().catch(function() {
-          // Autoplay bloccato - mostra controlli
+        video.play().catch(() => {
+          // Autoplay bloccato
           showControls();
-          loader.classList.add('hidden');
+          setPaused(true);
         });
       }
 
-      // === EVENTS ===
-      function bindEvents() {
-        // Video ready - nascondi loader
-        video.addEventListener('playing', function() {
-          poster.classList.add('hidden');
-          loader.classList.add('hidden');
-          player.classList.add('playing');
-          player.classList.remove('paused');
-          
-          if (firstPlay) {
-            firstPlay = false;
-            hideControls();
-          }
-        });
-
-        video.addEventListener('pause', function() {
-          player.classList.remove('playing');
-          player.classList.add('paused');
-        });
-
-        video.addEventListener('waiting', function() {
-          // Buffering - non fare nulla, il browser gestisce
-        });
-
-        // Tap su video = toggle controlli
-        controls.addEventListener('click', function(e) {
-          if (e.target === playBtn || e.target.closest('.play-btn')) {
-            togglePlay();
-          } else {
-            toggleControls();
-          }
-        });
-
-        // Play button
-        playBtn.addEventListener('click', function(e) {
-          e.stopPropagation();
-          togglePlay();
-        });
-
-        // Fullscreen
-        fsBtn.addEventListener('click', toggleFullscreen);
-
-        // Visibility change - SOLO riprendi se era in play
-        document.addEventListener('visibilitychange', function() {
-          if (document.visibilityState === 'visible' && !video.paused) {
-            // Non fare nulla di speciale, il browser gestisce
-          }
-        });
-
-        // Fullscreen change
-        document.addEventListener('fullscreenchange', onFsChange);
-        document.addEventListener('webkitfullscreenchange', onFsChange);
+      // ==========================================
+      // UI
+      // ==========================================
+      function setReady(ready) {
+        wrapper.classList.toggle('is-ready', ready);
       }
 
-      function togglePlay() {
-        if (video.paused) {
-          video.play();
-        } else {
-          video.pause();
-        }
-        showControls();
+      function setPaused(paused) {
+        wrapper.classList.toggle('is-paused', paused);
       }
 
       function showControls() {
-        controls.classList.add('visible');
-        clearTimeout(hideTimer);
-        hideTimer = setTimeout(hideControls, 3000);
+        wrapper.classList.add('controls-visible');
+        clearTimeout(autoHideTimer);
+        autoHideTimer = setTimeout(() => {
+          if (!video.paused) {
+            wrapper.classList.remove('controls-visible');
+          }
+        }, 4000);
       }
 
       function hideControls() {
-        if (!video.paused) {
-          controls.classList.remove('visible');
-        }
+        wrapper.classList.remove('controls-visible');
+        clearTimeout(autoHideTimer);
       }
 
       function toggleControls() {
-        if (controls.classList.contains('visible')) {
+        if (wrapper.classList.contains('controls-visible')) {
           hideControls();
         } else {
           showControls();
         }
       }
 
-      function toggleFullscreen() {
-        if (document.fullscreenElement) {
-          document.exitFullscreen();
+      function togglePlayPause() {
+        if (video.paused) {
+          userPaused = false;
+          video.play();
         } else {
-          player.requestFullscreen().catch(function() {
-            // Fallback per iOS
-            if (video.webkitEnterFullscreen) {
-              video.webkitEnterFullscreen();
-            }
-          });
+          userPaused = true;
+          video.pause();
+        }
+        showControls();
+      }
+
+      // ==========================================
+      // FULLSCREEN
+      // ==========================================
+      function toggleFullscreen() {
+        fsCurtain?.classList.add('on');
+        pageCurtain?.classList.add('on');
+
+        if (document.fullscreenElement || document.webkitFullscreenElement) {
+          (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+        } else {
+          (wrapper.requestFullscreen || wrapper.webkitRequestFullscreen)?.call(wrapper);
         }
       }
 
-      function onFsChange() {
-        // Orientamento landscape su mobile
-        if (document.fullscreenElement) {
-          screen.orientation?.lock?.('landscape').catch(function(){});
+      function onFullscreenChange() {
+        const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+        
+        if (isFs) {
+          screen.orientation?.lock?.('landscape').catch(() => {});
         } else {
           screen.orientation?.unlock?.();
         }
+
+        setTimeout(() => {
+          fsCurtain?.classList.remove('on');
+          pageCurtain?.classList.remove('on');
+        }, 220);
       }
 
-      // === SNOW ===
-      function createSnow() {
-        const container = document.getElementById('particles');
-        const count = window.innerWidth < 768 ? 30 : 50;
-        
-        for (let i = 0; i < count; i++) {
-          const snow = document.createElement('div');
-          snow.className = 'snow';
-          const size = Math.random() * 3 + 2;
-          snow.style.cssText = 
-            'width:' + size + 'px;' +
-            'height:' + size + 'px;' +
-            'left:' + (Math.random() * 100) + 'vw;' +
-            'top:' + (-Math.random() * 20) + 'vh;' +
-            'animation:fall ' + (Math.random() * 5 + 5) + 's linear infinite;' +
-            'animation-delay:' + (Math.random() * -10) + 's';
-          container.appendChild(snow);
+      // ==========================================
+      // EVENTS
+      // ==========================================
+      // Video events
+      video.addEventListener('playing', () => {
+        setReady(true);
+        setPaused(false);
+      });
+
+      video.addEventListener('pause', () => {
+        setPaused(true);
+        // Se non è stato l'utente, riprova
+        if (!userPaused && !document.hidden) {
+          setTimeout(() => {
+            if (video.paused && !userPaused) {
+              video.play().catch(() => {});
+            }
+          }, 500);
         }
+      });
+
+      video.addEventListener('waiting', () => {
+        // Buffering - non fare nulla
+      });
+
+      // Tap layer
+      tapLayer?.addEventListener('click', toggleControls);
+
+      // Play button
+      osdBtn?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        togglePlayPause();
+      });
+
+      // Fullscreen button
+      fsBtn?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleFullscreen();
+        showControls();
+      });
+
+      // Fullscreen change
+      document.addEventListener('fullscreenchange', onFullscreenChange);
+      document.addEventListener('webkitfullscreenchange', onFullscreenChange);
+
+      // Visibility
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible' && !userPaused) {
+          video.play().catch(() => {});
+        }
+      });
+
+      // ==========================================
+      // PARTICELLE
+      // ==========================================
+      function createParticles() {
+        if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+
+        const container = $('particlesContainer');
+        if (!container) return;
+
+        const isMobile = window.innerWidth < 768;
+        const snowCount = isMobile ? 35 : 70;
+        const emberCount = isMobile ? 15 : 30;
+        const speedModifier = isMobile ? 1.5 : 1;
+
+        const fragment = document.createDocumentFragment();
+
+        // Fiocchi di neve
+        for (let i = 0; i < snowCount; i++) {
+          const flake = document.createElement('div');
+          flake.className = 'snowflake';
+          const size = Math.random() * 3 + 2;
+          flake.style.cssText = `
+            width: ${size}px;
+            height: ${size}px;
+            left: ${Math.random() * 120 - 10}vw;
+            animation: fall ${(Math.random() * 4 + 4) * speedModifier}s linear infinite;
+            animation-delay: -${Math.random() * 5}s;
+          `;
+          fragment.appendChild(flake);
+        }
+
+        // Embers
+        const animations = ['riseRight', 'riseLeft', 'riseZigZag'];
+        for (let i = 0; i < emberCount; i++) {
+          const ember = document.createElement('div');
+          ember.className = 'ember';
+          const size = Math.random() * 4 + 3;
+          const randomAnim = animations[Math.floor(Math.random() * animations.length)];
+          ember.style.cssText = `
+            width: ${size}px;
+            height: ${size}px;
+            left: ${Math.random() * 100}vw;
+            animation: ${randomAnim} ${(Math.random() * 6 + 6) * speedModifier}s linear infinite;
+            animation-delay: -${Math.random() * 10}s;
+          `;
+          fragment.appendChild(ember);
+        }
+
+        container.appendChild(fragment);
       }
 
-      // Start
-      init();
+      // ==========================================
+      // START
+      // ==========================================
+      createParticles();
+      initPlayer();
+
     })();
   </script>
 </body>
