@@ -15,7 +15,6 @@
   
   <title>Webcam Montefalcone di Val Fortore</title>
   <meta name="description" content="Webcam in diretta dal Comune di Montefalcone. Vista panoramica e condizioni meteo attuali">
-  <meta name="keywords" content="webcam montefalcone, meteo montefalcone, comune di montefalcone live, telecamera diretta">
   <meta name="robots" content="index, follow">
   <meta name="google-site-verification" content="DLjKDn5UupGNdRgZXo9CuMc0Sg1S1aULxDJfIHT9tYo">
   <link rel="canonical" href="https://www.webcammontefalconedivalfortore.it/">
@@ -23,53 +22,31 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://www.webcammontefalconedivalfortore.it/">
   <meta property="og:title" content="Webcam Montefalcone di Val Fortore - LIVE">
-  <meta property="og:description" content="Guarda cosa succede ora a Montefalcone. Clicca per la diretta.">
+  <meta property="og:description" content="Guarda cosa succede ora a Montefalcone.">
   <meta property="og:image" content="https://www.webcammontefalconedivalfortore.it/p.png">
   <meta property="og:locale" content="it_IT">
-  <meta property="og:site_name" content="Webcam Montefalcone">
   
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Webcam Montefalcone di Val Fortore - LIVE">
-  <meta name="twitter:description" content="Guarda cosa succede ora a Montefalcone. Clicca per la diretta.">
-  <meta name="twitter:image" content="https://www.webcammontefalconedivalfortore.it/p.png">
-
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://live.webcammontefalconedivalfortore.it" crossorigin>
-  <link rel="preconnect" href="https://vjs.zencdn.net" crossorigin>
   
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&display=swap" rel="stylesheet">
-  
-  <!-- Video.js CSS -->
-  <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet">
 
   <style>
     :root {
       --color-bg: #000;
       --color-live: #ff2b2b;
-      --color-live-off: #666;
       --color-white: #fff;
-      --color-border: rgba(255, 255, 255, 0.18);
-      --radius-pill: 999px;
-      --radius-video: 15px;
-      --shadow-glow: 0 0 30px rgba(255, 220, 150, 0.2);
-      --shadow-deep: 0 40px 80px rgba(0, 0, 0, 0.95);
     }
 
-    *, *::before, *::after { box-sizing: border-box; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     html, body {
-      margin: 0;
-      padding: 0;
       width: 100%;
       height: 100%;
       overflow: hidden;
-      position: fixed;
-      top: 0;
-      left: 0;
-      overscroll-behavior: none;
-      background-color: var(--color-bg);
-      -webkit-font-smoothing: antialiased;
+      background: var(--color-bg);
+      font-family: "Poppins", sans-serif;
     }
 
     @font-face {
@@ -78,777 +55,515 @@
       font-display: swap;
     }
 
-    #main-container {
+    /* Layout */
+    .page {
       width: 100%;
       height: 100%;
       display: flex;
       flex-direction: column;
-      justify-content: center;
       align-items: center;
+      justify-content: center;
       position: relative;
-      z-index: 20;
     }
 
-    @media (min-width: 1024px) {
-      #main-container {
-        transform: scale(0.965);
-        transform-origin: center top;
-      }
-    }
-
-    #bg-static {
+    /* Background */
+    .bg {
       position: absolute;
       inset: 0;
-      background-image: url("1a.webp");
-      background-size: cover;
-      background-position: center;
+      background: url("1a.webp") center/cover no-repeat;
+      filter: brightness(0.6);
       z-index: 0;
-      filter: brightness(0.65);
-      pointer-events: none;
-    }
-
-    @media (min-width: 769px) {
-      #bg-static {
-        top: -5%;
-        left: -5%;
-        width: 110%;
-        height: 110%;
-        animation: driftBg 60s ease-in-out infinite alternate;
-      }
-    }
-
-    @keyframes driftBg {
-      0% { transform: translate(0, 0) scale(1); }
-      100% { transform: translate(-2%, 1%) scale(1.03); }
-    }
-
-    .municipality-logo, .festive-message { pointer-events: none; }
-
-    .municipality-logo {
-      width: 110px;
-      height: auto;
-      margin-bottom: 15px;
-      z-index: 30;
-      filter: brightness(1.1) drop-shadow(0 0 15px rgba(255, 215, 0, 0.5));
-    }
-
-    .festive-message {
-      font-family: 'MerryChristmasFont', 'Brush Script MT', cursive, serif;
-      color: var(--color-white);
-      text-align: center;
-      font-size: 3.5rem;
-      line-height: 1.2;
-      margin-bottom: 25px;
-      text-shadow: 2px 2px 4px var(--color-bg), 0 0 25px rgba(255, 255, 255, 0.6);
-      z-index: 30;
-      padding: 0 20px;
-      width: 100%;
     }
 
     .vignette {
       position: absolute;
       inset: 0;
-      background: radial-gradient(circle at center, transparent 40%, rgba(0, 0, 0, 0.7) 85%, var(--color-bg) 100%);
-      z-index: 6;
-      pointer-events: none;
+      background: radial-gradient(circle, transparent 30%, rgba(0,0,0,0.8) 100%);
+      z-index: 1;
     }
 
-    /* Particelle */
-    .particles-container {
+    /* Content */
+    .content {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 900px;
+      padding: 20px;
+    }
+
+    .logo {
+      width: 100px;
+      margin-bottom: 15px;
+      filter: drop-shadow(0 0 10px rgba(255,215,0,0.5));
+    }
+
+    .title {
+      font-family: 'MerryChristmasFont', cursive;
+      color: var(--color-white);
+      font-size: clamp(1.8rem, 5vw, 3.5rem);
+      text-align: center;
+      margin-bottom: 25px;
+      text-shadow: 2px 2px 8px rgba(0,0,0,0.8);
+    }
+
+    /* Player Container */
+    .player-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16/9;
+      background: #000;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+    }
+
+    /* Video - IL CUORE: semplicissimo */
+    #video {
+      width: 100%;
+      height: 100%;
+      background: #000;
+      object-fit: contain;
+    }
+
+    /* Poster/Loading - mostrato SOLO prima del primo frame */
+    .poster {
       position: absolute;
       inset: 0;
-      pointer-events: none;
+      background: url("https://www.webcammontefalconedivalfortore.it/p.png") center/cover;
+      filter: blur(15px) brightness(0.4);
+      transform: scale(1.1);
       z-index: 5;
-      overflow: hidden;
-      contain: strict;
+      transition: opacity 0.3s ease;
     }
 
-    .snowflake {
-      position: absolute;
-      top: -10px;
-      background: white;
-      border-radius: 50%;
-      opacity: 0.8;
-      will-change: transform;
-      transform: translateZ(0);
-    }
+    .poster.hidden { opacity: 0; pointer-events: none; }
 
-    @keyframes fall {
-      0% { transform: translate3d(0, -10vh, 0); }
-      100% { transform: translate3d(0, 110vh, 0); }
-    }
-
-    .ember {
-      position: absolute;
-      bottom: -20px;
-      background: #ffaa00;
-      border-radius: 50%;
-      opacity: 0;
-      will-change: transform, opacity;
-      transform: translateZ(0);
-    }
-
-    @keyframes rise {
-      0% { transform: translate3d(0, 0, 0); opacity: 0; }
-      15% { opacity: 0.7; }
-      100% { transform: translate3d(10vw, -100vh, 0); opacity: 0; }
-    }
-
-    /* Video Wrapper */
-    .video-wrapper {
-      position: relative;
-      width: auto;
-      height: 60%;
-      aspect-ratio: 16 / 9;
-      border-radius: var(--radius-video);
-      overflow: hidden;
-      background: var(--color-bg);
-      box-shadow: var(--shadow-glow), var(--shadow-deep);
-      border: 1px solid var(--color-border);
-      z-index: 30;
-    }
-
-    /* === VIDEO.JS CUSTOM STYLING === */
-    .video-js {
-      width: 100%;
-      height: 100%;
-      border-radius: var(--radius-video);
-      overflow: hidden;
-    }
-
-    /* Nascondi UI default di video.js, usiamo la nostra */
-    .video-js .vjs-control-bar {
-      display: none !important;
-    }
-
-    .video-js .vjs-big-play-button {
-      display: none !important;
-    }
-
-    .video-js .vjs-loading-spinner {
-      display: none !important;
-    }
-
-    .video-js .vjs-poster {
-      background-size: cover;
-      filter: blur(20px) brightness(0.5);
-      transform: scale(1.1);
-    }
-
-    /* Custom Loading Overlay */
-    .custom-loading {
-      position: absolute;
-      inset: 0;
-      z-index: 100;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      background: var(--color-bg);
-      opacity: 1;
-      visibility: visible;
-      transition: opacity 300ms ease, visibility 0ms linear 0ms;
-      pointer-events: none;
-    }
-
-    .custom-loading.hidden {
-      opacity: 0;
-      visibility: hidden;
-      transition: opacity 300ms ease, visibility 0ms linear 300ms;
-    }
-
-    .custom-loading .preview {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      filter: blur(20px) brightness(0.5) saturate(0.8);
-      transform: scale(1.1);
-    }
-
-    .custom-loading .spinner-box {
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 12px;
-      z-index: 2;
-    }
-
-    .custom-loading .spinner {
-      width: 42px;
-      height: 42px;
-      border-radius: 50%;
-      border: 3px solid rgba(255, 255, 255, 0.25);
-      border-top-color: rgba(255, 255, 255, 0.9);
-      animation: spin 0.8s linear infinite;
-    }
-
-    .custom-loading .status {
-      font-family: "Poppins", sans-serif;
-      font-size: 11px;
-      font-weight: 600;
-      color: rgba(255, 255, 255, 0.85);
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-    }
-
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* Custom Controls */
-    .custom-controls {
-      position: absolute;
-      inset: 0;
-      z-index: 50;
-      opacity: 0;
-      transition: opacity 150ms ease;
-      pointer-events: none;
-    }
-
-    .custom-controls.visible {
-      opacity: 1;
-      pointer-events: auto;
-    }
-
-    /* Play/Pause centrale */
-    .play-btn {
+    .loader {
       position: absolute;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      width: 80px;
-      height: 80px;
-      border-radius: 50%;
-      border: 1px solid rgba(255, 255, 255, 0.22);
-      background: rgba(0, 0, 0, 0.3);
-      backdrop-filter: blur(5px);
-      -webkit-backdrop-filter: blur(5px);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      z-index: 6;
+      text-align: center;
+      transition: opacity 0.3s ease;
     }
 
-    .play-btn:active { transform: translate(-50%, -50%) scale(0.92); }
-    .play-btn svg { width: 36px; height: 36px; fill: white; }
-    .play-btn .icon-pause { display: none; }
-    .video-wrapper.is-playing .play-btn .icon-play { display: none; }
-    .video-wrapper.is-playing .play-btn .icon-pause { display: block; }
+    .loader.hidden { opacity: 0; pointer-events: none; }
 
-    /* Fullscreen btn */
-    .fs-btn {
-      position: absolute;
-      bottom: 12px;
-      right: 12px;
-      width: 44px;
-      height: 44px;
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(255,255,255,0.2);
+      border-top-color: #fff;
       border-radius: 50%;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      background: rgba(0, 0, 0, 0.35);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 10px;
     }
 
-    .fs-btn:active { transform: scale(0.92); }
-    .fs-btn svg { width: 20px; height: 20px; fill: white; }
-    .fs-btn .icon-exit { display: none; }
-    .video-wrapper.is-fullscreen .fs-btn .icon-enter { display: none; }
-    .video-wrapper.is-fullscreen .fs-btn .icon-exit { display: block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loader-text {
+      color: rgba(255,255,255,0.8);
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
 
     /* Live Badge */
     .live-badge {
       position: absolute;
-      left: 12px;
       bottom: 12px;
-      z-index: 60;
-      display: inline-flex;
+      left: 12px;
+      z-index: 20;
+      display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 8px 12px;
-      border-radius: var(--radius-pill);
-      color: var(--color-white);
-      font-family: "Poppins", sans-serif;
-      font-weight: 700;
-      font-size: 12px;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      background: rgba(0, 0, 0, 0.18);
-      border: 1px solid var(--color-border);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      pointer-events: none;
+      gap: 6px;
+      padding: 6px 10px;
+      background: rgba(0,0,0,0.6);
+      border-radius: 20px;
+      backdrop-filter: blur(10px);
     }
 
     .live-dot {
       width: 8px;
       height: 8px;
-      border-radius: 50%;
       background: var(--color-live);
-      box-shadow: 0 0 12px rgba(255, 43, 43, 0.95);
-      animation: livePulse 1.6s infinite;
+      border-radius: 50%;
+      animation: pulse 1.5s infinite;
     }
 
-    .video-wrapper:not(.is-playing) .live-dot {
-      background: var(--color-live-off);
-      box-shadow: none;
+    .paused .live-dot {
+      background: #666;
       animation: none;
     }
 
-    @keyframes livePulse {
+    @keyframes pulse {
       0%, 100% { opacity: 1; }
       50% { opacity: 0.4; }
     }
 
-    /* Gradient bottom */
-    .gradient-bottom {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 100px;
-      background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
-      pointer-events: none;
-      z-index: 40;
-      opacity: 0;
-      transition: opacity 150ms ease;
+    .live-text {
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
     }
 
-    .custom-controls.visible .gradient-bottom {
+    /* Controls Overlay */
+    .controls {
+      position: absolute;
+      inset: 0;
+      z-index: 15;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0);
+      opacity: 0;
+      transition: opacity 0.2s ease, background 0.2s ease;
+      cursor: pointer;
+    }
+
+    .controls.visible {
       opacity: 1;
+      background: rgba(0,0,0,0.3);
+    }
+
+    .play-btn {
+      width: 70px;
+      height: 70px;
+      background: rgba(0,0,0,0.5);
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      backdrop-filter: blur(5px);
+      transition: transform 0.15s ease;
+    }
+
+    .play-btn:active { transform: scale(0.9); }
+
+    .play-btn svg {
+      width: 28px;
+      height: 28px;
+      fill: #fff;
+      margin-left: 3px;
+    }
+
+    .play-btn .pause-icon { display: none; margin-left: 0; }
+    .playing .play-btn .play-icon { display: none; }
+    .playing .play-btn .pause-icon { display: block; }
+
+    /* Fullscreen Button */
+    .fs-btn {
+      position: absolute;
+      bottom: 12px;
+      right: 12px;
+      width: 40px;
+      height: 40px;
+      background: rgba(0,0,0,0.5);
+      border: none;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+      z-index: 20;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .controls.visible ~ .fs-btn { opacity: 1; }
+
+    .fs-btn svg { width: 18px; height: 18px; fill: #fff; }
+
+    /* Particles */
+    .particles {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .snow {
+      position: absolute;
+      background: #fff;
+      border-radius: 50%;
+      opacity: 0.8;
+    }
+
+    @keyframes fall {
+      to { transform: translateY(100vh); }
     }
 
     /* Responsive */
-    @media (max-width: 768px) and (orientation: portrait) {
-      #main-container {
-        justify-content: flex-start;
-        padding-top: 18vh;
-      }
-
-      .municipality-logo { width: 75px; margin-bottom: 10px; }
-      .festive-message { font-size: 6vw; line-height: 1.4; margin-bottom: 20px; }
-      .video-wrapper { width: 95%; height: auto; }
-      .play-btn { width: 65px; height: 65px; }
-      .play-btn svg { width: 30px; height: 30px; }
-      .fs-btn { width: 38px; height: 38px; }
-      .live-badge { padding: 6px 10px; font-size: 10px; gap: 6px; }
-      .live-dot { width: 6px; height: 6px; }
+    @media (max-width: 768px) {
+      .content { padding: 15px; }
+      .logo { width: 70px; margin-bottom: 10px; }
+      .title { margin-bottom: 15px; }
+      .player-wrap { border-radius: 8px; }
+      .play-btn { width: 60px; height: 60px; }
+      .play-btn svg { width: 24px; height: 24px; }
     }
 
-    @media screen and (orientation: landscape) and (max-height: 600px) {
-      .municipality-logo, .festive-message, #bg-static, .vignette, .particles-container {
-        display: none !important;
-      }
+    @media (max-width: 768px) and (orientation: portrait) {
+      .page { justify-content: flex-start; padding-top: 15vh; }
+    }
 
-      #main-container {
-        padding: 0 !important;
-        justify-content: center !important;
-        background: var(--color-bg);
-      }
-
-      .video-wrapper {
-        width: 100vw;
-        height: 100vh;
-        border: none;
-        border-radius: 0;
-      }
-
-      .video-js { border-radius: 0; }
+    @media (orientation: landscape) and (max-height: 500px) {
+      .logo, .title, .bg, .vignette, .particles { display: none; }
+      .page { background: #000; }
+      .content { max-width: 100%; padding: 0; height: 100%; }
+      .player-wrap { border-radius: 0; height: 100%; }
     }
 
     /* Fullscreen */
-    .video-wrapper:fullscreen,
-    .video-wrapper:-webkit-full-screen {
-      border-radius: 0 !important;
-      border: none !important;
-      box-shadow: none !important;
-      width: 100vw !important;
-      height: 100vh !important;
-    }
-
-    .video-wrapper:fullscreen .video-js,
-    .video-wrapper:-webkit-full-screen .video-js {
+    .player-wrap:fullscreen,
+    .player-wrap:-webkit-full-screen {
       border-radius: 0;
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after {
-        animation-duration: 0.01ms !important;
-        transition-duration: 0.01ms !important;
-      }
-      .particles-container { display: none !important; }
-      .custom-loading .spinner { animation: spin 0.8s linear infinite !important; }
+      width: 100vw;
+      height: 100vh;
     }
   </style>
 </head>
-
 <body>
-  <div id="bg-static"></div>
-  <div class="vignette"></div>
-  <div class="particles-container" id="particlesContainer"></div>
+  <div class="page">
+    <div class="bg"></div>
+    <div class="vignette"></div>
+    <div class="particles" id="particles"></div>
 
-  <div id="main-container">
-    <img 
-      src="stemma2-removebg-preview.png" 
-      alt="Stemma Comune di Montefalcone di Val Fortore" 
-      class="municipality-logo"
-      width="110"
-      height="110"
-      loading="eager"
-    >
+    <div class="content">
+      <img src="stemma2-removebg-preview.png" alt="Stemma" class="logo" width="100" height="100">
+      
+      <h1 class="title">
+        Il comune di Montefalcone di Val Fortore<br>augura a tutti Buone Feste
+      </h1>
 
-    <div class="festive-message">
-      Il comune di Montefalcone di Val Fortore<br>
-      augura a tutti Buone Feste
-    </div>
-
-    <div class="video-wrapper" id="videoWrapper">
-      <!-- Video.js Player -->
-      <video
-        id="liveVideo"
-        class="video-js"
-        playsinline
-        muted
-        preload="auto"
-        poster="https://www.webcammontefalconedivalfortore.it/p.png"
-      >
-        <source 
-          src="https://live.webcammontefalconedivalfortore.it/memfs/58e0bcbe-f1bd-4c8b-85f7-b4566a3e5392.m3u8" 
-          type="application/x-mpegURL"
-        >
-      </video>
-
-      <!-- Custom Loading -->
-      <div class="custom-loading" id="customLoading">
-        <img class="preview" src="https://www.webcammontefalconedivalfortore.it/p.png" alt="" loading="eager">
-        <div class="spinner-box">
-          <div class="spinner"></div>
-          <div class="status" id="statusText">Connessione...</div>
-        </div>
-      </div>
-
-      <!-- Custom Controls -->
-      <div class="custom-controls" id="customControls">
-        <div class="gradient-bottom"></div>
+      <div class="player-wrap" id="player">
+        <video id="video" playsinline muted></video>
         
-        <button class="play-btn" id="playBtn" type="button" aria-label="Play/Pausa">
-          <svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-          <svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-        </button>
+        <div class="poster" id="poster"></div>
+        <div class="loader" id="loader">
+          <div class="spinner"></div>
+          <div class="loader-text">Connessione...</div>
+        </div>
 
-        <button class="fs-btn" id="fsBtn" type="button" aria-label="Schermo intero">
-          <svg class="icon-enter" viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
-          <svg class="icon-exit" viewBox="0 0 24 24"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>
-        </button>
-      </div>
+        <div class="live-badge">
+          <div class="live-dot"></div>
+          <span class="live-text">LIVE</span>
+        </div>
 
-      <!-- Live Badge -->
-      <div class="live-badge">
-        <span class="live-dot"></span>
-        <span>LIVE</span>
+        <div class="controls" id="controls">
+          <div class="play-btn" id="playBtn">
+            <svg class="play-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            <svg class="pause-icon" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+          </div>
+        </div>
+
+        <button class="fs-btn" id="fsBtn" aria-label="Fullscreen">
+          <svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+        </button>
       </div>
     </div>
   </div>
 
-  <!-- Video.js -->
-  <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
-
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.7/dist/hls.min.js"></script>
   <script>
-    (() => {
-      'use strict';
+    (function() {
+      const STREAM = 'https://live.webcammontefalconedivalfortore.it/memfs/58e0bcbe-f1bd-4c8b-85f7-b4566a3e5392.m3u8';
+      
+      const video = document.getElementById('video');
+      const player = document.getElementById('player');
+      const poster = document.getElementById('poster');
+      const loader = document.getElementById('loader');
+      const controls = document.getElementById('controls');
+      const playBtn = document.getElementById('playBtn');
+      const fsBtn = document.getElementById('fsBtn');
+      
+      let hls = null;
+      let hideTimer = null;
+      let firstPlay = true;
 
-      const $ = id => document.getElementById(id);
-
-      class WebcamPlayer {
-        constructor() {
-          this.wrapper = $('videoWrapper');
-          this.loading = $('customLoading');
-          this.controls = $('customControls');
-          this.playBtn = $('playBtn');
-          this.fsBtn = $('fsBtn');
-          this.statusText = $('statusText');
+      // === INIT ===
+      function init() {
+        // Safari/iOS: HLS nativo
+        if (video.canPlayType('application/vnd.apple.mpegurl')) {
+          video.src = STREAM;
+          video.load();
+          tryPlay();
+        } 
+        // Altri browser: HLS.js
+        else if (Hls.isSupported()) {
+          hls = new Hls({
+            // Config MINIMA - lascia i default di HLS.js che sono già ottimizzati
+            enableWorker: true,
+            lowLatencyMode: false,
+            backBufferLength: 30
+          });
           
-          this.player = null;
-          this.hideTimer = null;
-          this.userPaused = false;
-
-          this.init();
-        }
-
-        init() {
-          this.setupVideoJs();
-          this.bindEvents();
-          this.createParticles();
-        }
-
-        setupVideoJs() {
-          this.status('Connessione...');
-
-          // Configurazione Video.js ottimizzata per live
-          this.player = videojs('liveVideo', {
-            controls: false,
-            autoplay: true,
-            muted: true,
-            preload: 'auto',
-            fluid: false,
-            fill: true,
-            liveui: true,
-            liveTracker: {
-              trackingThreshold: 0,
-              liveTolerance: 10
-            },
-            html5: {
-              vhs: {
-                // Configurazione VHS (Video.js HTTP Streaming)
-                overrideNative: !videojs.browser.IS_SAFARI,
-                enableLowInitialPlaylist: true,
-                smoothQualityChange: true,
-                fastQualityChange: true,
-                allowSeeksWithinUnsafeLiveWindow: true,
-                // Configurazione per live
-                experimentalBufferBasedABR: true,
-                useDevicePixelRatio: true,
-                limitRenditionByPlayerDimensions: true,
-                // Buffer settings
-                bandwidth: 5000000,
-                maxPlaylistRetries: 10,
-                useBandwidthFromLocalStorage: true
-              },
-              nativeAudioTracks: false,
-              nativeVideoTracks: false
-            },
-            sources: [{
-              src: 'https://live.webcammontefalconedivalfortore.it/memfs/58e0bcbe-f1bd-4c8b-85f7-b4566a3e5392.m3u8',
-              type: 'application/x-mpegURL'
-            }]
-          });
-
-          // Eventi Video.js
-          this.player.ready(() => {
-            console.log('[VideoJS] Ready');
-            this.status('Avvio...');
-            
-            // Tenta autoplay
-            const playPromise = this.player.play();
-            if (playPromise) {
-              playPromise.catch(() => {
-                console.log('[VideoJS] Autoplay blocked');
-                this.status('Tap per avviare');
-                this.showControls();
-              });
-            }
-          });
-
-          this.player.on('loadeddata', () => {
-            console.log('[VideoJS] Loaded data');
-          });
-
-          this.player.on('canplay', () => {
-            console.log('[VideoJS] Can play');
-          });
-
-          this.player.on('playing', () => {
-            console.log('[VideoJS] Playing');
-            this.setPlaying(true);
-            this.hideLoading();
-          });
-
-          this.player.on('pause', () => {
-            console.log('[VideoJS] Pause, userPaused:', this.userPaused);
-            this.setPlaying(false);
-            
-            // Se non è stato l'utente, riprova
-            if (!this.userPaused && !document.hidden) {
-              setTimeout(() => {
-                if (this.player.paused() && !this.userPaused) {
-                  console.log('[VideoJS] Auto-resume');
-                  this.player.play();
-                }
-              }, 500);
-            }
-          });
-
-          this.player.on('waiting', () => {
-            console.log('[VideoJS] Waiting/buffering');
-            this.status('Buffering...');
-          });
-
-          this.player.on('error', (e) => {
-            console.error('[VideoJS] Error:', this.player.error());
-            this.status('Riconnessione...');
-            
-            // Riprova dopo 2 secondi
-            setTimeout(() => {
-              this.player.src({
-                src: 'https://live.webcammontefalconedivalfortore.it/memfs/58e0bcbe-f1bd-4c8b-85f7-b4566a3e5392.m3u8',
-                type: 'application/x-mpegURL'
-              });
-              this.player.play();
-            }, 2000);
-          });
-
-          this.player.on('stalled', () => {
-            console.log('[VideoJS] Stalled');
-          });
-        }
-
-        status(text) {
-          if (this.statusText) this.statusText.textContent = text;
-        }
-
-        hideLoading() {
-          this.loading?.classList.add('hidden');
-        }
-
-        showLoading() {
-          this.loading?.classList.remove('hidden');
-        }
-
-        setPlaying(playing) {
-          this.wrapper.classList.toggle('is-playing', playing);
-        }
-
-        showControls() {
-          this.controls.classList.add('visible');
-          clearTimeout(this.hideTimer);
+          hls.loadSource(STREAM);
+          hls.attachMedia(video);
           
-          this.hideTimer = setTimeout(() => {
-            if (!this.player.paused()) {
-              this.controls.classList.remove('visible');
-            }
-          }, 4000);
-        }
-
-        hideControls() {
-          this.controls.classList.remove('visible');
-          clearTimeout(this.hideTimer);
-        }
-
-        toggleControls() {
-          if (this.controls.classList.contains('visible')) {
-            this.hideControls();
-          } else {
-            this.showControls();
-          }
-        }
-
-        togglePlay() {
-          if (this.player.paused()) {
-            this.userPaused = false;
-            this.player.play();
-          } else {
-            this.userPaused = true;
-            this.player.pause();
-          }
-          this.showControls();
-        }
-
-        toggleFullscreen() {
-          if (document.fullscreenElement || document.webkitFullscreenElement) {
-            (document.exitFullscreen || document.webkitExitFullscreen).call(document);
-          } else {
-            (this.wrapper.requestFullscreen || this.wrapper.webkitRequestFullscreen)?.call(this.wrapper);
-          }
-        }
-
-        onFullscreenChange() {
-          const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
-          this.wrapper.classList.toggle('is-fullscreen', isFs);
-
-          if (isFs) {
-            screen.orientation?.lock?.('landscape').catch(() => {});
-          } else {
-            screen.orientation?.unlock?.();
-          }
-        }
-
-        bindEvents() {
-          // Tap sul video = toggle controls
-          this.wrapper.addEventListener('click', (e) => {
-            if (e.target === this.playBtn || e.target === this.fsBtn || 
-                e.target.closest('.play-btn') || e.target.closest('.fs-btn')) {
-              return;
-            }
-            this.toggleControls();
-          });
-
-          // Play button
-          this.playBtn?.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.togglePlay();
-          });
-
-          // Fullscreen button
-          this.fsBtn?.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.toggleFullscreen();
-          });
-
-          // Fullscreen change
-          document.addEventListener('fullscreenchange', () => this.onFullscreenChange());
-          document.addEventListener('webkitfullscreenchange', () => this.onFullscreenChange());
-
-          // Visibility change
-          document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible' && !this.userPaused) {
-              console.log('[Visibility] Tab visible, resuming...');
-              this.player.play();
-            }
-          });
-
-          // Online
-          window.addEventListener('online', () => {
-            console.log('[Network] Back online');
-            this.player.src({
-              src: 'https://live.webcammontefalconedivalfortore.it/memfs/58e0bcbe-f1bd-4c8b-85f7-b4566a3e5392.m3u8',
-              type: 'application/x-mpegURL'
-            });
-            this.player.play();
-          });
-        }
-
-        createParticles() {
-          if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
-
-          const container = $('particlesContainer');
-          if (!container) return;
-
-          const isMobile = window.innerWidth < 769;
-          const snowCount = isMobile ? 25 : 45;
-          const emberCount = isMobile ? 10 : 20;
-
-          const fragment = document.createDocumentFragment();
+          hls.on(Hls.Events.MANIFEST_PARSED, tryPlay);
           
-          for (let i = 0; i < snowCount; i++) {
-            const flake = document.createElement('div');
-            flake.className = 'snowflake';
-            const size = Math.random() * 2.5 + 1.5;
-            flake.style.cssText = `width:${size}px;height:${size}px;left:${Math.random()*100}vw;animation:fall ${Math.random()*6+6}s linear infinite ${Math.random()*-10}s`;
-            fragment.appendChild(flake);
-          }
+          hls.on(Hls.Events.ERROR, function(e, data) {
+            if (data.fatal) {
+              console.error('HLS Error:', data.type);
+              // Unico recovery: ricarica tutto
+              hls.destroy();
+              setTimeout(init, 3000);
+            }
+          });
+        } else {
+          loader.querySelector('.loader-text').textContent = 'Browser non supportato';
+        }
 
-          for (let i = 0; i < emberCount; i++) {
-            const ember = document.createElement('div');
-            ember.className = 'ember';
-            const size = Math.random() * 3 + 2;
-            ember.style.cssText = `width:${size}px;height:${size}px;left:${Math.random()*100}vw;animation:rise ${Math.random()*8+8}s linear infinite ${Math.random()*-15}s`;
-            fragment.appendChild(ember);
-          }
+        bindEvents();
+        createSnow();
+      }
 
-          container.appendChild(fragment);
+      function tryPlay() {
+        video.play().catch(function() {
+          // Autoplay bloccato - mostra controlli
+          showControls();
+          loader.classList.add('hidden');
+        });
+      }
+
+      // === EVENTS ===
+      function bindEvents() {
+        // Video ready - nascondi loader
+        video.addEventListener('playing', function() {
+          poster.classList.add('hidden');
+          loader.classList.add('hidden');
+          player.classList.add('playing');
+          player.classList.remove('paused');
+          
+          if (firstPlay) {
+            firstPlay = false;
+            hideControls();
+          }
+        });
+
+        video.addEventListener('pause', function() {
+          player.classList.remove('playing');
+          player.classList.add('paused');
+        });
+
+        video.addEventListener('waiting', function() {
+          // Buffering - non fare nulla, il browser gestisce
+        });
+
+        // Tap su video = toggle controlli
+        controls.addEventListener('click', function(e) {
+          if (e.target === playBtn || e.target.closest('.play-btn')) {
+            togglePlay();
+          } else {
+            toggleControls();
+          }
+        });
+
+        // Play button
+        playBtn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          togglePlay();
+        });
+
+        // Fullscreen
+        fsBtn.addEventListener('click', toggleFullscreen);
+
+        // Visibility change - SOLO riprendi se era in play
+        document.addEventListener('visibilitychange', function() {
+          if (document.visibilityState === 'visible' && !video.paused) {
+            // Non fare nulla di speciale, il browser gestisce
+          }
+        });
+
+        // Fullscreen change
+        document.addEventListener('fullscreenchange', onFsChange);
+        document.addEventListener('webkitfullscreenchange', onFsChange);
+      }
+
+      function togglePlay() {
+        if (video.paused) {
+          video.play();
+        } else {
+          video.pause();
+        }
+        showControls();
+      }
+
+      function showControls() {
+        controls.classList.add('visible');
+        clearTimeout(hideTimer);
+        hideTimer = setTimeout(hideControls, 3000);
+      }
+
+      function hideControls() {
+        if (!video.paused) {
+          controls.classList.remove('visible');
+        }
+      }
+
+      function toggleControls() {
+        if (controls.classList.contains('visible')) {
+          hideControls();
+        } else {
+          showControls();
+        }
+      }
+
+      function toggleFullscreen() {
+        if (document.fullscreenElement) {
+          document.exitFullscreen();
+        } else {
+          player.requestFullscreen().catch(function() {
+            // Fallback per iOS
+            if (video.webkitEnterFullscreen) {
+              video.webkitEnterFullscreen();
+            }
+          });
+        }
+      }
+
+      function onFsChange() {
+        // Orientamento landscape su mobile
+        if (document.fullscreenElement) {
+          screen.orientation?.lock?.('landscape').catch(function(){});
+        } else {
+          screen.orientation?.unlock?.();
+        }
+      }
+
+      // === SNOW ===
+      function createSnow() {
+        const container = document.getElementById('particles');
+        const count = window.innerWidth < 768 ? 30 : 50;
+        
+        for (let i = 0; i < count; i++) {
+          const snow = document.createElement('div');
+          snow.className = 'snow';
+          const size = Math.random() * 3 + 2;
+          snow.style.cssText = 
+            'width:' + size + 'px;' +
+            'height:' + size + 'px;' +
+            'left:' + (Math.random() * 100) + 'vw;' +
+            'top:' + (-Math.random() * 20) + 'vh;' +
+            'animation:fall ' + (Math.random() * 5 + 5) + 's linear infinite;' +
+            'animation-delay:' + (Math.random() * -10) + 's';
+          container.appendChild(snow);
         }
       }
 
       // Start
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => new WebcamPlayer());
-      } else {
-        new WebcamPlayer();
-      }
+      init();
     })();
   </script>
 </body>
