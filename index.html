@@ -52,8 +52,9 @@
   <!-- Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&display=swap" rel="stylesheet">
 
-  <!-- HLS.js preload -->
-  <link rel="preload" href="https://cdn.jsdelivr.net/npm/hls.js@1.5.7/dist/hls.min.js" as="script">
+  <!-- Scripts -->
+  <script type="module" src="https://cdn.jsdelivr.net/npm/media-chrome@4/+esm"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/hls-video-element@1/+esm"></script>
 
   <style>
     /* =====================================================
@@ -303,7 +304,23 @@
       height: 100% !important;
     }
 
-    #liveVideo {
+    #videoWrapper:fullscreen #mc,
+    #videoWrapper:-webkit-full-screen #mc,
+    #videoWrapper:-moz-full-screen #mc {
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    #videoWrapper media-controller {
+      width: 100%;
+      height: 100%;
+      display: block;
+      position: relative;
+      background: var(--color-bg);
+      --media-tooltip-display: none;
+    }
+
+    #videoWrapper hls-video {
       width: 100%;
       height: 100%;
       display: block;
@@ -316,6 +333,33 @@
       inset: 0;
       z-index: 10;
       cursor: default;
+    }
+
+    /* =====================================================
+       BLUR PRIMERS - Elementi sempre visibili per mantenere
+       il blur "caldo" su mobile. Sono trasparenti ma opacity:1
+       ===================================================== */
+    .blur-primer {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 1;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .blur-primer-play {
+      top: 50%;
+      left: 50%;
+      backdrop-filter: blur(var(--blur-play)) brightness(1.05) saturate(1.1);
+      -webkit-backdrop-filter: blur(var(--blur-play)) brightness(1.05) saturate(1.1);
+    }
+
+    .blur-primer-ui {
+      bottom: 12px;
+      right: 12px;
+      backdrop-filter: blur(var(--blur-ui));
+      -webkit-backdrop-filter: blur(var(--blur-ui));
     }
 
     /* =====================================================
@@ -392,6 +436,7 @@
 
     /* =====================================================
        FULLSCREEN BUTTON
+       opacity minima 0.05 per forzare blur sempre attivo
        ===================================================== */
     #videoWrapper media-fullscreen-button {
       width: 44px;
@@ -447,12 +492,6 @@
       animation: livePulse 1.6s infinite;
     }
 
-    #videoWrapper.is-paused .live-dot {
-      background: #666;
-      box-shadow: none;
-      animation: none;
-    }
-
     @keyframes livePulse {
       0% { opacity: 1; }
       50% { opacity: 0.45; }
@@ -461,6 +500,7 @@
 
     /* =====================================================
        OSD PLAY/PAUSE
+       Migliorato con effetto glass più luminoso
        ===================================================== */
     #videoWrapper .osd {
       position: absolute;
@@ -487,11 +527,15 @@
       margin: 0;
       font: inherit;
       color: inherit;
+      
+      /* Glass effect bilanciato */
       background: rgba(0, 0, 0, 0.25);
       border: 1px solid rgba(255, 255, 255, 0.22);
       backdrop-filter: blur(var(--blur-play)) brightness(1.05) saturate(1.1);
       -webkit-backdrop-filter: blur(var(--blur-play)) brightness(1.05) saturate(1.1);
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+      
+      /* opacity minima 0.05 per forzare blur sempre attivo */
       opacity: 0.05;
       transform: scale(0.98);
       transition: opacity 140ms ease, transform 140ms ease;
@@ -582,6 +626,7 @@
         animation: driftingWorldMobile 35s ease-in-out infinite alternate;
       }
 
+      /* Tasti più piccoli su mobile */
       #videoWrapper .osd-chip {
         width: 68px;
         height: 68px;
@@ -657,6 +702,7 @@
         display: none !important;
       }
 
+      /* Mantieni solo lo spinner */
       #videoWrapper .loading-overlay .spinner {
         animation: spin 0.9s linear infinite !important;
       }
@@ -686,44 +732,59 @@
     </div>
 
     <div class="video-wrapper" id="videoWrapper">
-      <video
-        id="liveVideo"
-        playsinline
-        muted
-        preload="auto"
-      ></video>
+      <media-controller
+        id="mc"
+        autohide="-1"
+        gesturesdisabled
+        fullscreenelement="videoWrapper"
+      >
+        <!-- Blur primers: elementi invisibili ma opacity:1 per tenere il blur sempre attivo -->
+        <div class="blur-primer blur-primer-play" aria-hidden="true"></div>
+        <div class="blur-primer blur-primer-ui" aria-hidden="true"></div>
+        
+        <hls-video
+          id="liveVideo"
+          slot="media"
+          src="https://live.webcammontefalconedivalfortore.it/memfs/58e0bcbe-f1bd-4c8b-85f7-b4566a3e5392.m3u8"
+          autoplay
+          muted
+          playsinline
+          preload="auto"
+          crossorigin="anonymous"
+        ></hls-video>
 
-      <div class="loading-overlay" id="loadingOverlay" aria-hidden="true">
-        <img 
-          class="preview" 
-          src="https://www.webcammontefalconedivalfortore.it/p.png" 
-          alt=""
-          loading="eager"
-        >
-        <div class="spinner" role="status" aria-label="Caricamento video in corso"></div>
-      </div>
+        <div class="loading-overlay" id="loadingOverlay" aria-hidden="true">
+          <img 
+            class="preview" 
+            src="https://www.webcammontefalconedivalfortore.it/p.png" 
+            alt=""
+            loading="eager"
+          >
+          <div class="spinner" role="status" aria-label="Caricamento video in corso"></div>
+        </div>
 
-      <div class="tap-layer" id="tapLayer" aria-hidden="true"></div>
+        <div class="tap-layer" id="tapLayer" aria-hidden="true"></div>
 
-      <div class="live-badge" aria-hidden="true">
-        <span class="live-dot"></span>
-        <span>LIVE</span>
-      </div>
+        <div class="live-badge" aria-hidden="true">
+          <span class="live-dot"></span>
+          <span>LIVE</span>
+        </div>
 
-      <div class="osd" aria-hidden="true">
-        <button class="osd-chip" id="osdBtn" type="button" aria-label="Play/Pausa">
-          <svg class="osd-icon play" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M8 5v14l11-7z"/>
-          </svg>
-          <svg class="osd-icon pause" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
-          </svg>
-        </button>
-      </div>
+        <div class="osd" aria-hidden="true">
+          <button class="osd-chip" id="osdBtn" type="button" aria-label="Play/Pausa">
+            <svg class="osd-icon play" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M8 5v14l11-7z"/>
+            </svg>
+            <svg class="osd-icon pause" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+            </svg>
+          </button>
+        </div>
 
-      <media-control-bar>
-        <media-fullscreen-button id="fsBtn" notooltip></media-fullscreen-button>
-      </media-control-bar>
+        <media-control-bar>
+          <media-fullscreen-button id="fsBtn" notooltip tooltipplacement="none"></media-fullscreen-button>
+        </media-control-bar>
+      </media-controller>
 
       <div id="fsCurtain" aria-hidden="true"></div>
     </div>
@@ -731,267 +792,478 @@
 
   <div id="pageCurtain" aria-hidden="true"></div>
 
-  <!-- Media Chrome per fullscreen button -->
-  <script type="module" src="https://cdn.jsdelivr.net/npm/media-chrome@4/+esm"></script>
-  
-  <!-- HLS.js -->
-  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.7/dist/hls.min.js"></script>
-
-  <script>
+  <script type="module">
     (() => {
       'use strict';
 
-      const STREAM_URL = 'https://live.webcammontefalconedivalfortore.it/memfs/58e0bcbe-f1bd-4c8b-85f7-b4566a3e5392.m3u8';
+      /* =====================================================
+         CONFIGURAZIONE
+         ===================================================== */
+      const CONFIG = {
+        AUTOHIDE_MS: 4000,
+        MAX_BEHIND_SEC: 20,
+        TARGET_BEHIND_SEC: 2.5,
+        CATCHUP_COOLDOWN_MS: 12000,
+        HARD_RESYNC_COOLDOWN_MS: 8000,
+        VISIBILITY_THRESHOLD_MS: 1200,
+        ERROR_RETRY_MS: 1500,
+        CATCHUP_DELAY_MS: 900,
+      };
 
+      /* =====================================================
+         UTILITIES
+         ===================================================== */
       const $ = (id) => document.getElementById(id);
+      const whenDefined = (tag) => customElements.whenDefined?.(tag).catch(() => {});
 
-      // Elementi
-      const wrapper = $('videoWrapper');
-      const video = $('liveVideo');
-      const tapLayer = $('tapLayer');
-      const osdBtn = $('osdBtn');
-      const fsBtn = $('fsBtn');
-      const fsCurtain = $('fsCurtain');
-      const pageCurtain = $('pageCurtain');
+      const isTouchDevice = () => (
+        'ontouchstart' in window ||
+        navigator.maxTouchPoints > 0 ||
+        window.matchMedia?.('(hover: none) and (pointer: coarse)').matches
+      );
 
-      let hls = null;
-      let autoHideTimer = null;
-      let userPaused = false;
+      // FIX #1: Detect iOS/Safari
+      const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
-      // ==========================================
-      // INIT PLAYER
-      // ==========================================
-      function initPlayer() {
-        // Safari/iOS = HLS nativo
-        if (video.canPlayType('application/vnd.apple.mpegurl')) {
-          video.src = STREAM_URL;
-          tryPlay();
-        } 
-        // Altri browser = HLS.js
-        else if (typeof Hls !== 'undefined' && Hls.isSupported()) {
-          hls = new Hls({
-            // Config minimale - HLS.js ha già buoni default
-            enableWorker: true,
-            lowLatencyMode: false
-          });
+      /* =====================================================
+         INIZIALIZZAZIONE
+         ===================================================== */
+      const init = async () => {
+        // Attendi che i custom elements siano definiti
+        await Promise.all([
+          whenDefined('media-controller'),
+          whenDefined('media-fullscreen-button'),
+          whenDefined('hls-video'),
+        ]);
 
-          hls.loadSource(STREAM_URL);
-          hls.attachMedia(video);
+        // Elementi DOM
+        const elements = {
+          wrapper: $('videoWrapper'),
+          video: $('liveVideo'),
+          tapLayer: $('tapLayer'),
+          osdBtn: $('osdBtn'),
+          fsBtn: $('fsBtn'),
+          fsCurtain: $('fsCurtain'),
+          pageCurtain: $('pageCurtain'),
+        };
 
-          hls.on(Hls.Events.MANIFEST_PARSED, tryPlay);
-
-          hls.on(Hls.Events.ERROR, function(event, data) {
-            if (data.fatal) {
-              switch (data.type) {
-                case Hls.ErrorTypes.NETWORK_ERROR:
-                  hls.startLoad();
-                  break;
-                case Hls.ErrorTypes.MEDIA_ERROR:
-                  hls.recoverMediaError();
-                  break;
-                default:
-                  // Reload completo
-                  hls.destroy();
-                  hls = null;
-                  setTimeout(initPlayer, 2000);
-                  break;
-              }
-            }
-          });
+        if (!elements.wrapper || !elements.video) {
+          console.error('Elementi video non trovati');
+          return;
         }
-      }
 
-      function tryPlay() {
-        video.play().catch(() => {
-          // Autoplay bloccato
-          showControls();
-          setPaused(true);
-        });
-      }
+        // Stato
+        const state = {
+          autoHideTimer: null,
+          lastCatchUpAt: 0,
+          lastHiddenAt: 0,
+          lastHardResyncAt: 0,
+          touchMode: isTouchDevice(),
+        };
 
-      // ==========================================
-      // UI
-      // ==========================================
-      function setReady(ready) {
-        wrapper.classList.toggle('is-ready', ready);
-      }
+        /* =====================================================
+           GESTIONE READY STATE
+           ===================================================== */
+        const setReady = (ready) => {
+          elements.wrapper.classList.toggle('is-ready', ready);
+        };
 
-      function setPaused(paused) {
-        wrapper.classList.toggle('is-paused', paused);
-      }
-
-      function showControls() {
-        wrapper.classList.add('controls-visible');
-        clearTimeout(autoHideTimer);
-        autoHideTimer = setTimeout(() => {
-          if (!video.paused) {
-            wrapper.classList.remove('controls-visible');
+        /* =====================================================
+           GESTIONE CONTROLLI (show/hide/toggle)
+           ===================================================== */
+        const clearAutoHide = () => {
+          if (state.autoHideTimer) {
+            clearTimeout(state.autoHideTimer);
+            state.autoHideTimer = null;
           }
-        }, 4000);
-      }
+        };
 
-      function hideControls() {
-        wrapper.classList.remove('controls-visible');
-        clearTimeout(autoHideTimer);
-      }
+        const scheduleAutoHide = () => {
+          clearAutoHide();
+          state.autoHideTimer = setTimeout(() => {
+            elements.wrapper.classList.remove('controls-visible');
+          }, CONFIG.AUTOHIDE_MS);
+        };
 
-      function toggleControls() {
-        if (wrapper.classList.contains('controls-visible')) {
-          hideControls();
-        } else {
-          showControls();
-        }
-      }
+        const showControls = () => {
+          elements.wrapper.classList.add('controls-visible');
+          scheduleAutoHide();
+        };
 
-      function togglePlayPause() {
-        if (video.paused) {
-          userPaused = false;
-          video.play();
-        } else {
-          userPaused = true;
-          video.pause();
-        }
-        showControls();
-      }
+        const hideControls = () => {
+          elements.wrapper.classList.remove('controls-visible');
+          clearAutoHide();
+        };
 
-      // ==========================================
-      // FULLSCREEN
-      // ==========================================
-      function toggleFullscreen() {
-        fsCurtain?.classList.add('on');
-        pageCurtain?.classList.add('on');
+        const toggleControls = () => {
+          if (elements.wrapper.classList.contains('controls-visible')) {
+            hideControls();
+          } else {
+            showControls();
+          }
+        };
 
-        if (document.fullscreenElement || document.webkitFullscreenElement) {
-          (document.exitFullscreen || document.webkitExitFullscreen).call(document);
-        } else {
-          (wrapper.requestFullscreen || wrapper.webkitRequestFullscreen)?.call(wrapper);
-        }
-      }
+        const bumpControlsTimer = () => {
+          if (elements.wrapper.classList.contains('controls-visible')) {
+            scheduleAutoHide();
+          }
+        };
 
-      function onFullscreenChange() {
-        const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
-        
-        if (isFs) {
-          screen.orientation?.lock?.('landscape').catch(() => {});
-        } else {
-          screen.orientation?.unlock?.();
-        }
-
-        setTimeout(() => {
-          fsCurtain?.classList.remove('on');
-          pageCurtain?.classList.remove('on');
-        }, 220);
-      }
-
-      // ==========================================
-      // EVENTS
-      // ==========================================
-      // Video events
-      video.addEventListener('playing', () => {
-        setReady(true);
-        setPaused(false);
-      });
-
-      video.addEventListener('pause', () => {
-        setPaused(true);
-        // Se non è stato l'utente, riprova
-        if (!userPaused && !document.hidden) {
-          setTimeout(() => {
-            if (video.paused && !userPaused) {
-              video.play().catch(() => {});
+        /* =====================================================
+           LIVE CATCH-UP
+           ===================================================== */
+        const getSeekableEnd = () => {
+          try {
+            const seekable = elements.video.seekable;
+            if (seekable?.length) {
+              return seekable.end(seekable.length - 1);
             }
-          }, 500);
+          } catch (e) {
+            // Ignora errori di seekable
+          }
+          return null;
+        };
+
+        const catchUpToLiveIfNeeded = (force = false) => {
+          const now = Date.now();
+
+          if (!force && (now - state.lastCatchUpAt < CONFIG.CATCHUP_COOLDOWN_MS)) {
+            return false;
+          }
+
+          const liveEnd = getSeekableEnd();
+          if (liveEnd == null || !Number.isFinite(liveEnd)) {
+            return false;
+          }
+
+          const currentTime = Number(elements.video.currentTime || 0);
+          const behind = liveEnd - currentTime;
+
+          if (force || behind > CONFIG.MAX_BEHIND_SEC) {
+            const target = Math.max(0, liveEnd - CONFIG.TARGET_BEHIND_SEC);
+            try {
+              elements.video.currentTime = target;
+              state.lastCatchUpAt = now;
+              return true;
+            } catch (e) {
+              // Ignora errori di seek
+            }
+          }
+          return false;
+        };
+
+        /* =====================================================
+           HARD RESYNC (dopo background/focus)
+           ===================================================== */
+        const hardResyncToLive = () => {
+          const now = Date.now();
+
+          if (now - state.lastHardResyncAt < CONFIG.HARD_RESYNC_COOLDOWN_MS) {
+            return;
+          }
+
+          state.lastHardResyncAt = now;
+          setReady(false);
+
+          const wasPaused = elements.video.paused;
+
+          try {
+            elements.video.load();
+          } catch (e) {
+            // Ignora errori di load
+          }
+
+          // Usa { once: true } per evitare memory leak
+          elements.video.addEventListener('loadedmetadata', () => {
+            catchUpToLiveIfNeeded(true);
+          }, { once: true });
+
+          if (!wasPaused) {
+            elements.video.play().catch(() => {});
+            setTimeout(() => catchUpToLiveIfNeeded(true), CONFIG.CATCHUP_DELAY_MS);
+          }
+        };
+
+        /* =====================================================
+           GESTIONE PLAY/PAUSE
+           ===================================================== */
+        const setPausedUI = () => {
+          const isPaused = elements.video.paused;
+          elements.wrapper.classList.toggle('is-paused', isPaused);
+          elements.osdBtn?.setAttribute('aria-label', isPaused ? 'Play' : 'Pausa');
+        };
+
+        const togglePlayPause = () => {
+          catchUpToLiveIfNeeded(true);
+
+          if (elements.video.paused) {
+            setReady(false);
+            elements.video.play().catch(() => {});
+            setTimeout(() => catchUpToLiveIfNeeded(true), CONFIG.CATCHUP_DELAY_MS);
+          } else {
+            elements.video.pause();
+          }
+          showControls();
+        };
+
+        /* =====================================================
+           GESTIONE FULLSCREEN - FIX #1: iOS Safari
+           ===================================================== */
+        const isFullscreen = () => {
+          return !!(document.fullscreenElement || document.webkitFullscreenElement);
+        };
+
+        const curtainOn = (el) => el?.classList.add('on');
+        const curtainOff = (el) => el?.classList.remove('on');
+
+        const lockOrientation = async (mode) => {
+          try {
+            await screen.orientation?.lock?.(mode);
+          } catch (e) {
+            // Ignora errori di orientation lock
+          }
+        };
+
+        const unlockOrientation = () => {
+          try {
+            screen.orientation?.unlock?.();
+          } catch (e) {
+            // Ignora errori di orientation unlock
+          }
+        };
+
+        // FIX #1: Custom fullscreen per iOS
+        const requestFullscreen = () => {
+          // iOS Safari: usa il fullscreen nativo del video
+          if (isIOS() && elements.video.webkitEnterFullscreen) {
+            try {
+              elements.video.webkitEnterFullscreen();
+              return;
+            } catch (e) {
+              console.log('webkitEnterFullscreen failed:', e);
+            }
+          }
+
+          // Altri browser: fullscreen sul wrapper
+          const wrapper = elements.wrapper;
+          if (wrapper.requestFullscreen) {
+            wrapper.requestFullscreen();
+          } else if (wrapper.webkitRequestFullscreen) {
+            wrapper.webkitRequestFullscreen();
+          }
+        };
+
+        const exitFullscreen = () => {
+          if (document.exitFullscreen) {
+            document.exitFullscreen();
+          } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+          }
+        };
+
+        const toggleFullscreen = () => {
+          if (isFullscreen()) {
+            exitFullscreen();
+          } else {
+            requestFullscreen();
+          }
+        };
+
+        const onFullscreenChange = async () => {
+          if (!state.touchMode) return;
+
+          if (isFullscreen()) {
+            curtainOn(elements.fsCurtain);
+            await lockOrientation('landscape');
+          } else {
+            curtainOn(elements.pageCurtain);
+            unlockOrientation();
+          }
+
+          setTimeout(() => {
+            curtainOff(elements.fsCurtain);
+            curtainOff(elements.pageCurtain);
+          }, 220);
+        };
+
+        /* =====================================================
+           CREAZIONE PARTICELLE
+           ===================================================== */
+        const createParticles = () => {
+          const container = $('particlesContainer');
+          if (!container) return;
+
+          const isMobile = window.innerWidth < 768;
+          const snowCount = isMobile ? 35 : 70;
+          const emberCount = isMobile ? 15 : 30;
+          const speedModifier = isMobile ? 1.5 : 1;
+
+          // Usa DocumentFragment per performance
+          const fragment = document.createDocumentFragment();
+
+          // Fiocchi di neve
+          for (let i = 0; i < snowCount; i++) {
+            const flake = document.createElement('div');
+            flake.className = 'snowflake';
+            const size = Math.random() * 3 + 2;
+            flake.style.cssText = `
+              width: ${size}px;
+              height: ${size}px;
+              left: ${Math.random() * 120 - 10}vw;
+              animation: fall ${(Math.random() * 4 + 4) * speedModifier}s linear infinite;
+              animation-delay: -${Math.random() * 5}s;
+            `;
+            fragment.appendChild(flake);
+          }
+
+          // Embers
+          const animations = ['riseRight', 'riseLeft', 'riseZigZag'];
+          for (let i = 0; i < emberCount; i++) {
+            const ember = document.createElement('div');
+            ember.className = 'ember';
+            const size = Math.random() * 4 + 3;
+            const randomAnim = animations[Math.floor(Math.random() * animations.length)];
+            ember.style.cssText = `
+              width: ${size}px;
+              height: ${size}px;
+              left: ${Math.random() * 100}vw;
+              animation: ${randomAnim} ${(Math.random() * 6 + 6) * speedModifier}s linear infinite;
+              animation-delay: -${Math.random() * 10}s;
+            `;
+            fragment.appendChild(ember);
+          }
+
+          container.appendChild(fragment);
+        };
+
+        /* =====================================================
+           EVENT LISTENERS
+           ===================================================== */
+        // Tap layer
+        elements.tapLayer?.addEventListener('click', toggleControls);
+
+        // Controlli timer bump
+        const bumpEvents = ['pointermove', 'touchstart', 'mousemove', 'keydown'];
+        bumpEvents.forEach(event => {
+          elements.wrapper.addEventListener(event, bumpControlsTimer, { passive: true });
+        });
+
+        // Play/Pause button
+        elements.osdBtn?.addEventListener('click', (e) => {
+          e.stopPropagation();
+          togglePlayPause();
+        });
+
+        // FIX #1: Fullscreen button - usa la nostra funzione custom
+        elements.fsBtn?.addEventListener('click', (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          showControls();
+          if (state.touchMode) {
+            curtainOn(elements.fsCurtain);
+            curtainOn(elements.pageCurtain);
+          }
+          toggleFullscreen();
+        }, { capture: true });
+
+        // Video events
+        elements.video.addEventListener('loadedmetadata', () => {
+          setPausedUI();
+          setTimeout(() => catchUpToLiveIfNeeded(true), 300);
+        });
+
+        elements.video.addEventListener('playing', () => {
+          setPausedUI();
+          setReady(true);
+          bumpControlsTimer();
+        });
+
+        elements.video.addEventListener('pause', () => {
+          setPausedUI();
+          showControls();
+        });
+
+        elements.video.addEventListener('error', () => {
+          setReady(false);
+          setTimeout(() => {
+            try {
+              elements.video.load();
+              elements.video.play().catch(() => {});
+              setTimeout(() => catchUpToLiveIfNeeded(true), CONFIG.CATCHUP_DELAY_MS);
+            } catch (e) {
+              // Ignora errori
+            }
+          }, CONFIG.ERROR_RETRY_MS);
+        });
+
+        // FIX #2: Visibility & Focus - ricarica lo stream dopo background lungo
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'hidden') {
+            state.lastHiddenAt = Date.now();
+            return;
+          }
+
+          // Tornati visibili
+          const hiddenFor = Date.now() - (state.lastHiddenAt || Date.now());
+          
+          // Se siamo stati in background per più di 30 secondi, ricarica tutto
+          if (hiddenFor > 30000) {
+            console.log('Long background detected, reloading stream...');
+            hardResyncToLive();
+          } else if (!elements.video.paused && hiddenFor > CONFIG.VISIBILITY_THRESHOLD_MS) {
+            hardResyncToLive();
+          } else {
+            setTimeout(() => catchUpToLiveIfNeeded(true), 250);
+          }
+        });
+
+        window.addEventListener('focus', () => {
+          setTimeout(hardResyncToLive, 150);
+        });
+
+        window.addEventListener('pageshow', (e) => {
+          if (e.persisted) hardResyncToLive();
+        });
+
+        // Online/Offline
+        window.addEventListener('online', () => {
+          setTimeout(hardResyncToLive, 500);
+        });
+
+        // Fullscreen events
+        document.addEventListener('fullscreenchange', onFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', onFullscreenChange);
+        
+        // FIX #1: iOS video fullscreen events
+        elements.video.addEventListener('webkitbeginfullscreen', () => {
+          console.log('iOS fullscreen started');
+        });
+        elements.video.addEventListener('webkitendfullscreen', () => {
+          console.log('iOS fullscreen ended');
+        });
+
+        /* =====================================================
+           INIT
+           ===================================================== */
+        // Crea particelle se motion è permesso
+        const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+        if (!prefersReducedMotion) {
+          createParticles();
         }
-      });
 
-      video.addEventListener('waiting', () => {
-        // Buffering - non fare nulla
-      });
+        // Stato iniziale
+        setReady(false);
+        setPausedUI();
+        hideControls();
+      };
 
-      // Tap layer
-      tapLayer?.addEventListener('click', toggleControls);
-
-      // Play button
-      osdBtn?.addEventListener('click', (e) => {
-        e.stopPropagation();
-        togglePlayPause();
-      });
-
-      // Fullscreen button
-      fsBtn?.addEventListener('click', (e) => {
-        e.stopPropagation();
-        toggleFullscreen();
-        showControls();
-      });
-
-      // Fullscreen change
-      document.addEventListener('fullscreenchange', onFullscreenChange);
-      document.addEventListener('webkitfullscreenchange', onFullscreenChange);
-
-      // Visibility
-      document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible' && !userPaused) {
-          video.play().catch(() => {});
-        }
-      });
-
-      // ==========================================
-      // PARTICELLE
-      // ==========================================
-      function createParticles() {
-        if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
-
-        const container = $('particlesContainer');
-        if (!container) return;
-
-        const isMobile = window.innerWidth < 768;
-        const snowCount = isMobile ? 35 : 70;
-        const emberCount = isMobile ? 15 : 30;
-        const speedModifier = isMobile ? 1.5 : 1;
-
-        const fragment = document.createDocumentFragment();
-
-        // Fiocchi di neve
-        for (let i = 0; i < snowCount; i++) {
-          const flake = document.createElement('div');
-          flake.className = 'snowflake';
-          const size = Math.random() * 3 + 2;
-          flake.style.cssText = `
-            width: ${size}px;
-            height: ${size}px;
-            left: ${Math.random() * 120 - 10}vw;
-            animation: fall ${(Math.random() * 4 + 4) * speedModifier}s linear infinite;
-            animation-delay: -${Math.random() * 5}s;
-          `;
-          fragment.appendChild(flake);
-        }
-
-        // Embers
-        const animations = ['riseRight', 'riseLeft', 'riseZigZag'];
-        for (let i = 0; i < emberCount; i++) {
-          const ember = document.createElement('div');
-          ember.className = 'ember';
-          const size = Math.random() * 4 + 3;
-          const randomAnim = animations[Math.floor(Math.random() * animations.length)];
-          ember.style.cssText = `
-            width: ${size}px;
-            height: ${size}px;
-            left: ${Math.random() * 100}vw;
-            animation: ${randomAnim} ${(Math.random() * 6 + 6) * speedModifier}s linear infinite;
-            animation-delay: -${Math.random() * 10}s;
-          `;
-          fragment.appendChild(ember);
-        }
-
-        container.appendChild(fragment);
+      // Avvia quando il DOM è pronto
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+      } else {
+        init();
       }
-
-      // ==========================================
-      // START
-      // ==========================================
-      createParticles();
-      initPlayer();
-
     })();
   </script>
 </body>
