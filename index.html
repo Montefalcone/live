@@ -53,10 +53,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&display=swap" rel="stylesheet">
 
   <!-- Scripts -->
-  <script type="module" src="https://cdn.jsdelivr.net/npm/media-chrome@4/+esm"></script>
-  <script type="module" src="https://cdn.jsdelivr.net/npm/hls-video-element@1/+esm"></script>
-
-  <style>
+  <!-- Player: implementazione semplificata (video nativo + Hls.js solo quando serve) -->
+<style>
     /* =====================================================
        CSS VARIABLES - Centralizzate per manutenibilità
        ===================================================== */
@@ -303,32 +301,24 @@
       width: 100% !important;
       height: 100% !important;
     }
-
-    #videoWrapper:fullscreen #mc,
-    #videoWrapper:-webkit-full-screen #mc,
-    #videoWrapper:-moz-full-screen #mc {
+/* In fullscreen, assicurati che il <video> riempia il wrapper */
+    #videoWrapper:fullscreen video,
+    #videoWrapper:-webkit-full-screen video,
+    #videoWrapper:-moz-full-screen video {
       width: 100% !important;
       height: 100% !important;
     }
-
-    #videoWrapper media-controller {
-      width: 100%;
-      height: 100%;
-      display: block;
-      position: relative;
-      background: var(--color-bg);
-      --media-tooltip-display: none;
-    }
-
-    #videoWrapper hls-video {
+/* =====================================================
+       VIDEO ELEMENT (nuova implementazione)
+       ===================================================== */
+    #videoWrapper video {
       width: 100%;
       height: 100%;
       display: block;
       background: var(--color-bg);
       object-fit: contain;
     }
-
-    #videoWrapper .tap-layer {
+#videoWrapper .tap-layer {
       position: absolute;
       inset: 0;
       z-index: 10;
@@ -415,7 +405,10 @@
     /* =====================================================
        CONTROL BAR
        ===================================================== */
-    #videoWrapper media-control-bar {
+/* =====================================================
+       CONTROL BAR (nuova implementazione)
+       ===================================================== */
+    #videoWrapper .control-bar {
       position: absolute;
       left: 0;
       right: 0;
@@ -430,15 +423,17 @@
       pointer-events: none;
     }
 
-    #videoWrapper.controls-visible media-control-bar {
+    #videoWrapper.controls-visible .control-bar {
       pointer-events: auto;
     }
-
-    /* =====================================================
+/* =====================================================
        FULLSCREEN BUTTON
        opacity minima 0.05 per forzare blur sempre attivo
        ===================================================== */
-    #videoWrapper media-fullscreen-button {
+/* =====================================================
+       FULLSCREEN BUTTON (nuova implementazione)
+       ===================================================== */
+    #videoWrapper .fs-btn {
       width: 44px;
       height: 44px;
       border-radius: var(--radius-pill);
@@ -449,13 +444,26 @@
       cursor: pointer;
       opacity: 0.05;
       transition: opacity var(--transition-fast);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      appearance: none;
+      -webkit-appearance: none;
     }
 
-    #videoWrapper.controls-visible media-fullscreen-button {
+    #videoWrapper .fs-btn svg {
+      width: 20px;
+      height: 20px;
+      fill: var(--color-white);
+      opacity: 0.92;
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25));
+    }
+
+    #videoWrapper.controls-visible .fs-btn {
       opacity: 1;
     }
-
-    /* =====================================================
+/* =====================================================
        LIVE BADGE
        ===================================================== */
     #videoWrapper .live-badge {
@@ -636,13 +644,16 @@
         width: 32px;
         height: 32px;
       }
-
-      #videoWrapper media-fullscreen-button {
+#videoWrapper .fs-btn {
         width: 38px;
         height: 38px;
       }
 
-      #videoWrapper .live-badge {
+      #videoWrapper .fs-btn svg {
+        width: 18px;
+        height: 18px;
+      }
+#videoWrapper .live-badge {
         padding: 6px 10px;
         font-size: 10px;
         gap: 6px;
@@ -732,59 +743,58 @@
     </div>
 
     <div class="video-wrapper" id="videoWrapper">
-      <media-controller
-        id="mc"
-        autohide="-1"
-        gesturesdisabled
-        fullscreenelement="videoWrapper"
-      >
-        <!-- Blur primers: elementi invisibili ma opacity:1 per tenere il blur sempre attivo -->
-        <div class="blur-primer blur-primer-play" aria-hidden="true"></div>
-        <div class="blur-primer blur-primer-ui" aria-hidden="true"></div>
-        
-        <hls-video
-          id="liveVideo"
-          slot="media"
-          src="https://live.webcammontefalconedivalfortore.it/memfs/58e0bcbe-f1bd-4c8b-85f7-b4566a3e5392.m3u8"
-          autoplay
-          muted
-          playsinline
-          preload="auto"
-          crossorigin="anonymous"
-        ></hls-video>
+      <!-- Blur primers: elementi invisibili ma opacity:1 per tenere il blur sempre attivo -->
+      <div class="blur-primer blur-primer-play" aria-hidden="true"></div>
+      <div class="blur-primer blur-primer-ui" aria-hidden="true"></div>
 
-        <div class="loading-overlay" id="loadingOverlay" aria-hidden="true">
-          <img 
-            class="preview" 
-            src="https://www.webcammontefalconedivalfortore.it/p.png" 
-            alt=""
-            loading="eager"
-          >
-          <div class="spinner" role="status" aria-label="Caricamento video in corso"></div>
-        </div>
+      <!-- Player: <video> nativo (iOS/Safari usa HLS nativo; altri browser usano Hls.js) -->
+      <video
+        id="liveVideo"
+        autoplay
+        muted
+        playsinline
+        webkit-playsinline
+        preload="auto"
+        crossorigin="anonymous"
+        poster="https://www.webcammontefalconedivalfortore.it/p.png"
+      ></video>
 
-        <div class="tap-layer" id="tapLayer" aria-hidden="true"></div>
+      <div class="loading-overlay" id="loadingOverlay" aria-hidden="true">
+        <img
+          class="preview"
+          src="https://www.webcammontefalconedivalfortore.it/p.png"
+          alt=""
+          loading="eager"
+        >
+        <div class="spinner" role="status" aria-label="Caricamento video in corso"></div>
+      </div>
 
-        <div class="live-badge" aria-hidden="true">
-          <span class="live-dot"></span>
-          <span>LIVE</span>
-        </div>
+      <div class="tap-layer" id="tapLayer" aria-hidden="true"></div>
 
-        <div class="osd" aria-hidden="true">
-          <button class="osd-chip" id="osdBtn" type="button" aria-label="Play/Pausa">
-            <svg class="osd-icon play" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M8 5v14l11-7z"/>
-            </svg>
-            <svg class="osd-icon pause" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
-            </svg>
-          </button>
-        </div>
+      <div class="live-badge" aria-hidden="true">
+        <span class="live-dot"></span>
+        <span>LIVE</span>
+      </div>
 
-        <media-control-bar>
-          <media-fullscreen-button id="fsBtn" notooltip tooltipplacement="none"></media-fullscreen-button>
-        </media-control-bar>
-      </media-controller>
+      <div class="osd" aria-hidden="true">
+        <button class="osd-chip" id="osdBtn" type="button" aria-label="Play/Pausa">
+          <svg class="osd-icon play" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M8 5v14l11-7z"/>
+          </svg>
+          <svg class="osd-icon pause" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="control-bar" aria-hidden="true">
+        <button class="fs-btn" id="fsBtn" type="button" aria-label="Schermo intero">
+          <!-- Icona fullscreen (stile simile ai player standard) -->
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M7 14H5v5h5v-2H7v-3zm0-4h2V7h3V5H5v5zm10 9h-3v2h5v-5h-2v3zm0-14V5h-5v2h3v3h2z"/>
+          </svg>
+        </button>
+      </div>
 
       <div id="fsCurtain" aria-hidden="true"></div>
     </div>
@@ -797,302 +807,591 @@
       'use strict';
 
       /* =====================================================
-         CONFIGURAZIONE
+         CONFIG
          ===================================================== */
+      const STREAM_URL = "https://live.webcammontefalconedivalfortore.it/memfs/58e0bcbe-f1bd-4c8b-85f7-b4566a3e5392.m3u8";
+      const HLS_JS_URL = 'https://cdn.jsdelivr.net/npm/hls.js@1.6.13/dist/hls.min.js';
+
       const CONFIG = {
         AUTOHIDE_MS: 4000,
         MAX_BEHIND_SEC: 20,
         TARGET_BEHIND_SEC: 2.5,
-        CATCHUP_COOLDOWN_MS: 12000,
+        CATCHUP_DELAY_MS: 1200,
+        ERROR_RETRY_MS: 2000,
         HARD_RESYNC_COOLDOWN_MS: 8000,
-        VISIBILITY_THRESHOLD_MS: 1200,
-        ERROR_RETRY_MS: 1500,
-        CATCHUP_DELAY_MS: 900,
+        STALL_RELOAD_MS: 6500,
       };
 
       /* =====================================================
-         UTILITIES
+         UTILS
          ===================================================== */
       const $ = (id) => document.getElementById(id);
-      const whenDefined = (tag) => customElements.whenDefined?.(tag).catch(() => {});
 
-      const isTouchDevice = () => (
-        'ontouchstart' in window ||
-        navigator.maxTouchPoints > 0 ||
-        window.matchMedia?.('(hover: none) and (pointer: coarse)').matches
-      );
+      const isIOS = (() => {
+        const ua = navigator.userAgent || '';
+        const iOSDevice = /iP(ad|hone|od)/.test(ua);
+        const iPadOS = navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+        return iOSDevice || iPadOS;
+      })();
 
-      // FIX #1: Detect iOS/Safari
-      const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) || 
-        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      const isTouchDevice = (() => {
+        return (
+          'ontouchstart' in window ||
+          navigator.maxTouchPoints > 0 ||
+          navigator.msMaxTouchPoints > 0
+        );
+      })();
+
+      const prefersReducedMotion = (() => {
+        try {
+          return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        } catch {
+          return false;
+        }
+      })();
+
+      const safeCall = (fn) => {
+        try { fn(); } catch { /* noop */ }
+      };
 
       /* =====================================================
-         INIZIALIZZAZIONE
+         ELEMENTS
          ===================================================== */
-      const init = async () => {
-        // Attendi che i custom elements siano definiti
-        await Promise.all([
-          whenDefined('media-controller'),
-          whenDefined('media-fullscreen-button'),
-          whenDefined('hls-video'),
-        ]);
+      const elements = {
+        wrapper: $('videoWrapper'),
+        video: $('liveVideo'),
+        loadingOverlay: $('loadingOverlay'),
+        tapLayer: $('tapLayer'),
+        osdBtn: $('osdBtn'),
+        fsBtn: $('fsBtn'),
+        fsCurtain: $('fsCurtain'),
+        pageCurtain: $('pageCurtain'),
+      };
 
-        // Elementi DOM
-        const elements = {
-          wrapper: $('videoWrapper'),
-          video: $('liveVideo'),
-          tapLayer: $('tapLayer'),
-          osdBtn: $('osdBtn'),
-          fsBtn: $('fsBtn'),
-          fsCurtain: $('fsCurtain'),
-          pageCurtain: $('pageCurtain'),
-        };
+      if (!elements.wrapper || !elements.video) {
+        console.error('Elementi video non trovati');
+        return;
+      }
 
-        if (!elements.wrapper || !elements.video) {
-          console.error('Elementi video non trovati');
-          return;
+      /* =====================================================
+         STATE
+         ===================================================== */
+      const state = {
+        autoHideTimer: null,
+        lastCatchUpAt: 0,
+        lastHiddenAt: 0,
+        lastHardResyncAt: 0,
+        touchMode: isTouchDevice,
+        // HLS
+        hls: null,
+        usingNativeHls: false,
+        // stall watchdog
+        stallTimer: null,
+      };
+
+      /* =====================================================
+         UI HELPERS
+         ===================================================== */
+      const setReady = (ready) => {
+        elements.wrapper.classList.toggle('is-ready', ready);
+        if (elements.loadingOverlay) {
+          elements.loadingOverlay.setAttribute('aria-hidden', ready ? 'true' : 'false');
         }
+      };
 
-        // Stato
-        const state = {
-          autoHideTimer: null,
-          lastCatchUpAt: 0,
-          lastHiddenAt: 0,
-          lastHardResyncAt: 0,
-          touchMode: isTouchDevice(),
-        };
+      const setPausedUI = () => {
+        elements.wrapper.classList.toggle('is-paused', !!elements.video.paused);
+      };
 
-        /* =====================================================
-           GESTIONE READY STATE
-           ===================================================== */
-        const setReady = (ready) => {
-          elements.wrapper.classList.toggle('is-ready', ready);
-        };
+      const clearAutoHide = () => {
+        if (state.autoHideTimer) {
+          clearTimeout(state.autoHideTimer);
+          state.autoHideTimer = null;
+        }
+      };
 
-        /* =====================================================
-           GESTIONE CONTROLLI (show/hide/toggle)
-           ===================================================== */
-        const clearAutoHide = () => {
-          if (state.autoHideTimer) {
-            clearTimeout(state.autoHideTimer);
-            state.autoHideTimer = null;
-          }
-        };
-
-        const scheduleAutoHide = () => {
-          clearAutoHide();
-          state.autoHideTimer = setTimeout(() => {
-            elements.wrapper.classList.remove('controls-visible');
-          }, CONFIG.AUTOHIDE_MS);
-        };
-
-        const showControls = () => {
-          elements.wrapper.classList.add('controls-visible');
-          scheduleAutoHide();
-        };
-
-        const hideControls = () => {
-          elements.wrapper.classList.remove('controls-visible');
-          clearAutoHide();
-        };
-
-        const toggleControls = () => {
-          if (elements.wrapper.classList.contains('controls-visible')) {
+      const scheduleAutoHide = () => {
+        clearAutoHide();
+        state.autoHideTimer = setTimeout(() => {
+          // Non nascondere se in pausa
+          if (!elements.video.paused) {
             hideControls();
-          } else {
-            showControls();
           }
-        };
+        }, CONFIG.AUTOHIDE_MS);
+      };
 
-        const bumpControlsTimer = () => {
-          if (elements.wrapper.classList.contains('controls-visible')) {
-            scheduleAutoHide();
-          }
-        };
+      const showControls = () => {
+        elements.wrapper.classList.add('controls-visible');
+        scheduleAutoHide();
+      };
 
-        /* =====================================================
-           LIVE CATCH-UP
-           ===================================================== */
-        const getSeekableEnd = () => {
-          try {
-            const seekable = elements.video.seekable;
-            if (seekable?.length) {
-              return seekable.end(seekable.length - 1);
-            }
-          } catch (e) {
-            // Ignora errori di seekable
-          }
-          return null;
-        };
+      const hideControls = () => {
+        elements.wrapper.classList.remove('controls-visible');
+        clearAutoHide();
+      };
 
-        const catchUpToLiveIfNeeded = (force = false) => {
-          const now = Date.now();
-
-          if (!force && (now - state.lastCatchUpAt < CONFIG.CATCHUP_COOLDOWN_MS)) {
-            return false;
-          }
-
-          const liveEnd = getSeekableEnd();
-          if (liveEnd == null || !Number.isFinite(liveEnd)) {
-            return false;
-          }
-
-          const currentTime = Number(elements.video.currentTime || 0);
-          const behind = liveEnd - currentTime;
-
-          if (force || behind > CONFIG.MAX_BEHIND_SEC) {
-            const target = Math.max(0, liveEnd - CONFIG.TARGET_BEHIND_SEC);
-            try {
-              elements.video.currentTime = target;
-              state.lastCatchUpAt = now;
-              return true;
-            } catch (e) {
-              // Ignora errori di seek
-            }
-          }
-          return false;
-        };
-
-        /* =====================================================
-           HARD RESYNC (dopo background/focus)
-           ===================================================== */
-        const hardResyncToLive = () => {
-          const now = Date.now();
-
-          if (now - state.lastHardResyncAt < CONFIG.HARD_RESYNC_COOLDOWN_MS) {
-            return;
-          }
-
-          state.lastHardResyncAt = now;
-          setReady(false);
-
-          const wasPaused = elements.video.paused;
-
-          try {
-            elements.video.load();
-          } catch (e) {
-            // Ignora errori di load
-          }
-
-          // Usa { once: true } per evitare memory leak
-          elements.video.addEventListener('loadedmetadata', () => {
-            catchUpToLiveIfNeeded(true);
-          }, { once: true });
-
-          if (!wasPaused) {
-            elements.video.play().catch(() => {});
-            setTimeout(() => catchUpToLiveIfNeeded(true), CONFIG.CATCHUP_DELAY_MS);
-          }
-        };
-
-        /* =====================================================
-           GESTIONE PLAY/PAUSE
-           ===================================================== */
-        const setPausedUI = () => {
-          const isPaused = elements.video.paused;
-          elements.wrapper.classList.toggle('is-paused', isPaused);
-          elements.osdBtn?.setAttribute('aria-label', isPaused ? 'Play' : 'Pausa');
-        };
-
-        const togglePlayPause = () => {
-          catchUpToLiveIfNeeded(true);
-
-          if (elements.video.paused) {
-            setReady(false);
-            elements.video.play().catch(() => {});
-            setTimeout(() => catchUpToLiveIfNeeded(true), CONFIG.CATCHUP_DELAY_MS);
-          } else {
-            elements.video.pause();
-          }
+      const toggleControls = () => {
+        if (elements.wrapper.classList.contains('controls-visible')) {
+          hideControls();
+        } else {
           showControls();
-        };
+        }
+      };
 
-        /* =====================================================
-           GESTIONE FULLSCREEN - FIX #1: iOS Safari
-           ===================================================== */
-        const isFullscreen = () => {
-          return !!(document.fullscreenElement || document.webkitFullscreenElement);
-        };
+      const bumpControlsTimer = () => {
+        showControls();
+      };
 
-        const curtainOn = (el) => el?.classList.add('on');
-        const curtainOff = (el) => el?.classList.remove('on');
+      const curtainOn = (el) => {
+        if (!el) return;
+        el.style.opacity = '1';
+        el.style.pointerEvents = 'auto';
+      };
 
-        const lockOrientation = async (mode) => {
-          try {
-            await screen.orientation?.lock?.(mode);
-          } catch (e) {
-            // Ignora errori di orientation lock
+      const curtainOff = (el) => {
+        if (!el) return;
+        el.style.opacity = '0';
+        el.style.pointerEvents = 'none';
+      };
+
+      /* =====================================================
+         FULLSCREEN
+         ===================================================== */
+      const isFullscreen = () => {
+        // Standard Fullscreen API (desktop/android)
+        if (document.fullscreenElement) return true;
+        // Vendor prefissi (vecchi)
+        const anyDoc = document;
+        if (anyDoc.webkitFullscreenElement || anyDoc.mozFullScreenElement) return true;
+        // iOS video fullscreen (non usa Fullscreen API)
+        if (isIOS && 'webkitDisplayingFullscreen' in elements.video) {
+          return !!elements.video.webkitDisplayingFullscreen;
+        }
+        return false;
+      };
+
+      const lockOrientation = async (orientation) => {
+        try {
+          if (screen.orientation && screen.orientation.lock) {
+            await screen.orientation.lock(orientation);
           }
-        };
+        } catch {
+          // Ignora: non supportato o permessi negati
+        }
+      };
 
-        const unlockOrientation = () => {
-          try {
-            screen.orientation?.unlock?.();
-          } catch (e) {
-            // Ignora errori di orientation unlock
+      const unlockOrientation = () => {
+        try {
+          if (screen.orientation && screen.orientation.unlock) {
+            screen.orientation.unlock();
           }
-        };
+        } catch {
+          // Ignora
+        }
+      };
 
-        // FIX #1: Custom fullscreen per iOS
-        const requestFullscreen = () => {
-          // iOS Safari: usa il fullscreen nativo del video
-          if (isIOS() && elements.video.webkitEnterFullscreen) {
-            try {
-              elements.video.webkitEnterFullscreen();
-              return;
-            } catch (e) {
-              console.log('webkitEnterFullscreen failed:', e);
-            }
-          }
-
-          // Altri browser: fullscreen sul wrapper
-          const wrapper = elements.wrapper;
-          if (wrapper.requestFullscreen) {
-            wrapper.requestFullscreen();
-          } else if (wrapper.webkitRequestFullscreen) {
-            wrapper.webkitRequestFullscreen();
-          }
-        };
-
-        const exitFullscreen = () => {
-          if (document.exitFullscreen) {
-            document.exitFullscreen();
-          } else if (document.webkitExitFullscreen) {
-            document.webkitExitFullscreen();
-          }
-        };
-
-        const toggleFullscreen = () => {
-          if (isFullscreen()) {
-            exitFullscreen();
-          } else {
-            requestFullscreen();
-          }
-        };
-
-        const onFullscreenChange = async () => {
-          if (!state.touchMode) return;
-
-          if (isFullscreen()) {
-            curtainOn(elements.fsCurtain);
-            await lockOrientation('landscape');
-          } else {
-            curtainOn(elements.pageCurtain);
-            unlockOrientation();
-          }
-
+      const enterFullscreen = async () => {
+        // iOS: solo video fullscreen nativo (webkitEnterFullscreen)
+        if (isIOS && typeof elements.video.webkitEnterFullscreen === 'function') {
+          curtainOn(elements.fsCurtain);
+          curtainOn(elements.pageCurtain);
+          // In iOS, l'orientamento è gestito dal sistema; lock può fallire
+          safeCall(() => elements.video.webkitEnterFullscreen());
           setTimeout(() => {
             curtainOff(elements.fsCurtain);
             curtainOff(elements.pageCurtain);
-          }, 220);
-        };
+          }, 650);
+          return;
+        }
 
-        /* =====================================================
-           CREAZIONE PARTICELLE
-           ===================================================== */
-        const createParticles = () => {
+        // Altri browser: fullscreen sul wrapper (così manteniamo UI/overlay)
+        const el = elements.wrapper;
+        const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen;
+        if (req) {
+          curtainOn(elements.fsCurtain);
+          await req.call(el);
+        }
+      };
+
+      const exitFullscreen = async () => {
+        // iOS
+        if (isIOS && typeof elements.video.webkitExitFullscreen === 'function') {
+          safeCall(() => elements.video.webkitExitFullscreen());
+          return;
+        }
+        const exit = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen;
+        if (exit) {
+          await exit.call(document);
+        }
+      };
+
+      const toggleFullscreen = async () => {
+        if (isFullscreen()) {
+          curtainOn(elements.pageCurtain);
+          await exitFullscreen();
+          unlockOrientation();
+          setTimeout(() => curtainOff(elements.pageCurtain), 650);
+        } else {
+          await enterFullscreen();
+          // Prova a bloccare in landscape (funziona soprattutto su Android)
+          await lockOrientation('landscape');
+          setTimeout(() => curtainOff(elements.fsCurtain), 650);
+        }
+      };
+
+      const onFullscreenChange = async () => {
+        if (!state.touchMode) return;
+
+        if (document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement) {
+          curtainOn(elements.fsCurtain);
+          await lockOrientation('landscape');
+        } else {
+          curtainOn(elements.pageCurtain);
+          unlockOrientation();
+        }
+
+        setTimeout(() => {
+          curtainOff(elements.fsCurtain);
+          curtainOff(elements.pageCurtain);
+        }, 650);
+      };
+
+      document.addEventListener('fullscreenchange', onFullscreenChange);
+      document.addEventListener('webkitfullscreenchange', onFullscreenChange);
+
+      // iOS fullscreen events (solo su <video>)
+      elements.video.addEventListener('webkitbeginfullscreen', () => {
+        curtainOn(elements.fsCurtain);
+        curtainOn(elements.pageCurtain);
+      });
+      elements.video.addEventListener('webkitendfullscreen', () => {
+        setTimeout(() => {
+          curtainOff(elements.fsCurtain);
+          curtainOff(elements.pageCurtain);
+        }, 250);
+      });
+
+      /* =====================================================
+         HLS (native HLS su Safari/iOS; Hls.js sugli altri)
+         ===================================================== */
+      const canUseNativeHls = () => {
+        // Safari/iOS: supporta nativamente application/vnd.apple.mpegurl
+        const v = elements.video;
+        const t1 = v.canPlayType('application/vnd.apple.mpegurl');
+        const t2 = v.canPlayType('application/x-mpegURL');
+        return (t1 && t1 !== 'no') || (t2 && t2 !== 'no');
+      };
+
+      const loadScriptOnce = (() => {
+        const cache = new Map();
+        return (src) => {
+          if (cache.has(src)) return cache.get(src);
+          const p = new Promise((resolve, reject) => {
+            const s = document.createElement('script');
+            s.src = src;
+            s.async = true;
+            s.onload = () => resolve();
+            s.onerror = () => reject(new Error('Impossibile caricare: ' + src));
+            document.head.appendChild(s);
+          });
+          cache.set(src, p);
+          return p;
+        };
+      })();
+
+      const destroyHls = () => {
+        if (state.hls) {
+          try {
+            state.hls.destroy();
+          } catch {
+            // Ignora
+          }
+          state.hls = null;
+        }
+      };
+
+      const tryPlay = async () => {
+        try {
+          await elements.video.play();
+        } catch {
+          // Autoplay bloccato: mostra controlli e lascia in pausa
+          setPausedUI();
+          showControls();
+        }
+      };
+
+      const handleHlsJsError = (data) => {
+        if (!data || !data.fatal || !state.hls) return;
+
+        const Hls = window.Hls;
+        // Recupero consigliato dalla doc: startLoad() per network, recoverMediaError() per media
+        if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+          try {
+            state.hls.startLoad();
+          } catch {
+            hardResyncToLive('hls-network-fatal');
+          }
+          return;
+        }
+        if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+          try {
+            state.hls.recoverMediaError();
+          } catch {
+            hardResyncToLive('hls-media-fatal');
+          }
+          return;
+        }
+
+        // Altri fatal: ricrea tutto
+        hardResyncToLive('hls-fatal');
+      };
+
+      const initStream = async () => {
+        destroyHls();
+        state.usingNativeHls = canUseNativeHls();
+
+        // Sempre: reset state "ready" finché non parte
+        setReady(false);
+
+        if (state.usingNativeHls) {
+          // Safari/iOS: HLS nativo (più stabile e fullscreen OK)
+          elements.video.src = STREAM_URL;
+          safeCall(() => elements.video.load());
+          await tryPlay();
+          return;
+        }
+
+        // Altri browser: Hls.js (standard di settore per HLS via MSE)
+        await loadScriptOnce(HLS_JS_URL);
+
+        if (!window.Hls || !window.Hls.isSupported()) {
+          // Fallback: prova src diretto (alcuni browser/TV box supportano HLS nativo)
+          elements.video.src = STREAM_URL;
+          safeCall(() => elements.video.load());
+          await tryPlay();
+          return;
+        }
+
+        const Hls = window.Hls;
+
+        const hls = new Hls({
+          startPosition: -1,
+          maxBufferLength: 15,
+          maxBufferHole: 0.5,
+          liveSyncDurationCount: 3,
+          liveMaxLatencyDurationCount: 10,
+          liveDurationInfinity: true,
+          enableWorker: true,
+        });
+
+        state.hls = hls;
+
+        hls.attachMedia(elements.video);
+        hls.on(Hls.Events.MEDIA_ATTACHED, () => {
+          hls.loadSource(STREAM_URL);
+        });
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          tryPlay();
+        });
+        hls.on(Hls.Events.ERROR, (evt, data) => {
+          handleHlsJsError(data);
+        });
+      };
+
+      /* =====================================================
+         LIVE CATCH-UP
+         ===================================================== */
+      const getLiveEdge = () => {
+        // Con Hls.js possiamo usare liveSyncPosition quando disponibile
+        if (state.hls && typeof state.hls.liveSyncPosition === 'number' && !Number.isNaN(state.hls.liveSyncPosition)) {
+          return state.hls.liveSyncPosition;
+        }
+        const s = elements.video.seekable;
+        if (!s || s.length === 0) return null;
+        return s.end(s.length - 1);
+      };
+
+      const catchUpToLiveIfNeeded = (force = false) => {
+        const now = Date.now();
+        if (!force && now - state.lastCatchUpAt < 1000) return;
+        state.lastCatchUpAt = now;
+
+        if (elements.video.paused) return;
+
+        const liveEdge = getLiveEdge();
+        if (liveEdge === null) return;
+
+        const behind = liveEdge - elements.video.currentTime;
+
+        if (behind > CONFIG.MAX_BEHIND_SEC) {
+          // Troppo indietro: salta vicino al live edge
+          safeCall(() => {
+            elements.video.currentTime = Math.max(0, liveEdge - CONFIG.TARGET_BEHIND_SEC);
+          });
+          return;
+        }
+
+        // Se siamo ancora un po' indietro, nudgia (solo se forzato)
+        if (force && behind > (CONFIG.TARGET_BEHIND_SEC + 1)) {
+          safeCall(() => {
+            elements.video.currentTime = Math.max(0, liveEdge - CONFIG.TARGET_BEHIND_SEC);
+          });
+        }
+      };
+
+      /* =====================================================
+         HARD RESYNC (ricrea lo stream)
+         ===================================================== */
+      const hardResyncToLive = (reason = 'manual') => {
+        const now = Date.now();
+        if (now - state.lastHardResyncAt < CONFIG.HARD_RESYNC_COOLDOWN_MS) return;
+        state.lastHardResyncAt = now;
+
+        // Evita loop su iOS con fullscreen
+        if (isIOS && elements.video.webkitDisplayingFullscreen) return;
+
+        setReady(false);
+
+        // Ricrea lo stream: è la via più robusta contro “stuck” su mobile
+        initStream().then(() => {
+          setTimeout(() => catchUpToLiveIfNeeded(true), CONFIG.CATCHUP_DELAY_MS);
+        });
+      };
+
+      /* =====================================================
+         STALL WATCHDOG
+         ===================================================== */
+      const clearStallTimer = () => {
+        if (state.stallTimer) {
+          clearTimeout(state.stallTimer);
+          state.stallTimer = null;
+        }
+      };
+
+      const armStallTimer = () => {
+        clearStallTimer();
+        if (elements.video.paused) return;
+
+        state.stallTimer = setTimeout(() => {
+          hardResyncToLive('stall');
+        }, CONFIG.STALL_RELOAD_MS);
+      };
+
+      /* =====================================================
+         UI EVENTS
+         ===================================================== */
+      elements.tapLayer?.addEventListener('click', (e) => {
+        e.preventDefault();
+        toggleControls();
+      }, { passive: false });
+
+      elements.osdBtn?.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        showControls();
+
+        if (elements.video.paused) {
+          tryPlay().then(() => catchUpToLiveIfNeeded(true));
+        } else {
+          elements.video.pause();
+        }
+      }, { passive: false });
+
+      elements.fsBtn?.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        showControls();
+        if (state.touchMode) {
+          curtainOn(elements.fsCurtain);
+          curtainOn(elements.pageCurtain);
+        }
+        toggleFullscreen();
+      }, { capture: true, passive: false });
+
+      // Interazione utente: mostra controlli e reset timer
+      ['pointerdown', 'mousemove', 'keydown'].forEach((evtName) => {
+        document.addEventListener(evtName, () => {
+          bumpControlsTimer();
+        }, { passive: true });
+      });
+
+      /* =====================================================
+         VIDEO EVENTS
+         ===================================================== */
+      elements.video.addEventListener('loadedmetadata', () => {
+        setPausedUI();
+        setTimeout(() => catchUpToLiveIfNeeded(true), 300);
+      });
+
+      elements.video.addEventListener('playing', () => {
+        setPausedUI();
+        setReady(true);
+        bumpControlsTimer();
+        clearStallTimer();
+      });
+
+      elements.video.addEventListener('pause', () => {
+        setPausedUI();
+        showControls();
+        clearStallTimer();
+      });
+
+      elements.video.addEventListener('waiting', () => {
+        armStallTimer();
+      });
+
+      elements.video.addEventListener('stalled', () => {
+        armStallTimer();
+      });
+
+      elements.video.addEventListener('error', () => {
+        // Per native HLS: prova hard resync
+        if (!state.hls) {
+          setReady(false);
+          setTimeout(() => hardResyncToLive('native-error'), CONFIG.ERROR_RETRY_MS);
+        }
+      });
+
+      // Periodic catch-up
+      setInterval(() => catchUpToLiveIfNeeded(false), 2000);
+
+      /* =====================================================
+         VISIBILITY / NETWORK
+         ===================================================== */
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') {
+          state.lastHiddenAt = Date.now();
+          return;
+        }
+
+        // Tornato in foreground: se è stato in background a lungo, ricarica
+        const hiddenFor = Date.now() - state.lastHiddenAt;
+        if (hiddenFor > 4500) {
+          hardResyncToLive('resume');
+        } else {
+          // piccolo nudging
+          setTimeout(() => catchUpToLiveIfNeeded(true), 350);
+        }
+      });
+
+      window.addEventListener('online', () => {
+        hardResyncToLive('online');
+      });
+
+      window.addEventListener('pagehide', () => {
+        // iOS: libera risorse
+        destroyHls();
+      });
+
+      /* =====================================================
+         PARTICLES (effetto natalizio) - non bloccare il primo paint
+         ===================================================== */
+      const createParticles = () => {
           const container = $('particlesContainer');
           if (!container) return;
+
+          // Ricrea (evita duplicati su resize/orientamento)
+          container.textContent = '';
 
           const isMobile = window.innerWidth < 768;
           const snowCount = isMobile ? 35 : 70;
@@ -1137,128 +1436,38 @@
           container.appendChild(fragment);
         };
 
-        /* =====================================================
-           EVENT LISTENERS
-           ===================================================== */
-        // Tap layer
-        elements.tapLayer?.addEventListener('click', toggleControls);
+      const scheduleParticles = () => {
+        if (prefersReducedMotion) return;
+        const run = () => createParticles();
 
-        // Controlli timer bump
-        const bumpEvents = ['pointermove', 'touchstart', 'mousemove', 'keydown'];
-        bumpEvents.forEach(event => {
-          elements.wrapper.addEventListener(event, bumpControlsTimer, { passive: true });
-        });
-
-        // Play/Pause button
-        elements.osdBtn?.addEventListener('click', (e) => {
-          e.stopPropagation();
-          togglePlayPause();
-        });
-
-        // FIX #1: Fullscreen button - usa la nostra funzione custom
-        elements.fsBtn?.addEventListener('click', (e) => {
-          e.stopPropagation();
-          e.preventDefault();
-          showControls();
-          if (state.touchMode) {
-            curtainOn(elements.fsCurtain);
-            curtainOn(elements.pageCurtain);
-          }
-          toggleFullscreen();
-        }, { capture: true });
-
-        // Video events
-        elements.video.addEventListener('loadedmetadata', () => {
-          setPausedUI();
-          setTimeout(() => catchUpToLiveIfNeeded(true), 300);
-        });
-
-        elements.video.addEventListener('playing', () => {
-          setPausedUI();
-          setReady(true);
-          bumpControlsTimer();
-        });
-
-        elements.video.addEventListener('pause', () => {
-          setPausedUI();
-          showControls();
-        });
-
-        elements.video.addEventListener('error', () => {
-          setReady(false);
-          setTimeout(() => {
-            try {
-              elements.video.load();
-              elements.video.play().catch(() => {});
-              setTimeout(() => catchUpToLiveIfNeeded(true), CONFIG.CATCHUP_DELAY_MS);
-            } catch (e) {
-              // Ignora errori
-            }
-          }, CONFIG.ERROR_RETRY_MS);
-        });
-
-        // FIX #2: Visibility & Focus - ricarica lo stream dopo background lungo
-        document.addEventListener('visibilitychange', () => {
-          if (document.visibilityState === 'hidden') {
-            state.lastHiddenAt = Date.now();
-            return;
-          }
-
-          // Tornati visibili
-          const hiddenFor = Date.now() - (state.lastHiddenAt || Date.now());
-          
-          // Se siamo stati in background per più di 30 secondi, ricarica tutto
-          if (hiddenFor > 30000) {
-            console.log('Long background detected, reloading stream...');
-            hardResyncToLive();
-          } else if (!elements.video.paused && hiddenFor > CONFIG.VISIBILITY_THRESHOLD_MS) {
-            hardResyncToLive();
-          } else {
-            setTimeout(() => catchUpToLiveIfNeeded(true), 250);
-          }
-        });
-
-        window.addEventListener('focus', () => {
-          setTimeout(hardResyncToLive, 150);
-        });
-
-        window.addEventListener('pageshow', (e) => {
-          if (e.persisted) hardResyncToLive();
-        });
-
-        // Online/Offline
-        window.addEventListener('online', () => {
-          setTimeout(hardResyncToLive, 500);
-        });
-
-        // Fullscreen events
-        document.addEventListener('fullscreenchange', onFullscreenChange);
-        document.addEventListener('webkitfullscreenchange', onFullscreenChange);
-        
-        // FIX #1: iOS video fullscreen events
-        elements.video.addEventListener('webkitbeginfullscreen', () => {
-          console.log('iOS fullscreen started');
-        });
-        elements.video.addEventListener('webkitendfullscreen', () => {
-          console.log('iOS fullscreen ended');
-        });
-
-        /* =====================================================
-           INIT
-           ===================================================== */
-        // Crea particelle se motion è permesso
-        const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-        if (!prefersReducedMotion) {
-          createParticles();
+        if ('requestIdleCallback' in window) {
+          // @ts-ignore
+          window.requestIdleCallback(run, { timeout: 1500 });
+        } else {
+          setTimeout(run, 500);
         }
+      };
 
+      window.addEventListener('resize', () => {
+        scheduleParticles();
+      }, { passive: true });
+
+      /* =====================================================
+         INIT
+         ===================================================== */
+      const init = () => {
         // Stato iniziale
         setReady(false);
         setPausedUI();
         hideControls();
+
+        // Particles dopo il primo paint
+        scheduleParticles();
+
+        // Avvia stream
+        initStream();
       };
 
-      // Avvia quando il DOM è pronto
       if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
       } else {
