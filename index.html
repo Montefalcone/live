@@ -45,276 +45,688 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="preconnect" href="https://live.webcammontefalconedivalfortore.it" crossorigin>
   
-  <!-- DNS prefetch per risorse secondarie -->
-  <link rel="dns-prefetch" href="https://fonts.googleapis.com">
-  <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
-  
+ <!-- Preload poster (most important for perceived speed) -->
+  <link rel="preload" as="image" href="frame.webp" />
+
+  <!-- Plyr (UI player) -->
+  <link rel="stylesheet" href="https://cdn.plyr.io/3.8.3/plyr.css" />
+
   <style>
     :root {
-      --radius-video: 24px;
-      --blur-strength: 20px; /* IL BLUR È TORNATO */
+      --radius-video: 26px;
+      --radius-pill: 999px;
+      --blur-ui: 18px;
+
+      --color-border: rgba(255,255,255,0.18);
+      --color-white: #fff;
       --color-live: #ff2b2b;
-      --transition-speed: 250ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+
+      --shadow-deep: 0 30px 120px rgba(0,0,0,0.60);
+      --shadow-glow: 0 0 60px rgba(255, 255, 255, 0.06);
+      --shadow-button: 0 10px 35px rgba(0,0,0,0.35);
+
+      --transition-medium: 320ms ease;
+
+      /* Plyr theming */
+      --plyr-color-main: rgba(255,255,255,0.92);
+      --plyr-control-radius: 999px;
+      --plyr-control-spacing: 10px;
+      --plyr-font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      --plyr-video-control-background-hover: rgba(0,0,0,0.45);
+      --plyr-video-control-background: rgba(0,0,0,0.32);
+      --plyr-tooltip-background: rgba(0,0,0,0.7);
+      --plyr-tooltip-color: #fff;
     }
 
     * { box-sizing: border-box; }
-    html, body { height: 100%; margin: 0; background: #000; overflow: hidden; font-family: system-ui, sans-serif; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: var(--plyr-font-family);
+      background: #000;
+      color: var(--color-white);
+      overflow: hidden;
+    }
 
-    /* SFONDO */
-    #bg { position: fixed; inset: 0; z-index: 0; }
-    #bgPoster, #bgVideo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 1s ease; }
-    #bgPoster { opacity: 1; filter: blur(40px) brightness(0.4); transform: scale(1.1); } 
-    /* Poster molto sfocato per dare atmosfera subito */
+    /* =========================
+       BACKGROUND (poster first, video later)
+       ========================= */
+    #bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      background: #000;
+    }
+    #bgPoster, #bgVideo {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scale(1.02);
+    }
+    #bgPoster {
+      filter: saturate(1.05) contrast(1.02);
+      opacity: 1;
+      transition: opacity 500ms ease;
+    }
+    #bgVideo {
+      opacity: 0;
+      transition: opacity 600ms ease;
+    }
     body.bg-playing #bgPoster { opacity: 0; }
-    body.bg-playing #bgVideo { opacity: 1; filter: blur(30px) brightness(0.4); transform: scale(1.1); }
+    body.bg-playing #bgVideo { opacity: 1; }
 
-    /* LAYOUT CENTRALE */
+    #bg::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(900px 560px at 50% 45%, rgba(0,0,0,0.22), rgba(0,0,0,0.72));
+      pointer-events: none;
+    }
+
+    /* =========================
+       LAYOUT
+       ========================= */
     main {
-      position: relative; z-index: 2; height: 100%;
-      display: grid; place-items: center; padding: 20px;
+      position: relative;
+      z-index: 2;
+      height: 100%;
+      display: grid;
+      place-items: center;
+      padding: 20px;
     }
 
     .video-wrapper {
       position: relative;
-      width: min(980px, 92vw); aspect-ratio: 16/9;
+      width: min(980px, 92vw);
+      aspect-ratio: 16 / 9;
       border-radius: var(--radius-video);
-      background: #000;
-      box-shadow: 0 40px 80px rgba(0,0,0,0.6);
       overflow: hidden;
-      border: 1px solid rgba(255,255,255,0.1);
-      /* Forza accelerazione hardware per evitare lag del blur */
-      transform: translateZ(0);
+      background: rgba(0,0,0,0.55);
+      box-shadow: var(--shadow-glow), var(--shadow-deep);
+      border: 1px solid var(--color-border);
+      isolation: isolate;
     }
 
     .video-wrapper:fullscreen {
-      width: 100vw; height: 100vh; border-radius: 0; border: none; padding: 0;
+      width: 100vw;
+      height: 100vh;
+      aspect-ratio: auto;
+      border-radius: 0;
+      border: none;
     }
 
-    video#liveVideo {
-      width: 100%; height: 100%; object-fit: cover;
-      opacity: 0; transition: opacity 0.5s ease;
+    .video-wrapper .plyr {
+      height: 100%;
+      width: 100%;
     }
-    .video-wrapper.is-ready video#liveVideo { opacity: 1; }
+    .video-wrapper video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      background: #000;
+    }
 
-    /* ELEMENTI UI COMUNI (Glassmorphism) */
-    .glass-ui {
-      background: rgba(20, 20, 20, 0.4); /* Base scura semitrasparente */
-      backdrop-filter: blur(var(--blur-strength)); /* IL BLUR */
-      -webkit-backdrop-filter: blur(var(--blur-strength));
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-      color: #fff;
-      z-index: 20;
-      /* Ottimizzazione performance animazione */
+    /* Plyr controls styling */
+    /* === Plyr controls behavior & positioning === */
+
+/* Remove tooltip bubbles (Enter/Exit fullscreen, etc.) */
+    .video-wrapper .plyr__tooltip { display: none !important; }
+
+/* Control cluster at bottom-right (works even with 1 button) */
+    .video-wrapper .plyr__controls {
+      position: absolute !important;
+      left: auto !important;
+      right: 14px !important;
+      bottom: 14px !important;
+      width: auto !important;
+      background: transparent !important;
+      padding: 0 !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 10px !important;
+      z-index: 40 !important;
+    }
+
+/* Desktop: reveal controls on hover/focus (no click).
+   Add a subtle, pleasant fade/slide-in. */
+    @media (hover: hover) and (pointer: fine) {
+      .video-wrapper .plyr__controls {
+        opacity: 0 !important;
+        pointer-events: none !important;
+        transform: translateY(8px) !important;
+        transition: opacity 160ms ease, transform 160ms ease !important;
+      }
+      .video-wrapper .plyr:hover .plyr__controls,
+      .video-wrapper .plyr:focus-within .plyr__controls {
+        opacity: 1 !important;
+        pointer-events: auto !important;
+        transform: translateY(0) !important;
+      }
+    }
+
+/* Prevent Plyr's default hide/show animations from fighting ours */
+    .video-wrapper .plyr--hide-controls .plyr__controls {
+      transform: none !important;
+    }
+
+/* Fullscreen button: glass blur (more reliable via pseudo-element) */
+    .video-wrapper .plyr__control[data-plyr="fullscreen"]{
+      position: relative;
+      overflow: hidden; /* clip the glass */
+      background: transparent !important; /* glass is drawn by ::before */
+    }
+    .video-wrapper .plyr__control[data-plyr="fullscreen"]::before{
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.24);
+      -webkit-backdrop-filter: blur(14px);
+      backdrop-filter: blur(14px);
+      z-index: 0;
+    }
+    .video-wrapper .plyr__control[data-plyr="fullscreen"] > svg{
+      position: relative;
+      z-index: 1;
+    }
+
+/* Button shape: rounded-square like the player corners (not fully round) */
+    /* === Overlaid PLAY button (center) behavior ===
+       Desktop: show on hover (no click needed), even while playing.
+       Mobile: keep Plyr's default (tap behavior). */
+    @media (hover: hover) and (pointer: fine) {
+      .video-wrapper .plyr__control--overlaid {
+        /* Make it a rounded-rect "pill-ish" and a bit wider */
+        width: 86px !important;      /* wider */
+        height: 52px !important;
+        border-radius: 16px !important;
+
+        /* Override Plyr hiding while playing */
+        display: grid !important;
+        visibility: visible !important;
+
+        /* Hidden until hover */
+        opacity: 0 !important;
+        pointer-events: none !important;
+
+        /* Nice, light animation */
+        transform: translate(-50%, -50%) translateY(8px) !important;
+        transition: opacity 160ms ease, transform 160ms ease !important;
+
+        /* Help backdrop-filter render immediately */
+        background: rgba(0,0,0,0.24) !important;
+        -webkit-backdrop-filter: blur(8px) !important;
+        backdrop-filter: blur(8px) !important;
+
+        will-change: opacity, transform;
+        backface-visibility: hidden;
+      }
+
+      .video-wrapper .plyr:hover .plyr__control--overlaid,
+      .video-wrapper .plyr:focus-within .plyr__control--overlaid {
+        opacity: 1 !important;
+        pointer-events: auto !important;
+        transform: translate(-50%, -50%) translateY(0) !important;
+      }
+
+      /* Keep the triangle size unchanged */
+            /* Replace Plyr's fixed play icon with a stateful icon (play/pause) */
+      .video-wrapper .plyr__control--overlaid svg {
+        display: none !important;
+      }
+      .video-wrapper .plyr__control--overlaid::before {
+        content: "";
+        width: 26px;
+        height: 26px;
+        display: block;
+        background-color: currentColor;
+        -webkit-mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%3E%3Cpath%20d%3D%27M8%205v14l11-7z%27%2F%3E%3C%2Fsvg%3E") center / contain no-repeat;
+        mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%3E%3Cpath%20d%3D%27M8%205v14l11-7z%27%2F%3E%3C%2Fsvg%3E") center / contain no-repeat;
+      }
+      .video-wrapper .plyr.plyr--playing .plyr__control--overlaid::before {
+        -webkit-mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%3E%3Cpath%20d%3D%27M6%205h4v14H6zM14%205h4v14h-4z%27%2F%3E%3C%2Fsvg%3E") center / contain no-repeat;
+        mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%3E%3Cpath%20d%3D%27M6%205h4v14H6zM14%205h4v14h-4z%27%2F%3E%3C%2Fsvg%3E") center / contain no-repeat;
+      }
+      .video-wrapper .plyr.plyr--paused .plyr__control--overlaid::before {
+        -webkit-mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%3E%3Cpath%20d%3D%27M8%205v14l11-7z%27%2F%3E%3C%2Fsvg%3E") center / contain no-repeat;
+        mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%3E%3Cpath%20d%3D%27M8%205v14l11-7z%27%2F%3E%3C%2Fsvg%3E") center / contain no-repeat;
+      }
+
+    }
+
+    /* === Reduce "late blur" on controls === */
+    .video-wrapper .plyr__controls {
       will-change: opacity, transform;
-      transition: opacity var(--transition-speed), transform var(--transition-speed);
+      backface-visibility: hidden;
+      transform: translateZ(0);
+    }
+    .video-wrapper .plyr__control {
+      backface-visibility: hidden;
+      transform: translateZ(0);
     }
 
-    /* BADGE LIVE (Basso Sinistra) */
-    .live-badge {
-      position: absolute; bottom: 20px; left: 20px;
-      display: flex; align-items: center; gap: 8px;
-      padding: 8px 14px; border-radius: 99px;
-      font-size: 12px; font-weight: 800; letter-spacing: 1px;
-      pointer-events: none;
+    .video-wrapper .plyr__control {
+      width: 46px;
+      height: 46px;
+      padding: 0 !important;
+      border-radius: 16px !important; /* tweak: 14-18px */
+      display: grid !important;
+      place-items: center !important;
+
+      /* Nice micro-interaction */
+      transition: transform 180ms cubic-bezier(.2,.9,.2,1), background-color 180ms ease, box-shadow 180ms ease !important;
+      will-change: transform;
     }
-    .live-dot {
-      width: 8px; height: 8px; border-radius: 50%; background: var(--color-live);
-      box-shadow: 0 0 10px var(--color-live);
-      animation: pulse 2s infinite;
+    .video-wrapper .plyr__control svg {
+      width: 20px !important;
+      height: 20px !important;
+    }
+    .video-wrapper .plyr__control:hover {
+      transform: translateY(-1px) scale(1.04);
+      box-shadow: 0 14px 40px rgba(0,0,0,0.45);
+    }
+    .video-wrapper .plyr__control:active {
+      transform: scale(0.98);
+      box-shadow: 0 10px 28px rgba(0,0,0,0.35);
     }
 
-    /* FULLSCREEN BUTTON (Basso Destra - FIXATO) */
-    .fs-btn {
-      position: absolute; bottom: 20px; right: 20px;
-      width: 44px; height: 44px; border-radius: 14px; /* Un po' quadrato */
-      display: grid; place-items: center; cursor: pointer;
-      padding: 0; margin: 0;
+/* Leave space for LIVE badge bottom-left by not using a full-width bar */
+.video-wrapper .plyr__control {
+      border: 1px solid rgba(255,255,255,0.20) !important;
+      box-shadow: var(--shadow-button);
+      backdrop-filter: blur(var(--blur-ui));
+      -webkit-backdrop-filter: blur(var(--blur-ui));
     }
-    .fs-btn svg { width: 22px; height: 22px; fill: white; }
-    .fs-btn:active { transform: scale(0.92); background: rgba(255,255,255,0.1); }
 
-    /* PLAY/PAUSE CENTRALE (OSD) */
-    .osd-center {
-      position: absolute; inset: 0;
-      display: grid; place-items: center; pointer-events: none;
+    /* =========================
+       LOADING OVERLAY
+       ========================= */
+    .loading-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 50;
+      display: grid;
+      place-items: center;
+      background: rgba(0,0,0,0.55);
+      opacity: 1;
+      visibility: visible;
+      transition: opacity var(--transition-medium), visibility 0ms linear 0ms;
+      pointer-events: auto;
     }
-    .play-btn {
-      width: 80px; height: 80px; border-radius: 50%;
-      pointer-events: auto; cursor: pointer;
-      display: grid; place-items: center;
-    }
-    .play-btn svg { width: 32px; height: 32px; fill: white; }
-    .play-btn:active { transform: scale(0.9); }
-
-    /* LOGICA VISIBILITÀ CONTROLLI */
-    .ui-hidden {
+    .video-wrapper.is-ready .loading-overlay {
       opacity: 0;
+      visibility: hidden;
       pointer-events: none;
-      transform: scale(0.95); /* Effetto zoom-out leggero quando sparisce */
+      transition: opacity var(--transition-medium), visibility 0ms linear var(--transition-medium);
     }
-    .video-wrapper.is-paused .play-btn { opacity: 1; transform: scale(1); pointer-events: auto; }
-    .icon-pause { display: block; } .icon-play { display: none; }
-    .video-wrapper.is-paused .icon-pause { display: none; }
-    .video-wrapper.is-paused .icon-play { display: block; margin-left: 4px; }
-
-    /* TAP LAYER */
-    .tap-layer { position: absolute; inset: 0; z-index: 10; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-
-    /* LOADING */
-    .loading-layer {
-      position: absolute; inset: 0; z-index: 50; background: #000;
-      display: grid; place-items: center; transition: opacity 0.4s;
+    .loading-overlay .preview {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: blur(20px) brightness(0.55) saturate(0.85);
+      transform: scale(1.08);
+      opacity: 1;
     }
-    .video-wrapper.is-ready .loading-layer { opacity: 0; pointer-events: none; }
     .spinner {
-      width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.2);
-      border-top-color: #fff; border-radius: 50%; animation: spin 1s linear infinite;
+      position: relative;
+      width: 46px;
+      height: 46px;
+      border-radius: var(--radius-pill);
+      border: 3px solid rgba(255,255,255,0.18);
+      border-top-color: rgba(255,255,255,0.92);
+      animation: spin 900ms linear infinite;
+      z-index: 2;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
-    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
 
+    .start-cta {
+      position: relative;
+      z-index: 3;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 12px 16px;
+      border-radius: var(--radius-pill);
+      border: 1px solid rgba(255,255,255,0.22);
+      background: rgba(0,0,0,0.38);
+      backdrop-filter: blur(var(--blur-ui));
+      -webkit-backdrop-filter: blur(var(--blur-ui));
+      box-shadow: var(--shadow-button);
+      color: #fff;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .start-cta svg { width: 18px; height: 18px; fill: currentColor; }
+
+    .loading-overlay.needs-gesture .spinner { display: none; }
+    .loading-overlay.needs-gesture .start-cta { display: inline-flex; }
+
+    /* =========================
+       LIVE BADGE (bottom-left)
+       ========================= */
+    .live-badge {
+      position: absolute;
+      left: 14px;
+      bottom: 14px;
+      z-index: 40;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: var(--radius-pill);
+      color: var(--color-white);
+      font-weight: 800;
+      font-size: 12px;
+      line-height: 1;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      background: rgba(0, 0, 0, 0.18);
+      border: 1px solid var(--color-border);
+      box-shadow: var(--shadow-button);
+      backdrop-filter: blur(var(--blur-ui));
+      -webkit-backdrop-filter: blur(var(--blur-ui));
+      pointer-events: none;
+      user-select: none;
+    }
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--color-live);
+      box-shadow: 0 0 12px rgba(255, 43, 43, 0.95);
+      animation: livePulse 1.6s infinite;
+    }
+    @keyframes livePulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.45; }
+      100% { opacity: 1; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * { transition: none !important; animation: none !important; }
+    }
   </style>
 </head>
 
 <body>
-
   <div id="bg" aria-hidden="true">
     <img id="bgPoster" src="frame.webp" alt="" />
-    <video id="bgVideo" muted playsinline loop preload="none"></video>
+    <video id="bgVideo" muted playsinline loop preload="none" poster="frame.webp"></video>
   </div>
 
   <main>
-    <section class="video-wrapper" id="wrapper">
-      <video id="liveVideo" playsinline muted></video>
+    <section class="video-wrapper" id="videoWrapper" aria-label="Player live">
+      <video id="liveVideo" controls playsinline muted preload="metadata" crossorigin="anonymous" poster="frame.webp"></video>
 
-      <div class="loading-layer" id="loader">
-        <div class="spinner"></div>
-      </div>
-
-      <div class="tap-layer" id="tapLayer"></div>
-
-      <div class="live-badge glass-ui" id="uiBadge">
-        <div class="live-dot"></div>
-        <span>LIVE</span>
-      </div>
-
-      <button class="fs-btn glass-ui" id="fsBtn" type="button">
-        <svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm0-4h3V7h2v5H7V10zm10 7h-3v2h5v-5h-2v3zm-3-7V7h3V5h-5v5h2z"/></svg>
-      </button>
-
-      <div class="osd-center">
-        <button class="play-btn glass-ui ui-hidden" id="playBtn" type="button">
-          <svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-          <svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+      <div class="loading-overlay" id="loadingOverlay" aria-hidden="false">
+        <img class="preview" src="frame.webp" alt="" />
+        <div class="spinner" aria-label="Caricamento"></div>
+        <button class="start-cta" id="startBtn" type="button" aria-label="Avvia live">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+          Avvia
         </button>
       </div>
 
+      <div class="live-badge" aria-hidden="true">
+        <span class="live-dot"></span>
+        <span>LIVE</span>
+      </div>
     </section>
   </main>
 
-  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.15/dist/hls.min.js"></script>
+  <script src="https://cdn.plyr.io/3.8.3/plyr.polyfilled.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.18/dist/hls.min.js" defer></script>
+
   <script>
     (function() {
-      const STREAM = 'https://live.webcammontefalconedivalfortore.it/memfs/58e0bcbe-f1bd-4c8b-85f7-b4566a3e5392.m3u8';
-      
-      const wrapper = document.getElementById('wrapper');
+      'use strict';
+
+      const STREAM_URL = 'https://live.webcammontefalconedivalfortore.it/memfs/58e0bcbe-f1bd-4c8b-85f7-b4566a3e5392.m3u8';
+
+      const wrapper = document.getElementById('videoWrapper');
       const video = document.getElementById('liveVideo');
-      const fsBtn = document.getElementById('fsBtn');
-      const playBtn = document.getElementById('playBtn');
-      const tapLayer = document.getElementById('tapLayer');
-      const uiBadge = document.getElementById('uiBadge');
-      
-      let hls;
-      let hideTimer;
-      let controlsActive = true;
+      const overlay = document.getElementById('loadingOverlay');
+      const startBtn = document.getElementById('startBtn');
 
-      // Gestione UI (Mostra/Nascondi)
-      function showUI() {
-        controlsActive = true;
-        wrapper.classList.remove('hide-cursor');
-        // Rimuoviamo la classe che nasconde
-        uiBadge.classList.remove('ui-hidden');
-        fsBtn.classList.remove('ui-hidden');
-        // Il playBtn ha una logica a parte (appare solo in pausa o hover, ma qui semplifichiamo: se è in play, appare solo al tocco)
-        if (!video.paused) playBtn.classList.remove('ui-hidden');
-        
-        clearTimeout(hideTimer);
-        if (!video.paused) {
-          hideTimer = setTimeout(hideUI, 2500);
-        }
-      }
+      const bgVideo = document.getElementById('bgVideo');
 
-      function hideUI() {
-        if (video.paused) return; // Mai nascondere se in pausa
-        controlsActive = false;
-        uiBadge.classList.add('ui-hidden');
-        fsBtn.classList.add('ui-hidden');
-        playBtn.classList.add('ui-hidden');
-        wrapper.classList.add('hide-cursor');
-      }
+      video.muted = true;
+      video.playsInline = true;
 
-      function togglePlay() {
-        if (video.paused) {
-          video.play();
-          wrapper.classList.remove('is-paused');
-          showUI(); // Riavvia timer per nascondere
-        } else {
-          video.pause();
-          wrapper.classList.add('is-paused');
-          showUI(); // Resta visibile in pausa
-        }
-      }
+      const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
-      // Init Video
-      if (Hls.isSupported()) {
-        hls = new Hls();
-        hls.loadSource(STREAM);
-        hls.attachMedia(video);
-        hls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(()=>{}));
-      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        video.src = STREAM;
-        video.addEventListener('loadedmetadata', () => video.play().catch(()=>{}));
-      }
+      const isSafari = () => {
+        const ua = navigator.userAgent;
+        return /Safari/.test(ua) && !/Chrome|CriOS|Edg|OPR/.test(ua);
+      };
 
-      video.addEventListener('playing', () => {
+      const supportsNativeHls = () => !!video.canPlayType('application/vnd.apple.mpegurl');
+
+      function setReady() {
         wrapper.classList.add('is-ready');
-        wrapper.classList.remove('is-paused');
-        showUI();
-        // Background video (lazy)
+        overlay.setAttribute('aria-hidden', 'true');
+        overlay.classList.remove('needs-gesture');
+        scheduleBackgroundVideo();
+      }
+
+      function setNeedsGesture() {
+        overlay.classList.add('needs-gesture');
+        overlay.setAttribute('aria-hidden', 'false');
+      }
+
+      function waitForFirstFrame() {
+        const done = () => setReady();
+
+        video.addEventListener('playing', done, { once: true });
+        video.addEventListener('timeupdate', () => {
+          if (video.currentTime > 0) done();
+        }, { once: true });
+
+        if ('requestVideoFrameCallback' in HTMLVideoElement.prototype) {
+          try { video.requestVideoFrameCallback(() => done()); } catch (_) {}
+        }
+
         setTimeout(() => {
-          const bg = document.getElementById('bgVideo');
-          bg.src = 'galaxy.mp4';
-          bg.play().catch(()=>{});
-        }, 2000);
+          if (!wrapper.classList.contains('is-ready') && !video.paused) done();
+        }, 6000);
+      }
+
+      function jumpToLiveEdge() {
+        try {
+          const s = video.seekable;
+          if (s && s.length) {
+            const end = s.end(s.length - 1);
+            video.currentTime = Math.max(0, end - 0.6);
+          }
+        } catch (_) {}
+      }
+
+      function whenReady(fn) {
+        if (document.readyState === 'complete' || document.readyState === 'interactive') fn();
+        else document.addEventListener('DOMContentLoaded', fn, { once: true });
+      }
+
+      let player = null;
+      let hls = null;
+      let stallTimer = null;
+
+      function destroyHls() {
+        if (hls) {
+          try { hls.destroy(); } catch (_) {}
+          hls = null;
+        }
+      }
+
+      function hardReset() {
+        destroyHls();
+        try {
+          video.pause();
+          video.removeAttribute('src');
+          video.load();
+        } catch (_) {}
+        wrapper.classList.remove('is-ready');
+        overlay.classList.remove('needs-gesture');
+        overlay.setAttribute('aria-hidden', 'false');
+        attachStream().catch(() => setNeedsGesture());
+      }
+
+      async function attemptPlay() {
+        try {
+          await player.play();
+          jumpToLiveEdge();
+        } catch (e) {
+          setNeedsGesture();
+        }
+      }
+
+      function armStallWatchdog() {
+        if (stallTimer) clearTimeout(stallTimer);
+        stallTimer = setTimeout(() => {
+          if (video.paused) return;
+          jumpToLiveEdge();
+          setTimeout(() => {
+            if (!video.paused && video.readyState < 3) hardReset();
+          }, 2500);
+        }, 4500);
+      }
+
+      function attachStream() {
+        destroyHls();
+
+        wrapper.classList.remove('is-ready');
+        overlay.classList.remove('needs-gesture');
+        overlay.setAttribute('aria-hidden', 'false');
+
+        if (supportsNativeHls() && (isIOS() || isSafari())) {
+          video.src = STREAM_URL;
+          video.load();
+          waitForFirstFrame();
+          return attemptPlay();
+        }
+
+        if (!window.Hls || !window.Hls.isSupported()) {
+          video.src = STREAM_URL;
+          video.load();
+          waitForFirstFrame();
+          return attemptPlay();
+        }
+
+        hls = new window.Hls({
+          lowLatencyMode: true,
+          backBufferLength: 30,
+          maxBufferLength: 12,
+          maxMaxBufferLength: 24,
+          liveSyncDurationCount: 2,
+          liveMaxLatencyDurationCount: 6,
+          enableWorker: true
+        });
+
+        hls.attachMedia(video);
+        hls.on(window.Hls.Events.MEDIA_ATTACHED, () => {
+          hls.loadSource(STREAM_URL);
+        });
+
+        hls.on(window.Hls.Events.ERROR, (_evt, data) => {
+          if (!data || !data.fatal) return;
+
+          try {
+            switch (data.type) {
+              case window.Hls.ErrorTypes.NETWORK_ERROR:
+                hls.startLoad(-1);
+                break;
+              case window.Hls.ErrorTypes.MEDIA_ERROR:
+                hls.recoverMediaError();
+                break;
+              default:
+                hardReset();
+                break;
+            }
+          } catch (_) {
+            hardReset();
+          }
+        });
+
+        waitForFirstFrame();
+        return attemptPlay();
+      }
+
+      function scheduleBackgroundVideo() {
+        const saveData = navigator.connection && navigator.connection.saveData;
+        const et = navigator.connection && navigator.connection.effectiveType;
+        const slow = et && (et.includes('2g') || et.includes('slow'));
+        const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (saveData || slow || reduceMotion) return;
+
+        setTimeout(() => {
+          if (!bgVideo.src) {
+            bgVideo.src = 'galaxy.mp4';
+            bgVideo.load();
+          }
+          const p = bgVideo.play();
+          if (p && typeof p.catch === 'function') p.catch(() => {});
+        }, 1800);
+      }
+
+      bgVideo.addEventListener('playing', () => document.body.classList.add('bg-playing'));
+
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+          try { bgVideo.pause(); } catch (_) {}
+        } else if (document.body.classList.contains('bg-playing')) {
+          const p = bgVideo.play();
+          if (p && typeof p.catch === 'function') p.catch(() => {});
+        }
       });
 
-      // Eventi
-      tapLayer.addEventListener('click', () => {
-        // Se UI è nascosta, mostrala. Se è visibile, toggle play/pausa o nascondi?
-        // Comportamento standard mobile: tocco = mostra controlli. Secondo tocco = azione (opzionale) o nascondi.
-        if (!controlsActive) showUI();
-        else hideUI();
-      });
-
-      playBtn.addEventListener('click', (e) => { e.stopPropagation(); togglePlay(); });
-      
-      fsBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (!document.fullscreenElement) {
-          wrapper.requestFullscreen().catch(err => {
-            // Fallback iOS
-            if (video.webkitEnterFullscreen) video.webkitEnterFullscreen();
+      whenReady(() => {
+        if (window.Plyr) {
+          player = new Plyr(video, {
+          controls: ['play-large', 'fullscreen'],
+          clickToPlay: true,
+          hideControls: true,
+          tooltips: { controls: false, seek: false },
+          fullscreen: { enabled: true, fallback: true, iosNative: true }
           });
         } else {
-          document.exitFullscreen();
+          // Fallback: keep native controls if Plyr CDN fails.
+          player = {
+            play: () => video.play(),
+            on: () => {}
+          };
         }
+
+        video.addEventListener('waiting', armStallWatchdog);
+        video.addEventListener('stalled', armStallWatchdog);
+        video.addEventListener('playing', () => stallTimer && clearTimeout(stallTimer));
+
+        // iOS: enforce native fullscreen when requested
+        player.on('enterfullscreen', () => {
+          if (isIOS() && typeof video.webkitEnterFullscreen === 'function') {
+            try { video.webkitEnterFullscreen(); } catch (_) {}
+          }
+        });
+
+        attachStream().catch(() => setNeedsGesture());
       });
-      
-      // Initial state
-      wrapper.classList.add('is-paused'); 
+
+      startBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        attemptPlay();
+      });
     })();
   </script>
 </body>
 </html>
+
+
 
