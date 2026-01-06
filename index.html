@@ -44,8 +44,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="preconnect" href="https://live.webcammontefalconedivalfortore.it" crossorigin>
-  
- <!-- Preload poster (most important for perceived speed) -->
+<!-- Preload poster (most important for perceived speed) -->
   <link rel="preload" as="image" href="frame.webp" />
 
   <!-- Plyr (UI player) -->
@@ -144,7 +143,7 @@
       aspect-ratio: 16 / 9;
       border-radius: var(--radius-video);
       overflow: hidden;
-      background: rgba(0,0,0,0.55);
+      background: #000;
       box-shadow: var(--shadow-glow), var(--shadow-deep);
       border: 1px solid var(--color-border);
       isolation: isolate;
@@ -170,169 +169,189 @@
     }
 
     /* Plyr controls styling */
-    /* === Plyr controls behavior & positioning === */
+            /* === Overlaid PLAY button (center) behavior ===
+       Desktop: show on hover (no click needed), even while playing.
+       Mobile: show on tap (JS adds .show-ui). */
+    .video-wrapper .plyr__control--overlaid {
+      width: 90px !important;
+      height: 52px !important;
+      border-radius: 16px !important;
+
+      display: grid !important;
+      place-items: center !important;
+
+      opacity: 0 !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
+
+      transform: translate(-50%, -50%) translateY(8px) !important;
+      transition:
+        opacity 220ms ease,
+        transform 220ms ease,
+        visibility 0ms linear 220ms !important;
+
+      background: rgba(0,0,0,0.22) !important;
+      -webkit-backdrop-filter: blur(6px) !important;
+      backdrop-filter: blur(6px) !important;
+    }
+
+    /* Always show when paused */
+    .video-wrapper .plyr.plyr--paused .plyr__control--overlaid {
+      opacity: 1 !important;
+      visibility: visible !important;
+      pointer-events: auto !important;
+      transform: translate(-50%, -50%) translateY(0) !important;
+      transition:
+        opacity 220ms ease,
+        transform 220ms ease,
+        visibility 0ms linear 0ms !important;
+    }
+
+    /* Desktop: show on hover/focus */
+    @media (hover: hover) and (pointer: fine) {
+      .video-wrapper .plyr:hover .plyr__control--overlaid,
+      .video-wrapper .plyr:focus-within .plyr__control--overlaid {
+        opacity: 1 !important;
+        visibility: visible !important;
+        pointer-events: auto !important;
+        transform: translate(-50%, -50%) translateY(0) !important;
+        transition:
+          opacity 220ms ease,
+          transform 220ms ease,
+          visibility 0ms linear 0ms !important;
+      }
+    }
+
+    /* Mobile/touch: show when JS adds .show-ui */
+    .video-wrapper.show-ui .plyr__control--overlaid {
+      opacity: 1 !important;
+      visibility: visible !important;
+      pointer-events: auto !important;
+      transform: translate(-50%, -50%) translateY(0) !important;
+      transition:
+        opacity 220ms ease,
+        transform 220ms ease,
+        visibility 0ms linear 0ms !important;
+    }
+
+    /* Stateful icon (play/pause) - hard centered */
+    .video-wrapper .plyr__control--overlaid {
+      position: absolute !important;
+    }
+    .video-wrapper .plyr__control--overlaid svg { display: none !important; }
+
+    .video-wrapper .plyr__control--overlaid::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 26px;
+      height: 26px;
+      transform: translate(-50%, -50%);
+      background-color: currentColor;
+      -webkit-mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%3E%3Cpath%20d%3D%27M8%205v14l11-7z%27%2F%3E%3C%2Fsvg%3E") center / contain no-repeat;
+      mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%3E%3Cpath%20d%3D%27M8%205v14l11-7z%27%2F%3E%3C%2Fsvg%3E") center / contain no-repeat;
+    }
+    .video-wrapper .plyr.plyr--playing .plyr__control--overlaid::after {
+      -webkit-mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%3E%3Cpath%20d%3D%27M6%205h4v14H6zM14%205h4v14h-4z%27%2F%3E%3C%2Fsvg%3E") center / contain no-repeat;
+      mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%3E%3Cpath%20d%3D%27M6%205h4v14H6zM14%205h4v14h-4z%27%2F%3E%3C%2Fsvg%3E") center / contain no-repeat;
+    }
+    .video-wrapper .plyr.plyr--paused .plyr__control--overlaid::after {
+      -webkit-mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%3E%3Cpath%20d%3D%27M8%205v14l11-7z%27%2F%3E%3C%2Fsvg%3E") center / contain no-repeat;
+      mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%3E%3Cpath%20d%3D%27M8%205v14l11-7z%27%2F%3E%3C%2Fsvg%3E") center / contain no-repeat;
+    }
+
+/* === (Removed) blur-timing hacks for fullscreen controls === */
+
+
+
+/* === Plyr controls behavior & positioning === */
 
 /* Remove tooltip bubbles (Enter/Exit fullscreen, etc.) */
     .video-wrapper .plyr__tooltip { display: none !important; }
 
-/* Control cluster at bottom-right (works even with 1 button) */
+/* Control cluster at bottom-right (force it: avoid drifting under LIVE) */
     .video-wrapper .plyr__controls {
       position: absolute !important;
       left: auto !important;
       right: 14px !important;
       bottom: 14px !important;
       width: auto !important;
+      justify-content: flex-end !important;
+
       background: transparent !important;
       padding: 0 !important;
       display: inline-flex !important;
       align-items: center !important;
       gap: 10px !important;
       z-index: 40 !important;
+
+      /* Hidden by default (touch needs tap, desktop needs hover) */
+      opacity: 0 !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
+      transform: translateY(8px) !important;
+      transition:
+        opacity 220ms ease,
+        transform 220ms ease,
+        visibility 0ms linear 220ms !important;
     }
 
-/* Desktop: reveal controls on hover/focus (no click).
-   Add a subtle, pleasant fade/slide-in. */
-    @media (hover: hover) and (pointer: fine) {
-      .video-wrapper .plyr__controls {
-        opacity: 0 !important;
-        pointer-events: none !important;
-        transform: translateY(8px) !important;
-        transition: opacity 160ms ease, transform 160ms ease !important;
-      }
-      .video-wrapper .plyr:hover .plyr__controls,
-      .video-wrapper .plyr:focus-within .plyr__controls {
-        opacity: 1 !important;
-        pointer-events: auto !important;
-        transform: translateY(0) !important;
-      }
-    }
-
-/* Prevent Plyr's default hide/show animations from fighting ours */
-    .video-wrapper .plyr--hide-controls .plyr__controls {
-      transform: none !important;
-    }
-
-/* Fullscreen button: glass blur (more reliable via pseudo-element) */
-    .video-wrapper .plyr__control[data-plyr="fullscreen"]{
-      position: relative;
-      overflow: hidden; /* clip the glass */
-      background: transparent !important; /* glass is drawn by ::before */
-    }
-    .video-wrapper .plyr__control[data-plyr="fullscreen"]::before{
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: rgba(0,0,0,0.24);
-      -webkit-backdrop-filter: blur(14px);
-      backdrop-filter: blur(14px);
-      z-index: 0;
-    }
-    .video-wrapper .plyr__control[data-plyr="fullscreen"] > svg{
-      position: relative;
-      z-index: 1;
-    }
-
-/* Button shape: rounded-square like the player corners (not fully round) */
-    /* === Overlaid PLAY button (center) behavior ===
-       Desktop: show on hover (no click needed), even while playing.
-       Mobile: keep Plyr's default (tap behavior). */
-    @media (hover: hover) and (pointer: fine) {
-      .video-wrapper .plyr__control--overlaid {
-        /* Make it a rounded-rect "pill-ish" and a bit wider */
-        width: 86px !important;      /* wider */
-        height: 52px !important;
-        border-radius: 16px !important;
-
-        /* Override Plyr hiding while playing */
-        display: grid !important;
-        visibility: visible !important;
-
-        /* Hidden until hover */
-        opacity: 0 !important;
-        pointer-events: none !important;
-
-        /* Nice, light animation */
-        transform: translate(-50%, -50%) translateY(8px) !important;
-        transition: opacity 160ms ease, transform 160ms ease !important;
-
-        /* Help backdrop-filter render immediately */
-        background: rgba(0,0,0,0.24) !important;
-        -webkit-backdrop-filter: blur(8px) !important;
-        backdrop-filter: blur(8px) !important;
-
-        will-change: opacity, transform;
-        backface-visibility: hidden;
-      }
-
-      .video-wrapper .plyr:hover .plyr__control--overlaid,
-      .video-wrapper .plyr:focus-within .plyr__control--overlaid {
-        opacity: 1 !important;
-        pointer-events: auto !important;
-        transform: translate(-50%, -50%) translateY(0) !important;
-      }
-
-      /* Keep the triangle size unchanged */
-            /* Replace Plyr's fixed play icon with a stateful icon (play/pause) */
-      .video-wrapper .plyr__control--overlaid svg {
-        display: none !important;
-      }
-      .video-wrapper .plyr__control--overlaid::before {
-        content: "";
-        width: 26px;
-        height: 26px;
-        display: block;
-        background-color: currentColor;
-        -webkit-mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%3E%3Cpath%20d%3D%27M8%205v14l11-7z%27%2F%3E%3C%2Fsvg%3E") center / contain no-repeat;
-        mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%3E%3Cpath%20d%3D%27M8%205v14l11-7z%27%2F%3E%3C%2Fsvg%3E") center / contain no-repeat;
-      }
-      .video-wrapper .plyr.plyr--playing .plyr__control--overlaid::before {
-        -webkit-mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%3E%3Cpath%20d%3D%27M6%205h4v14H6zM14%205h4v14h-4z%27%2F%3E%3C%2Fsvg%3E") center / contain no-repeat;
-        mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%3E%3Cpath%20d%3D%27M6%205h4v14H6zM14%205h4v14h-4z%27%2F%3E%3C%2Fsvg%3E") center / contain no-repeat;
-      }
-      .video-wrapper .plyr.plyr--paused .plyr__control--overlaid::before {
-        -webkit-mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%3E%3Cpath%20d%3D%27M8%205v14l11-7z%27%2F%3E%3C%2Fsvg%3E") center / contain no-repeat;
-        mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%3E%3Cpath%20d%3D%27M8%205v14l11-7z%27%2F%3E%3C%2Fsvg%3E") center / contain no-repeat;
-      }
-
-    }
-
-    /* === Reduce "late blur" on controls === */
-    .video-wrapper .plyr__controls {
-      will-change: opacity, transform;
-      backface-visibility: hidden;
-      transform: translateZ(0);
-    }
-    .video-wrapper .plyr__control {
-      backface-visibility: hidden;
-      transform: translateZ(0);
-    }
-
-    .video-wrapper .plyr__control {
+/* Rounded-square buttons like the player corners */
+    .video-wrapper .plyr__controls .plyr__control {
       width: 46px;
       height: 46px;
       padding: 0 !important;
-      border-radius: 16px !important; /* tweak: 14-18px */
+      border-radius: 16px !important;
       display: grid !important;
       place-items: center !important;
 
-      /* Nice micro-interaction */
-      transition: transform 180ms cubic-bezier(.2,.9,.2,1), background-color 180ms ease, box-shadow 180ms ease !important;
+      transition: transform 220ms cubic-bezier(.2,.9,.2,1), box-shadow 220ms ease !important;
       will-change: transform;
     }
-    .video-wrapper .plyr__control svg {
+    .video-wrapper .plyr__controls .plyr__control svg {
       width: 20px !important;
       height: 20px !important;
     }
-    .video-wrapper .plyr__control:hover {
+    .video-wrapper .plyr__controls .plyr__control:hover {
       transform: translateY(-1px) scale(1.04);
       box-shadow: 0 14px 40px rgba(0,0,0,0.45);
     }
-    .video-wrapper .plyr__control:active {
+    .video-wrapper .plyr__controls .plyr__control:active {
       transform: scale(0.98);
       box-shadow: 0 10px 28px rgba(0,0,0,0.35);
     }
 
+/* Desktop: show on hover/focus (no click) */
+    @media (hover: hover) and (pointer: fine) {
+      .video-wrapper .plyr:hover .plyr__controls,
+      .video-wrapper .plyr:focus-within .plyr__controls {
+        opacity: 1 !important;
+        visibility: visible !important;
+        pointer-events: auto !important;
+        transform: translateY(0) !important;
+        transition:
+          opacity 220ms ease,
+          transform 220ms ease,
+          visibility 0ms linear 0ms !important;
+      }
+    }
+
+/* Mobile/touch: show when JS adds .show-ui */
+    .video-wrapper.show-ui .plyr__controls {
+      opacity: 1 !important;
+      visibility: visible !important;
+      pointer-events: auto !important;
+      transform: translateY(0) !important;
+      transition:
+        opacity 220ms ease,
+        transform 220ms ease,
+        visibility 0ms linear 0ms !important;
+    }
+
 /* Leave space for LIVE badge bottom-left by not using a full-width bar */
+
+
 .video-wrapper .plyr__control {
       border: 1px solid rgba(255,255,255,0.20) !important;
       box-shadow: var(--shadow-button);
@@ -349,7 +368,7 @@
       z-index: 50;
       display: grid;
       place-items: center;
-      background: rgba(0,0,0,0.55);
+      background: #000;
       opacity: 1;
       visibility: visible;
       transition: opacity var(--transition-medium), visibility 0ms linear 0ms;
@@ -453,7 +472,20 @@
     @media (prefers-reduced-motion: reduce) {
       * { transition: none !important; animation: none !important; }
     }
-  </style>
+  
+    @media (max-width: 720px) {
+      #bgPoster, #bgVideo { transform: none !important; }
+    }
+
+
+    /* Bottom-right controls: no backdrop blur (mobile/desktop) */
+    .video-wrapper .plyr__controls .plyr__control{
+      -webkit-backdrop-filter: none !important;
+      backdrop-filter: none !important;
+      background: rgba(0,0,0,0.32) !important;
+    }
+
+</style>
 </head>
 
 <body>
@@ -510,11 +542,28 @@
       };
 
       const supportsNativeHls = () => !!video.canPlayType('application/vnd.apple.mpegurl');
+      const isTouchDevice = window.matchMedia && window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+
+
+      async function lockLandscape() {
+        try {
+          if (isTouchDevice && screen.orientation && screen.orientation.lock) {
+            await screen.orientation.lock('landscape');
+          }
+        } catch (_) {}
+      }
+      function unlockOrientation() {
+        try {
+          if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock();
+        } catch (_) {}
+      }
+
 
       function setReady() {
         wrapper.classList.add('is-ready');
         overlay.setAttribute('aria-hidden', 'true');
         overlay.classList.remove('needs-gesture');
+        try { video.poster = ''; } catch (_) {}
         scheduleBackgroundVideo();
       }
 
@@ -536,8 +585,11 @@
         }
 
         setTimeout(() => {
-          if (!wrapper.classList.contains('is-ready') && !video.paused) done();
-        }, 6000);
+          try {
+            const hasFrames = (video.readyState >= 3) && (video.videoWidth > 0);
+            if (!wrapper.classList.contains('is-ready') && !video.paused && hasFrames) done();
+          } catch (_) {}
+        }, 9000);
       }
 
       function jumpToLiveEdge() {
@@ -545,7 +597,7 @@
           const s = video.seekable;
           if (s && s.length) {
             const end = s.end(s.length - 1);
-            video.currentTime = Math.max(0, end - 0.6);
+            video.currentTime = Math.max(0, end - 3.0);
           }
         } catch (_) {}
       }
@@ -573,16 +625,39 @@
           video.removeAttribute('src');
           video.load();
         } catch (_) {}
+        try { video.poster = ''; } catch (_) {}
         wrapper.classList.remove('is-ready');
         overlay.classList.remove('needs-gesture');
         overlay.setAttribute('aria-hidden', 'false');
+
+        // Touch UI: show play + fullscreen on tap (no hover on mobile)
+        if (isTouchDevice) {
+          let uiTimer = null;
+
+          const showTouchUI = () => {
+            wrapper.classList.add('show-ui');
+            if (uiTimer) clearTimeout(uiTimer);
+            uiTimer = setTimeout(() => wrapper.classList.remove('show-ui'), 2600);
+          };
+
+          wrapper.addEventListener('pointerdown', (e) => {
+            // Ignore taps on actual controls
+            if (e.target && e.target.closest && e.target.closest('.plyr__control')) return;
+            if (e.pointerType === 'mouse') return;
+            showTouchUI();
+          }, { passive: true });
+
+          // Keep UI visible briefly when user pauses/plays
+          video.addEventListener('pause', () => wrapper.classList.add('show-ui'));
+          video.addEventListener('play', () => showTouchUI());
+        }
+
         attachStream().catch(() => setNeedsGesture());
       }
 
       async function attemptPlay() {
         try {
           await player.play();
-          jumpToLiveEdge();
         } catch (e) {
           setNeedsGesture();
         }
@@ -621,13 +696,22 @@
         }
 
         hls = new window.Hls({
-          lowLatencyMode: true,
-          backBufferLength: 30,
-          maxBufferLength: 12,
-          maxMaxBufferLength: 24,
-          liveSyncDurationCount: 2,
-          liveMaxLatencyDurationCount: 6,
-          enableWorker: true
+          // Stability-first for webcams + avoid 'start-stutter'
+          lowLatencyMode: false,
+          backBufferLength: 60,
+          maxBufferLength: 60,
+          maxMaxBufferLength: 120,
+          liveSyncDurationCount: 8,
+          liveMaxLatencyDurationCount: 16,
+          capLevelToPlayerSize: true,
+          startLevel: 0,
+          enableWorker: true,
+          fragLoadingMaxRetry: 6,
+          fragLoadingRetryDelay: 800,
+          fragLoadingMaxRetryTimeout: 12000,
+          manifestLoadingMaxRetry: 6,
+          manifestLoadingRetryDelay: 800,
+          manifestLoadingMaxRetryTimeout: 12000
         });
 
         hls.attachMedia(video);
@@ -636,7 +720,22 @@
         });
 
         hls.on(window.Hls.Events.ERROR, (_evt, data) => {
-          if (!data || !data.fatal) return;
+          if (!data) return;
+
+          // Non-fatal network hiccups: try restart load (helps flaky networks)
+          if (!data.fatal && data.type === window.Hls.ErrorTypes.NETWORK_ERROR) {
+            try { hls.startLoad(-1); } catch (_) {}
+            return;
+          }
+
+          // Non-fatal buffer stalls: jump to live edge and restart loading
+          if (!data.fatal && data.details === window.Hls.ErrorDetails.BUFFER_STALLED_ERROR) {
+            try { jumpToLiveEdge(); } catch (_) {}
+            try { hls.startLoad(-1); } catch (_) {}
+            return;
+          }
+
+          if (!data.fatal) return;
 
           try {
             switch (data.type) {
@@ -658,7 +757,6 @@
         waitForFirstFrame();
         return attemptPlay();
       }
-
       function scheduleBackgroundVideo() {
         const saveData = navigator.connection && navigator.connection.saveData;
         const et = navigator.connection && navigator.connection.effectiveType;
@@ -678,6 +776,10 @@
 
       bgVideo.addEventListener('playing', () => document.body.classList.add('bg-playing'));
 
+      window.addEventListener('online', () => {
+        try { hardReset(); } catch (_) {}
+      });
+
       document.addEventListener('visibilitychange', () => {
         if (document.hidden) {
           try { bgVideo.pause(); } catch (_) {}
@@ -691,7 +793,7 @@
         if (window.Plyr) {
           player = new Plyr(video, {
           controls: ['play-large', 'fullscreen'],
-          clickToPlay: true,
+          clickToPlay: !isTouchDevice,
           hideControls: true,
           tooltips: { controls: false, seek: false },
           fullscreen: { enabled: true, fallback: true, iosNative: true }
@@ -708,11 +810,55 @@
         video.addEventListener('stalled', armStallWatchdog);
         video.addEventListener('playing', () => stallTimer && clearTimeout(stallTimer));
 
+        // On some streams/devices, starting *too* close to the live edge causes stutter until a manual pause.
+        // Fix: after playback starts, ensure we sit a few seconds behind live edge (one-time).
+        const alignToSafeLiveEdge = () => {
+          try {
+            const s = video.seekable;
+            if (!s || !s.length) return;
+            const end = s.end(s.length - 1);
+            const behind = end - (video.currentTime || 0);
+
+            // If we're too close (<1s) or oddly far (>10s), move to a safer point (~3s behind).
+            if (behind < 1.0 || behind > 10.0) {
+              video.currentTime = Math.max(0, end - 3.0);
+            }
+          } catch (_) {}
+        };
+        video.addEventListener('playing', () => setTimeout(alignToSafeLiveEdge, 1600), { once: true });
+
+        video.addEventListener('error', () => hardReset());
+        video.addEventListener('ended', () => hardReset());
+        video.addEventListener('emptied', () => hardReset());
+
+        // Heartbeat: if playback time stops advancing while "playing", reset.
+        let lastT = 0;
+        let stuckCount = 0;
+        setInterval(() => {
+          try {
+            if (video.paused) { stuckCount = 0; lastT = video.currentTime; return; }
+            const t = video.currentTime || 0;
+            if (t === lastT) stuckCount += 1;
+            else stuckCount = 0;
+            lastT = t;
+
+            // ~15s of no progress (3 * 5s interval) => reset
+            if (stuckCount >= 3) {
+              hardReset();
+              stuckCount = 0;
+            }
+          } catch (_) {}
+        }, 5000);
+
         // iOS: enforce native fullscreen when requested
-        player.on('enterfullscreen', () => {
+        player.on('enterfullscreen', async () => {
+          await lockLandscape();
           if (isIOS() && typeof video.webkitEnterFullscreen === 'function') {
             try { video.webkitEnterFullscreen(); } catch (_) {}
           }
+        });
+        player.on('exitfullscreen', () => {
+          unlockOrientation();
         });
 
         attachStream().catch(() => setNeedsGesture());
@@ -727,7 +873,3 @@
   </script>
 </body>
 </html>
-
-
-
-
