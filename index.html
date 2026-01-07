@@ -123,7 +123,6 @@
       align-items: center;
       justify-content: center;
       padding: 20px;
-      transition: padding 0.3s ease;
     }
 
     .video-wrapper {
@@ -136,41 +135,20 @@
       box-shadow: var(--shadow-glow), var(--shadow-deep);
       border: 1px solid var(--color-border);
       isolation: isolate;
-      transition: all 0.3s ease;
     }
 
-    /* Mobile portrait: centrato */
     @media (max-width: 768px) and (orientation: portrait) {
       .video-wrapper {
         width: min(980px, 92vw);
       }
     }
 
-    /* Mobile landscape: ZERO padding, fullscreen perfetto */
-    @media (max-width: 768px) and (orientation: landscape),
-           (max-height: 500px) and (orientation: landscape) {
-      body.landscape-fullscreen main {
-        padding: 0 !important;
-        margin: 0 !important;
-      }
-      body.landscape-fullscreen .video-wrapper {
-        width: 100vw !important;
-        height: 100vh !important;
-        max-width: 100vw !important;
-        max-height: 100vh !important;
-        aspect-ratio: auto !important;
-        border-radius: 0 !important;
-        border: none !important;
-        box-shadow: none !important;
-        margin: 0 !important;
-      }
-    }
-
-    /* Real fullscreen API */
     .video-wrapper:fullscreen,
     .video-wrapper:-webkit-full-screen,
     .video-wrapper:-moz-full-screen,
     .video-wrapper:-ms-fullscreen {
+      position: fixed !important;
+      inset: 0 !important;
       width: 100vw !important;
       height: 100vh !important;
       max-width: 100vw !important;
@@ -192,40 +170,31 @@
       background: #000;
     }
 
-    /* Play/Pause button - animazione graduale IDENTICA al fullscreen */
     .video-wrapper .plyr__control--overlaid {
       width: 90px !important;
       height: 52px !important;
       border-radius: 16px !important;
       display: grid !important;
       place-items: center !important;
-      
-      /* NASCOSTO di default con scale + opacity */
       opacity: 0 !important;
       visibility: hidden !important;
       pointer-events: none !important;
       transform: translate(-50%, -50%) scale(0.92) !important;
-      
-      /* Transizione GRADUALE come fullscreen button */
       transition: 
         opacity 220ms ease,
         transform 220ms cubic-bezier(.2,.9,.2,1),
         box-shadow 220ms ease,
         visibility 0ms linear 220ms !important;
-      
       background: rgba(0,0,0,0.22) !important;
       -webkit-backdrop-filter: blur(6px) !important;
       backdrop-filter: blur(6px) !important;
       will-change: transform, opacity;
       border: 1px solid rgba(255,255,255,0.20) !important;
       box-shadow: var(--shadow-button);
-      
-      /* RIMUOVI outline blu mobile */
       outline: none !important;
       -webkit-tap-highlight-color: transparent !important;
     }
 
-    /* Quando diventa visibile: fade in + scale up */
     .video-wrapper .plyr.plyr--paused .plyr__control--overlaid,
     .video-wrapper.show-ui .plyr__control--overlaid {
       opacity: 1 !important;
@@ -239,13 +208,11 @@
         visibility 0ms linear 0ms !important;
     }
 
-    /* Hover: zoom + lift */
     .video-wrapper .plyr__control--overlaid:hover {
       transform: translate(-50%, -50%) translateY(-1px) scale(1.04) !important;
       box-shadow: 0 14px 40px rgba(0,0,0,0.45) !important;
     }
     
-    /* Active: press down */
     .video-wrapper .plyr__control--overlaid:active {
       transform: translate(-50%, -50%) scale(0.98) !important;
       box-shadow: 0 10px 28px rgba(0,0,0,0.35) !important;
@@ -282,7 +249,6 @@
 
     .video-wrapper .plyr__tooltip { display: none !important; }
     
-    /* Bottom controls - animazione graduale */
     .video-wrapper .plyr__controls {
       position: absolute !important;
       left: auto !important;
@@ -296,25 +262,19 @@
       align-items: center !important;
       gap: 10px !important;
       z-index: 40 !important;
-      
       backdrop-filter: blur(var(--blur-ui-reduced)) !important;
       -webkit-backdrop-filter: blur(var(--blur-ui-reduced)) !important;
       border-radius: 18px;
-      
-      /* Nascosti di default con scale */
       opacity: 0 !important;
       visibility: hidden !important;
       pointer-events: none !important;
       transform: translateY(8px) scale(0.95) !important;
-      
-      /* Transizione graduale */
       transition: 
         opacity 220ms ease, 
         transform 220ms cubic-bezier(.2,.9,.2,1), 
         visibility 0ms linear 220ms !important;
     }
 
-    /* Visibili: fade in + scale up */
     .video-wrapper.show-ui .plyr__controls {
       opacity: 1 !important;
       visibility: visible !important;
@@ -333,10 +293,6 @@
         visibility: visible !important;
         pointer-events: auto !important;
         transform: translateY(0) scale(1) !important;
-        transition: 
-          opacity 220ms ease, 
-          transform 220ms cubic-bezier(.2,.9,.2,1), 
-          visibility 0ms linear 0ms !important;
       }
     }
 
@@ -356,8 +312,6 @@
       backdrop-filter: none !important;
       -webkit-backdrop-filter: none !important;
       overflow: hidden;
-      
-      /* RIMUOVI outline blu */
       outline: none !important;
       -webkit-tap-highlight-color: transparent !important;
     }
@@ -547,7 +501,7 @@
     <video id="bgVideo" muted playsinline loop preload="none" poster="frame.webp"></video>
   </div>
 
-  <main>
+  <main id="mainContainer">
     <section class="video-wrapper" id="videoWrapper" aria-label="Player live">
       <video id="liveVideo" controls playsinline muted preload="metadata" crossorigin="anonymous" poster="frame.webp"></video>
 
@@ -575,6 +529,7 @@
       'use strict';
 
       const STREAM_URL = 'https://live.webcammontefalconedivalfortore.it/memfs/58e0bcbe-f1bd-4c8b-85f7-b4566a3e5392.m3u8';
+      const mainContainer = document.getElementById('mainContainer');
       const wrapper = document.getElementById('videoWrapper');
       const video = document.getElementById('liveVideo');
       const overlay = document.getElementById('loadingOverlay');
@@ -586,7 +541,6 @@
       const DEBUG_ENABLED = window.location.search.includes('debug') || window.location.hash.includes('debug');
       if (DEBUG_ENABLED) {
         debugPanel.classList.add('visible');
-        console.log('%c🔧 DEBUG MODE ATTIVO', 'color: #0f0; font-size: 16px; font-weight: bold;');
       }
 
       const debugLog = {
@@ -596,12 +550,7 @@
           const line = `[${timestamp}] ${msg}`;
           
           if (DEBUG_ENABLED) {
-            console.log(`%c[${type.toUpperCase()}] ${msg}`, `color: ${
-              type === 'error' ? '#f44' : 
-              type === 'warn' ? '#fa0' : 
-              type === 'success' ? '#0f0' : '#0af'
-            }`);
-            
+            console.log(`[${type.toUpperCase()}] ${msg}`);
             this.lines.push({ msg: line, type });
             if (this.lines.length > 15) this.lines.shift();
             this.render();
@@ -609,9 +558,7 @@
         },
         render() {
           if (!DEBUG_ENABLED) return;
-          debugContent.innerHTML = this.lines
-            .map(l => `<div class="line ${l.type}">${l.msg}</div>`)
-            .join('');
+          debugContent.innerHTML = this.lines.map(l => `<div class="line ${l.type}">${l.msg}</div>`).join('');
         }
       };
 
@@ -631,7 +578,7 @@
       const MAX_RETRIES = 5;
       const DOUBLE_TAP_THRESHOLD = 300;
 
-      debugLog.add('🚀 Inizializzato', 'success');
+      debugLog.add('🚀 Init', 'success');
 
       function setReady() {
         wrapper.classList.add('is-ready');
@@ -650,9 +597,9 @@
       }
 
       function waitForFirstFrame() {
-        debugLog.add('⏳ Wait frame', 'info');
+        debugLog.add('⏳ Wait', 'info');
         const done = () => {
-          debugLog.add('🎬 Frame OK', 'success');
+          debugLog.add('🎬 OK', 'success');
           setReady();
         };
         video.addEventListener('playing', done, { once: true });
@@ -672,7 +619,7 @@
           const s = video.seekable;
           if (s && s.length) {
             video.currentTime = Math.max(0, s.end(s.length - 1) - 2.0);
-            debugLog.add(`⏩ Jump`, 'warn');
+            debugLog.add(`⏩`, 'warn');
           }
         } catch (_) {}
       }
@@ -702,10 +649,10 @@
       }
 
       function hardReset() {
-        debugLog.add(`🔄 Reset ${retryCount}/${MAX_RETRIES}`, 'warn');
+        debugLog.add(`🔄 ${retryCount}/${MAX_RETRIES}`, 'warn');
         
         if (retryCount >= MAX_RETRIES) {
-          debugLog.add('❌ Max retry', 'error');
+          debugLog.add('❌ Max', 'error');
           setNeedsGesture();
           retryCount = 0;
           return;
@@ -728,12 +675,12 @@
 
       async function attemptPlay() {
         try {
-          debugLog.add('▶️ Play', 'info');
+          debugLog.add('▶️', 'info');
           await player.play();
           retryCount = 0;
-          debugLog.add('✅ Playing', 'success');
+          debugLog.add('✅', 'success');
         } catch (e) {
-          debugLog.add(`❌ ${e.message}`, 'error');
+          debugLog.add(`❌`, 'error');
           setNeedsGesture();
         }
       }
@@ -743,7 +690,7 @@
         wrapper.classList.remove('is-ready');
         overlay.classList.remove('needs-gesture');
 
-        debugLog.add('🔗 Attach', 'info');
+        debugLog.add('🔗', 'info');
 
         if (supportsNativeHls() && (isIOS() || isSafari())) {
           debugLog.add('📺 Native', 'info');
@@ -754,14 +701,14 @@
         }
 
         if (!window.Hls || !window.Hls.isSupported()) {
-          debugLog.add('⚠️ Fallback', 'warn');
+          debugLog.add('⚠️ FB', 'warn');
           video.src = STREAM_URL;
           video.load();
           waitForFirstFrame();
           return attemptPlay();
         }
 
-        debugLog.add('🎯 HLS.js', 'success');
+        debugLog.add('🎯 HLS', 'success');
 
         hls = new window.Hls({
           lowLatencyMode: false,
@@ -785,16 +732,16 @@
         hls.attachMedia(video);
         
         hls.on(window.Hls.Events.MEDIA_ATTACHED, () => {
-          debugLog.add('✅ Attached', 'success');
+          debugLog.add('✅ ATT', 'success');
           hls.loadSource(STREAM_URL);
         });
 
         hls.on(window.Hls.Events.MANIFEST_PARSED, (evt, data) => {
-          debugLog.add(`📋 ${data.levels.length}lvl`, 'success');
+          debugLog.add(`📋 ${data.levels.length}`, 'success');
         });
 
         hls.on(window.Hls.Events.FRAG_LOADED, (evt, data) => {
-          debugLog.add(`📦 #${data.frag.sn}`, 'info');
+          debugLog.add(`📦${data.frag.sn}`, 'info');
         });
 
         hls.on(window.Hls.Events.ERROR, (evt, data) => {
@@ -845,12 +792,12 @@
       }
 
       async function enterFullscreenLandscape() {
-        debugLog.add('🖼️ Enter FS', 'info');
+        debugLog.add('🖼️ FS', 'info');
         
         try {
           if (screen.orientation && screen.orientation.lock) {
             await screen.orientation.lock('landscape');
-            debugLog.add('✅ Locked', 'success');
+            debugLog.add('✅ L', 'success');
           }
         } catch (e) {
           debugLog.add(`⚠️ ${e.message}`, 'warn');
@@ -875,12 +822,10 @@
       }
 
       function exitFullscreenPortrait() {
-        debugLog.add('🚪 Exit', 'info');
+        debugLog.add('🚪', 'info');
         
         try {
-          if (screen.orientation && screen.orientation.unlock) {
-            screen.orientation.unlock();
-          }
+          if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock();
         } catch (_) {}
 
         try {
@@ -896,6 +841,46 @@
         } catch (_) {}
       }
 
+      // NUOVO APPROCCIO: JavaScript forza stili inline per landscape mobile
+      function applyLandscapeFullscreen() {
+        debugLog.add('🖼️ FORCE FS', 'success');
+        
+        // Main container
+        mainContainer.style.cssText = `
+          position: fixed !important;
+          inset: 0 !important;
+          padding: 0 !important;
+          margin: 0 !important;
+        `;
+        
+        // Video wrapper
+        wrapper.style.cssText = `
+          position: fixed !important;
+          inset: 0 !important;
+          width: 100vw !important;
+          height: 100vh !important;
+          max-width: 100vw !important;
+          max-height: 100vh !important;
+          aspect-ratio: auto !important;
+          border-radius: 0 !important;
+          border: none !important;
+          box-shadow: none !important;
+          margin: 0 !important;
+        `;
+        
+        // Video deve riempire tutto
+        video.style.objectFit = 'cover';
+      }
+
+      function removeLandscapeFullscreen() {
+        debugLog.add('📱 NORMAL', 'info');
+        
+        // Remove inline styles
+        mainContainer.style.cssText = '';
+        wrapper.style.cssText = '';
+        video.style.objectFit = 'contain';
+      }
+
       function handleOrientationChange() {
         const isLandscape = window.matchMedia('(orientation: landscape)').matches;
         const w = window.innerWidth;
@@ -904,23 +889,23 @@
         
         debugLog.add(`📱 ${isLandscape ? 'L' : 'P'} ${w}x${h}`, 'info');
         
+        // Applica/rimuovi fullscreen finto con JavaScript inline styles
         if (isLandscape && isMobile) {
-          document.body.classList.add('landscape-fullscreen');
-          debugLog.add('🖼️ FAKE FS', 'success');
+          applyLandscapeFullscreen();
         } else {
-          document.body.classList.remove('landscape-fullscreen');
+          removeLandscapeFullscreen();
         }
       }
 
       bgVideo.addEventListener('playing', () => document.body.classList.add('bg-playing'));
 
       window.addEventListener('online', () => {
-        debugLog.add('⚡ ONLINE', 'success');
+        debugLog.add('⚡', 'success');
         retryCount = 0;
         hardReset();
       });
 
-      window.addEventListener('offline', () => debugLog.add('📡 OFF', 'error'));
+      window.addEventListener('offline', () => debugLog.add('📡', 'error'));
 
       document.addEventListener('visibilitychange', () => {
         if (document.hidden) {
@@ -946,7 +931,7 @@
       }
 
       whenReady(() => {
-        debugLog.add('📄 Ready', 'success');
+        debugLog.add('📄', 'success');
 
         if (window.Plyr) {
           player = new Plyr(video, {
@@ -977,7 +962,7 @@
             const now = Date.now();
             if (now - lastTapTime < DOUBLE_TAP_THRESHOLD) {
               e.preventDefault();
-              debugLog.add('⚠️ DBL', 'warn');
+              debugLog.add('⚠️', 'warn');
               return;
             }
             
@@ -997,7 +982,7 @@
               const s = video.seekable;
               if (s && s.length) {
                 const behind = s.end(s.length - 1) - (video.currentTime || 0);
-                debugLog.add(`📊 ${behind.toFixed(1)}s`, behind > 15 ? 'warn' : 'info');
+                debugLog.add(`📊 ${behind.toFixed(1)}`, behind > 15 ? 'warn' : 'info');
                 if (behind < 0.5 || behind > 20) jumpToLiveEdge();
               }
             } catch (_) {}
@@ -1005,7 +990,7 @@
         }, { once: true });
 
         video.addEventListener('error', () => {
-          debugLog.add(`❌ ERR`, 'error');
+          debugLog.add(`❌`, 'error');
           setTimeout(() => hardReset(), 1500);
         });
 
@@ -1025,9 +1010,7 @@
           
           const t = video.currentTime || 0;
           
-          if (stuckCount === 0) {
-            debugLog.add(`📊 ${t.toFixed(1)}`, 'info');
-          }
+          if (stuckCount === 0) debugLog.add(`📊 ${t.toFixed(1)}`, 'info');
 
           if (Math.abs(t - lastTime) < 0.1) {
             stuckCount++;
