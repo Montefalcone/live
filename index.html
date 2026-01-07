@@ -633,14 +633,13 @@
           return attemptPlay();
         }
 
-        // LOW LATENCY CONFIG - STARE AL LIVE EDGE!
         hls = new window.Hls({
-          lowLatencyMode: true,  // MODALITÀ BASSA LATENZA!
-          backBufferLength: 30,
-          maxBufferLength: 60,
-          maxMaxBufferLength: 90,
-          liveSyncDurationCount: 1,  // STARE VICINISSIMO AL LIVE!
-          liveMaxLatencyDurationCount: 3,
+          lowLatencyMode: true,
+          backBufferLength: 60,
+          maxBufferLength: 120,
+          maxMaxBufferLength: 180,
+          liveSyncDurationCount: 2,
+          liveMaxLatencyDurationCount: 5,
           capLevelToPlayerSize: true,
           startLevel: -1,
           enableWorker: true,
@@ -712,25 +711,50 @@
         }
       }
 
-      // MONITORING LATENZA - OGNI 10 SEC
+      // STUCK DETECTION - RILEVA QUANDO SI BLOCCA
+      let lastTime = 0;
+      let stuckCount = 0;
+      let reloadAttempts = 0;
+      
       setInterval(() => {
-        if (video.paused || !wrapper.classList.contains('is-ready')) return;
+        if (video.paused || !wrapper.classList.contains('is-ready')) {
+          stuckCount = 0;
+          reloadAttempts = 0;
+          lastTime = video.currentTime;
+          return;
+        }
         
-        try {
-          const s = video.seekable;
-          if (s && s.length) {
-            const liveEdge = s.end(s.length - 1);
-            const currentTime = video.currentTime || 0;
-            const latency = liveEdge - currentTime;
-            
-            // SE OLTRE 5 SECONDI INDIETRO → SALTA!
-            if (latency > 5) {
-              console.log(`Latency ${latency.toFixed(1)}s - jumping to live`);
+        const currentTime = video.currentTime || 0;
+        
+        // SE currentTime NON AVANZA → BLOCCATO!
+        if (Math.abs(currentTime - lastTime) < 0.2) {
+          stuckCount++;
+          console.log(`STUCK ${stuckCount}/3 - reload attempts ${reloadAttempts}`);
+          
+          if (stuckCount >= 3) {
+            // BLOCCATO - PROVA A RICARICARE
+            if (reloadAttempts < 2 && hls) {
+              console.log('Reloading fragments...');
+              hls.startLoad(-1);
+              reloadAttempts++;
+              stuckCount = 0;
+            } else {
+              // ANCORA BLOCCATO - SALTA AL LIVE
+              console.log('Still stuck - jumping to live');
               jumpToLive();
+              stuckCount = 0;
+              reloadAttempts = 0;
             }
           }
-        } catch (_) {}
-      }, 10000);
+        } else {
+          // OK - AVANZA
+          if (stuckCount > 0) console.log('Resumed');
+          stuckCount = 0;
+          reloadAttempts = 0;
+        }
+        
+        lastTime = currentTime;
+      }, 3000);
 
       // PAUSA 5 SEC → SALTA AL LIVE
       video.addEventListener('pause', () => {
