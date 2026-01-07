@@ -135,7 +135,7 @@
       }
     }
 
-    /* LANDSCAPE MODE - USA SVH per altezza REALE mobile */
+    /* LANDSCAPE MODE */
     body.landscape-mode {
       overflow: hidden;
     }
@@ -150,7 +150,7 @@
       top: 0;
       left: 0;
       width: 100vw;
-      height: 100svh; /* SMALL VIEWPORT HEIGHT - ALTEZZA REALE! */
+      height: 100svh;
       max-width: 100vw;
       max-height: 100svh;
       aspect-ratio: auto;
@@ -176,7 +176,6 @@
       width: 100%;
     }
     
-    /* VIDEO SEMPRE CONTAIN - MAI COVER! */
     .video-wrapper video {
       width: 100%;
       height: 100%;
@@ -332,7 +331,6 @@
       -webkit-tap-highlight-color: transparent !important;
     }
     
-    /* Mobile: fullscreen button più piccolo e ALLINEATO */
     @media (max-width: 768px) {
       .video-wrapper .plyr__controls {
         bottom: 12px !important;
@@ -358,9 +356,6 @@
     .video-wrapper .plyr__controls .plyr__control:active {
       transform: scale(0.98);
       box-shadow: 0 10px 28px rgba(0,0,0,0.35);
-    }
-    .video-wrapper .plyr__controls .plyr__control:focus {
-      outline: none !important;
     }
 
     .loading-overlay {
@@ -455,7 +450,6 @@
       user-select: none;
     }
     
-    /* Mobile: LIVE badge leggermente più grande e ALLINEATO */
     @media (max-width: 768px) {
       .live-badge {
         bottom: 12px;
@@ -482,47 +476,6 @@
       50% { opacity: 0.45; }
     }
 
-    #debugPanel {
-      position: fixed;
-      top: 10px;
-      left: 10px;
-      z-index: 9999;
-      background: rgba(0,0,0,0.90);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(0,255,0,0.25);
-      border-radius: 12px;
-      padding: 10px 14px;
-      font-family: 'Courier New', monospace;
-      font-size: 10px;
-      line-height: 1.4;
-      color: #0f0;
-      max-width: 340px;
-      max-height: 50vh;
-      overflow-y: auto;
-      pointer-events: none;
-      user-select: none;
-      display: none;
-    }
-    #debugPanel.visible { display: block; }
-    #debugPanel .line {
-      margin: 1px 0;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    #debugPanel .error { color: #ff4444; font-weight: bold; }
-    #debugPanel .warn { color: #ffaa00; }
-    #debugPanel .success { color: #00ff00; }
-    #debugPanel .info { color: #00aaff; }
-    #debugPanel .title {
-      color: #fff;
-      font-weight: bold;
-      margin-bottom: 4px;
-      border-bottom: 1px solid rgba(0,255,0,0.3);
-      padding-bottom: 3px;
-    }
-
     @media (prefers-reduced-motion: reduce) {
       * { transition: none !important; animation: none !important; }
     }
@@ -530,11 +483,6 @@
 </head>
 
 <body>
-  <div id="debugPanel" aria-hidden="true">
-    <div class="line title">🔧 DEBUG</div>
-    <div id="debugContent"></div>
-  </div>
-
   <div id="bg" aria-hidden="true">
     <img id="bgPoster" src="frame.webp" alt="" />
     <video id="bgVideo" muted playsinline loop preload="none" poster="frame.webp"></video>
@@ -573,29 +521,6 @@
       const overlay = document.getElementById('loadingOverlay');
       const startBtn = document.getElementById('startBtn');
       const bgVideo = document.getElementById('bgVideo');
-      const debugPanel = document.getElementById('debugPanel');
-      const debugContent = document.getElementById('debugContent');
-
-      const DEBUG_ENABLED = window.location.search.includes('debug') || window.location.hash.includes('debug');
-      if (DEBUG_ENABLED) debugPanel.classList.add('visible');
-
-      const debugLog = {
-        lines: [],
-        add(msg, type = 'info') {
-          const ts = new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-          const line = `[${ts}] ${msg}`;
-          if (DEBUG_ENABLED) {
-            console.log(`[${type}] ${msg}`);
-            this.lines.push({ msg: line, type });
-            if (this.lines.length > 15) this.lines.shift();
-            this.render();
-          }
-        },
-        render() {
-          if (!DEBUG_ENABLED) return;
-          debugContent.innerHTML = this.lines.map(l => `<div class="line ${l.type}">${l.msg}</div>`).join('');
-        }
-      };
 
       video.muted = true;
       video.playsInline = true;
@@ -608,11 +533,9 @@
       let player = null;
       let hls = null;
       let uiTimer = null;
+      let pauseTimer = null;
       let retryCount = 0;
       let lastTapTime = 0;
-      const MAX_RETRIES = 5;
-
-      debugLog.add('Init', 'success');
 
       function setReady() {
         wrapper.classList.add('is-ready');
@@ -621,37 +544,26 @@
         try { video.poster = ''; } catch (_) {}
         scheduleBackgroundVideo();
         retryCount = 0;
-        debugLog.add('Ready', 'success');
       }
 
       function setNeedsGesture() {
         overlay.classList.add('needs-gesture');
         overlay.setAttribute('aria-hidden', 'false');
-        debugLog.add('Need gesture', 'warn');
       }
 
       function waitForFirstFrame() {
-        const done = () => {
-          debugLog.add('Frame OK', 'success');
-          setReady();
-        };
+        const done = () => setReady();
         video.addEventListener('playing', done, { once: true });
         video.addEventListener('timeupdate', () => {
           if (video.currentTime > 0) done();
         }, { once: true });
-        if ('requestVideoFrameCallback' in HTMLVideoElement.prototype) {
-          try { video.requestVideoFrameCallback(() => done()); } catch (_) {}
-        }
-        setTimeout(() => {
-          if (!wrapper.classList.contains('is-ready') && !video.paused && video.readyState >= 3) done();
-        }, 12000);
       }
 
-      function jumpToLiveEdge() {
+      function jumpToLive() {
         try {
           const s = video.seekable;
           if (s && s.length) {
-            video.currentTime = Math.max(0, s.end(s.length - 1) - 2.0);
+            video.currentTime = s.end(s.length - 1) - 1;
           }
         } catch (_) {}
       }
@@ -670,47 +582,37 @@
 
       function destroyHls() {
         if (hls) {
-          try {
-            hls.off(window.Hls.Events.ERROR);
-            hls.off(window.Hls.Events.MANIFEST_PARSED);
-            hls.off(window.Hls.Events.FRAG_LOADED);
-            hls.destroy();
-          } catch (_) {}
+          try { hls.destroy(); } catch (_) {}
           hls = null;
         }
       }
 
       function hardReset() {
-        if (retryCount >= MAX_RETRIES) {
-          debugLog.add('Max retry', 'error');
+        if (retryCount >= 3) {
           setNeedsGesture();
           retryCount = 0;
           return;
         }
         retryCount++;
-        debugLog.add(`Reset ${retryCount}/${MAX_RETRIES}`, 'warn');
         
         destroyHls();
         try {
           video.pause();
           video.removeAttribute('src');
           video.load();
-          video.poster = '';
         } catch (_) {}
         
         wrapper.classList.remove('is-ready');
         overlay.classList.remove('needs-gesture');
 
-        setTimeout(() => attachStream().catch(() => setNeedsGesture()), 1500);
+        setTimeout(() => attachStream().catch(() => setNeedsGesture()), 2000);
       }
 
       async function attemptPlay() {
         try {
           await player.play();
           retryCount = 0;
-          debugLog.add('Playing', 'success');
         } catch (e) {
-          debugLog.add('Play fail', 'error');
           setNeedsGesture();
         }
       }
@@ -721,7 +623,6 @@
         overlay.classList.remove('needs-gesture');
 
         if (supportsNativeHls() && (isIOS() || isSafari())) {
-          debugLog.add('Native HLS', 'info');
           video.src = STREAM_URL;
           video.load();
           waitForFirstFrame();
@@ -729,66 +630,39 @@
         }
 
         if (!window.Hls || !window.Hls.isSupported()) {
-          debugLog.add('Fallback', 'warn');
           video.src = STREAM_URL;
           video.load();
           waitForFirstFrame();
           return attemptPlay();
         }
 
-        debugLog.add('HLS.js', 'success');
-
         hls = new window.Hls({
+          // BUFFER GRANDI - NO LAG!
           lowLatencyMode: false,
-          backBufferLength: 90,
-          maxBufferLength: 90,
-          maxMaxBufferLength: 180,
-          liveSyncDurationCount: 5,
-          liveMaxLatencyDurationCount: 10,
+          backBufferLength: 180,
+          maxBufferLength: 240,
+          maxMaxBufferLength: 360,
+          liveSyncDurationCount: 3,
+          liveMaxLatencyDurationCount: 8,
           capLevelToPlayerSize: true,
           startLevel: -1,
           enableWorker: true,
-          fragLoadingMaxRetry: 6,
-          fragLoadingRetryDelay: 1000,
-          manifestLoadingMaxRetry: 6
+          fragLoadingMaxRetry: 4,
+          manifestLoadingMaxRetry: 4
         });
 
         hls.attachMedia(video);
-        
-        hls.on(window.Hls.Events.MEDIA_ATTACHED, () => {
-          debugLog.add('Attached', 'success');
-          hls.loadSource(STREAM_URL);
-        });
-
-        hls.on(window.Hls.Events.MANIFEST_PARSED, (evt, data) => {
-          debugLog.add(`${data.levels.length}lvl`, 'success');
-        });
-
-        hls.on(window.Hls.Events.FRAG_LOADED, (evt, data) => {
-          debugLog.add(`Frag${data.frag.sn}`, 'info');
-        });
+        hls.on(window.Hls.Events.MEDIA_ATTACHED, () => hls.loadSource(STREAM_URL));
 
         hls.on(window.Hls.Events.ERROR, (evt, data) => {
-          if (!data) return;
-
-          debugLog.add(`${data.fatal ? 'FATAL' : 'ERR'} ${data.type}`, data.fatal ? 'error' : 'warn');
-
-          if (!data.fatal) {
-            if (data.type === window.Hls.ErrorTypes.NETWORK_ERROR) {
-              try { setTimeout(() => hls.startLoad(-1), 500); } catch (_) {}
-            }
-            return;
-          }
-
-          try {
-            if (data.type === window.Hls.ErrorTypes.NETWORK_ERROR) {
-              setTimeout(() => hls.startLoad(-1), 1000);
-            } else if (data.type === window.Hls.ErrorTypes.MEDIA_ERROR) {
-              hls.recoverMediaError();
-            } else {
-              hardReset();
-            }
-          } catch (_) {
+          if (!data || !data.fatal) return;
+          
+          // Solo reset su errori VERAMENTE fatali
+          if (data.type === window.Hls.ErrorTypes.NETWORK_ERROR) {
+            setTimeout(() => hls.startLoad(-1), 2000);
+          } else if (data.type === window.Hls.ErrorTypes.MEDIA_ERROR) {
+            hls.recoverMediaError();
+          } else {
             hardReset();
           }
         });
@@ -798,19 +672,12 @@
       }
 
       function scheduleBackgroundVideo() {
-        const saveData = navigator.connection && navigator.connection.saveData;
-        const et = navigator.connection && navigator.connection.effectiveType;
-        const slow = et && (et.includes('2g') || et.includes('slow'));
-        const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        if (saveData || slow || reduceMotion) return;
-
         setTimeout(() => {
           if (!bgVideo.src) {
             bgVideo.src = 'galaxy.mp4';
             bgVideo.load();
           }
-          const p = bgVideo.play();
-          if (p && typeof p.catch === 'function') p.catch(() => {});
+          bgVideo.play().catch(() => {});
         }, 2000);
       }
 
@@ -822,17 +689,9 @@
         } catch (_) {}
 
         try {
-          if (wrapper.requestFullscreen) {
-            await wrapper.requestFullscreen();
-          } else if (wrapper.webkitRequestFullscreen) {
-            await wrapper.webkitRequestFullscreen();
-          } else if (wrapper.mozRequestFullScreen) {
-            await wrapper.mozRequestFullScreen();
-          } else if (wrapper.msRequestFullscreen) {
-            await wrapper.msRequestFullscreen();
-          } else if (isIOS() && video.webkitEnterFullscreen) {
-            video.webkitEnterFullscreen();
-          }
+          if (wrapper.requestFullscreen) await wrapper.requestFullscreen();
+          else if (wrapper.webkitRequestFullscreen) await wrapper.webkitRequestFullscreen();
+          else if (isIOS() && video.webkitEnterFullscreen) video.webkitEnterFullscreen();
         } catch (_) {}
       }
 
@@ -840,64 +699,67 @@
         try {
           if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock();
         } catch (_) {}
-
         try {
-          if (document.exitFullscreen) {
-            document.exitFullscreen();
-          } else if (document.webkitExitFullscreen) {
-            document.webkitExitFullscreen();
-          } else if (document.mozCancelFullScreen) {
-            document.mozCancelFullScreen();
-          } else if (document.msExitFullscreen) {
-            document.msExitFullscreen();
-          }
+          if (document.exitFullscreen) document.exitFullscreen();
+          else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
         } catch (_) {}
       }
 
       function handleOrientationChange() {
         const isLandscape = window.matchMedia('(orientation: landscape)').matches;
-        const w = window.innerWidth;
-        const h = window.innerHeight;
-        const isMobile = w <= 768 || h <= 500;
-        
-        debugLog.add(`${isLandscape ? 'LAND' : 'PORT'} ${w}x${h}`, 'info');
+        const isMobile = window.innerWidth <= 768 || window.innerHeight <= 500;
         
         if (isLandscape && isMobile) {
           document.body.classList.add('landscape-mode');
-          debugLog.add('LANDSCAPE ON', 'success');
         } else {
           document.body.classList.remove('landscape-mode');
         }
       }
 
-      bgVideo.addEventListener('playing', () => document.body.classList.add('bg-playing'));
-
-      window.addEventListener('online', () => {
-        retryCount = 0;
-        hardReset();
+      // AUTO-RESUME DOPO 5 SEC DI PAUSA
+      video.addEventListener('pause', () => {
+        if (pauseTimer) clearTimeout(pauseTimer);
+        pauseTimer = setTimeout(() => {
+          if (video.paused && wrapper.classList.contains('is-ready')) {
+            jumpToLive();
+            video.play().catch(() => {});
+          }
+        }, 5000);
       });
 
-      window.addEventListener('orientationchange', () => setTimeout(handleOrientationChange, 100));
-      window.addEventListener('resize', handleOrientationChange);
+      video.addEventListener('play', () => {
+        if (pauseTimer) {
+          clearTimeout(pauseTimer);
+          pauseTimer = null;
+        }
+      });
 
+      // CAMBI SCHEDA → SALTA AL LIVE
       document.addEventListener('visibilitychange', () => {
+        if (!document.hidden && wrapper.classList.contains('is-ready')) {
+          jumpToLive();
+          if (video.paused) {
+            video.play().catch(() => {});
+          }
+        }
+        
+        // Gestione background video
         if (document.hidden) {
           try { bgVideo.pause(); } catch (_) {}
         } else {
           if (document.body.classList.contains('bg-playing')) {
-            const p = bgVideo.play();
-            if (p && typeof p.catch === 'function') p.catch(() => {});
-          }
-          if (video.paused && wrapper.classList.contains('is-ready')) {
-            jumpToLiveEdge();
-            attemptPlay();
+            bgVideo.play().catch(() => {});
           }
         }
       });
 
+      bgVideo.addEventListener('playing', () => document.body.classList.add('bg-playing'));
+      window.addEventListener('orientationchange', () => setTimeout(handleOrientationChange, 100));
+      window.addEventListener('resize', handleOrientationChange);
+
       function whenReady(fn) {
-        if (document.readyState === 'complete' || document.readyState === 'interactive') fn();
-        else document.addEventListener('DOMContentLoaded', fn, { once: true });
+        if (document.readyState !== 'loading') fn();
+        else document.addEventListener('DOMContentLoaded', fn);
       }
 
       whenReady(() => {
@@ -931,53 +793,11 @@
           });
         }
 
-        video.addEventListener('playing', () => {
-          setTimeout(() => {
-            try {
-              const s = video.seekable;
-              if (s && s.length) {
-                const behind = s.end(s.length - 1) - (video.currentTime || 0);
-                if (behind < 0.5 || behind > 20) jumpToLiveEdge();
-              }
-            } catch (_) {}
-          }, 2500);
-        }, { once: true });
-
-        video.addEventListener('error', () => setTimeout(() => hardReset(), 1500));
-        video.addEventListener('ended', hardReset);
-
-        let lastTime = 0;
-        let stuckCount = 0;
-        setInterval(() => {
-          if (video.paused || !wrapper.classList.contains('is-ready')) {
-            stuckCount = 0;
-            lastTime = video.currentTime;
-            return;
-          }
-          
-          const t = video.currentTime || 0;
-
-          if (Math.abs(t - lastTime) < 0.1) {
-            stuckCount++;
-          } else {
-            stuckCount = 0;
-          }
-          lastTime = t;
-
-          if (stuckCount >= 8) {
-            debugLog.add('STUCK - RESET', 'error');
-            hardReset();
-            stuckCount = 0;
-          }
-        }, 5000);
-
         handleOrientationChange();
         attachStream().catch(() => setNeedsGesture());
       });
 
-      startBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
+      startBtn.addEventListener('click', () => {
         retryCount = 0;
         attemptPlay();
       });
