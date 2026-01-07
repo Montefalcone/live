@@ -63,12 +63,17 @@
       --plyr-tooltip-color: #fff;
     }
 
-    * { box-sizing: border-box; }
+    * { 
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
     html, body { 
       height: 100%; 
       margin: 0;
       padding: 0;
     }
+    
     body {
       font-family: var(--plyr-font-family);
       background: #000;
@@ -134,18 +139,19 @@
       transition: all 0.3s ease;
     }
 
-    /* Mobile portrait: centrato, dimensioni normali */
+    /* Mobile portrait: centrato */
     @media (max-width: 768px) and (orientation: portrait) {
       .video-wrapper {
         width: min(980px, 92vw);
       }
     }
 
-    /* Mobile landscape: VERO fake fullscreen */
+    /* Mobile landscape: ZERO padding, fullscreen perfetto */
     @media (max-width: 768px) and (orientation: landscape),
            (max-height: 500px) and (orientation: landscape) {
       body.landscape-fullscreen main {
-        padding: 0;
+        padding: 0 !important;
+        margin: 0 !important;
       }
       body.landscape-fullscreen .video-wrapper {
         width: 100vw !important;
@@ -156,6 +162,7 @@
         border-radius: 0 !important;
         border: none !important;
         box-shadow: none !important;
+        margin: 0 !important;
       }
     }
 
@@ -185,47 +192,60 @@
       background: #000;
     }
 
-    /* Play/Pause button - STESSI EFFETTI del fullscreen */
+    /* Play/Pause button - animazione graduale IDENTICA al fullscreen */
     .video-wrapper .plyr__control--overlaid {
       width: 90px !important;
       height: 52px !important;
       border-radius: 16px !important;
       display: grid !important;
       place-items: center !important;
+      
+      /* NASCOSTO di default con scale + opacity */
       opacity: 0 !important;
       visibility: hidden !important;
       pointer-events: none !important;
-      transform: translate(-50%, -50%) translateY(8px) !important;
-      transition: opacity var(--transition-fast), 
-                  transform var(--transition-fast) cubic-bezier(.2,.9,.2,1), 
-                  box-shadow var(--transition-fast) ease,
-                  visibility 0ms linear var(--transition-fast) !important;
+      transform: translate(-50%, -50%) scale(0.92) !important;
+      
+      /* Transizione GRADUALE come fullscreen button */
+      transition: 
+        opacity 220ms ease,
+        transform 220ms cubic-bezier(.2,.9,.2,1),
+        box-shadow 220ms ease,
+        visibility 0ms linear 220ms !important;
+      
       background: rgba(0,0,0,0.22) !important;
       -webkit-backdrop-filter: blur(6px) !important;
       backdrop-filter: blur(6px) !important;
-      will-change: transform;
+      will-change: transform, opacity;
       border: 1px solid rgba(255,255,255,0.20) !important;
       box-shadow: var(--shadow-button);
+      
+      /* RIMUOVI outline blu mobile */
+      outline: none !important;
+      -webkit-tap-highlight-color: transparent !important;
     }
 
+    /* Quando diventa visibile: fade in + scale up */
     .video-wrapper .plyr.plyr--paused .plyr__control--overlaid,
     .video-wrapper.show-ui .plyr__control--overlaid {
       opacity: 1 !important;
       visibility: visible !important;
       pointer-events: auto !important;
-      transform: translate(-50%, -50%) translateY(0) !important;
-      transition: opacity var(--transition-fast), 
-                  transform var(--transition-fast) cubic-bezier(.2,.9,.2,1), 
-                  box-shadow var(--transition-fast) ease,
-                  visibility 0ms linear 0ms !important;
+      transform: translate(-50%, -50%) scale(1) !important;
+      transition: 
+        opacity 220ms ease,
+        transform 220ms cubic-bezier(.2,.9,.2,1),
+        box-shadow 220ms ease,
+        visibility 0ms linear 0ms !important;
     }
 
-    /* STESSO ZOOM del fullscreen button */
+    /* Hover: zoom + lift */
     .video-wrapper .plyr__control--overlaid:hover {
       transform: translate(-50%, -50%) translateY(-1px) scale(1.04) !important;
       box-shadow: 0 14px 40px rgba(0,0,0,0.45) !important;
     }
     
+    /* Active: press down */
     .video-wrapper .plyr__control--overlaid:active {
       transform: translate(-50%, -50%) scale(0.98) !important;
       box-shadow: 0 10px 28px rgba(0,0,0,0.35) !important;
@@ -237,7 +257,7 @@
         opacity: 1 !important;
         visibility: visible !important;
         pointer-events: auto !important;
-        transform: translate(-50%, -50%) translateY(0) !important;
+        transform: translate(-50%, -50%) scale(1) !important;
       }
     }
 
@@ -262,7 +282,7 @@
 
     .video-wrapper .plyr__tooltip { display: none !important; }
     
-    /* Bottom controls - blur sempre attivo */
+    /* Bottom controls - animazione graduale */
     .video-wrapper .plyr__controls {
       position: absolute !important;
       left: auto !important;
@@ -281,19 +301,29 @@
       -webkit-backdrop-filter: blur(var(--blur-ui-reduced)) !important;
       border-radius: 18px;
       
+      /* Nascosti di default con scale */
       opacity: 0 !important;
       visibility: hidden !important;
       pointer-events: none !important;
-      transform: translateY(8px) !important;
-      transition: opacity var(--transition-fast), transform var(--transition-fast), visibility 0ms linear var(--transition-fast) !important;
+      transform: translateY(8px) scale(0.95) !important;
+      
+      /* Transizione graduale */
+      transition: 
+        opacity 220ms ease, 
+        transform 220ms cubic-bezier(.2,.9,.2,1), 
+        visibility 0ms linear 220ms !important;
     }
 
+    /* Visibili: fade in + scale up */
     .video-wrapper.show-ui .plyr__controls {
       opacity: 1 !important;
       visibility: visible !important;
       pointer-events: auto !important;
-      transform: translateY(0) !important;
-      transition: opacity var(--transition-fast), transform var(--transition-fast), visibility 0ms linear 0ms !important;
+      transform: translateY(0) scale(1) !important;
+      transition: 
+        opacity 220ms ease, 
+        transform 220ms cubic-bezier(.2,.9,.2,1), 
+        visibility 0ms linear 0ms !important;
     }
 
     @media (hover: hover) and (pointer: fine) {
@@ -302,8 +332,11 @@
         opacity: 1 !important;
         visibility: visible !important;
         pointer-events: auto !important;
-        transform: translateY(0) !important;
-        transition: opacity var(--transition-fast), transform var(--transition-fast), visibility 0ms linear 0ms !important;
+        transform: translateY(0) scale(1) !important;
+        transition: 
+          opacity 220ms ease, 
+          transform 220ms cubic-bezier(.2,.9,.2,1), 
+          visibility 0ms linear 0ms !important;
       }
     }
 
@@ -323,6 +356,10 @@
       backdrop-filter: none !important;
       -webkit-backdrop-filter: none !important;
       overflow: hidden;
+      
+      /* RIMUOVI outline blu */
+      outline: none !important;
+      -webkit-tap-highlight-color: transparent !important;
     }
     .video-wrapper .plyr__controls .plyr__control svg {
       width: 20px !important;
@@ -335,6 +372,9 @@
     .video-wrapper .plyr__controls .plyr__control:active {
       transform: scale(0.98);
       box-shadow: 0 10px 28px rgba(0,0,0,0.35);
+    }
+    .video-wrapper .plyr__controls .plyr__control:focus {
+      outline: none !important;
     }
 
     .loading-overlay {
@@ -397,6 +437,8 @@
       text-transform: uppercase;
       font-size: 12px;
       cursor: pointer;
+      outline: none !important;
+      -webkit-tap-highlight-color: transparent !important;
     }
     .start-cta svg { width: 18px; height: 18px; fill: currentColor; }
     .loading-overlay.needs-gesture .spinner { display: none; }
@@ -589,8 +631,7 @@
       const MAX_RETRIES = 5;
       const DOUBLE_TAP_THRESHOLD = 300;
 
-      debugLog.add('🚀 Sistema inizializzato', 'success');
-      debugLog.add(`Device: ${isTouchDevice ? 'Touch' : 'Desktop'}`, 'info');
+      debugLog.add('🚀 Inizializzato', 'success');
 
       function setReady() {
         wrapper.classList.add('is-ready');
@@ -599,19 +640,19 @@
         try { video.poster = ''; } catch (_) {}
         scheduleBackgroundVideo();
         retryCount = 0;
-        debugLog.add('✅ Stream pronto', 'success');
+        debugLog.add('✅ Ready', 'success');
       }
 
       function setNeedsGesture() {
         overlay.classList.add('needs-gesture');
         overlay.setAttribute('aria-hidden', 'false');
-        debugLog.add('⚠️ Richiesta interazione', 'warn');
+        debugLog.add('⚠️ Need gesture', 'warn');
       }
 
       function waitForFirstFrame() {
-        debugLog.add('⏳ Attesa primo frame', 'info');
+        debugLog.add('⏳ Wait frame', 'info');
         const done = () => {
-          debugLog.add('🎬 Primo frame OK', 'success');
+          debugLog.add('🎬 Frame OK', 'success');
           setReady();
         };
         video.addEventListener('playing', done, { once: true });
@@ -630,13 +671,10 @@
         try {
           const s = video.seekable;
           if (s && s.length) {
-            const end = s.end(s.length - 1);
-            video.currentTime = Math.max(0, end - 2.0);
-            debugLog.add(`⏩ Jump to live`, 'warn');
+            video.currentTime = Math.max(0, s.end(s.length - 1) - 2.0);
+            debugLog.add(`⏩ Jump`, 'warn');
           }
-        } catch (e) {
-          debugLog.add(`❌ ${e.message}`, 'error');
-        }
+        } catch (_) {}
       }
 
       function toggleUI() {
@@ -664,10 +702,10 @@
       }
 
       function hardReset() {
-        debugLog.add(`🔄 RESET (${retryCount}/${MAX_RETRIES})`, 'warn');
+        debugLog.add(`🔄 Reset ${retryCount}/${MAX_RETRIES}`, 'warn');
         
         if (retryCount >= MAX_RETRIES) {
-          debugLog.add('❌ MAX RETRY', 'error');
+          debugLog.add('❌ Max retry', 'error');
           setNeedsGesture();
           retryCount = 0;
           return;
@@ -690,7 +728,7 @@
 
       async function attemptPlay() {
         try {
-          debugLog.add('▶️ Play...', 'info');
+          debugLog.add('▶️ Play', 'info');
           await player.play();
           retryCount = 0;
           debugLog.add('✅ Playing', 'success');
@@ -705,10 +743,10 @@
         wrapper.classList.remove('is-ready');
         overlay.classList.remove('needs-gesture');
 
-        debugLog.add('🔗 Attach stream', 'info');
+        debugLog.add('🔗 Attach', 'info');
 
         if (supportsNativeHls() && (isIOS() || isSafari())) {
-          debugLog.add('📺 Native HLS', 'info');
+          debugLog.add('📺 Native', 'info');
           video.src = STREAM_URL;
           video.load();
           waitForFirstFrame();
@@ -747,23 +785,23 @@
         hls.attachMedia(video);
         
         hls.on(window.Hls.Events.MEDIA_ATTACHED, () => {
-          debugLog.add('✅ ATTACHED', 'success');
+          debugLog.add('✅ Attached', 'success');
           hls.loadSource(STREAM_URL);
         });
 
         hls.on(window.Hls.Events.MANIFEST_PARSED, (evt, data) => {
-          debugLog.add(`📋 ${data.levels.length} levels`, 'success');
+          debugLog.add(`📋 ${data.levels.length}lvl`, 'success');
         });
 
         hls.on(window.Hls.Events.FRAG_LOADED, (evt, data) => {
-          debugLog.add(`📦 Frag #${data.frag.sn}`, 'info');
+          debugLog.add(`📦 #${data.frag.sn}`, 'info');
         });
 
         hls.on(window.Hls.Events.ERROR, (evt, data) => {
           if (!data) return;
 
           const f = data.fatal ? '🚨' : '⚠️';
-          debugLog.add(`${f} ${data.type} ${data.details}`, data.fatal ? 'error' : 'warn');
+          debugLog.add(`${f} ${data.type}`, data.fatal ? 'error' : 'warn');
 
           if (!data.fatal) {
             if (data.type === window.Hls.ErrorTypes.NETWORK_ERROR) {
@@ -807,15 +845,15 @@
       }
 
       async function enterFullscreenLandscape() {
-        debugLog.add('🖼️ Enter FS + landscape', 'info');
+        debugLog.add('🖼️ Enter FS', 'info');
         
         try {
           if (screen.orientation && screen.orientation.lock) {
             await screen.orientation.lock('landscape');
-            debugLog.add('✅ Landscape locked', 'success');
+            debugLog.add('✅ Locked', 'success');
           }
         } catch (e) {
-          debugLog.add(`⚠️ Lock: ${e.message}`, 'warn');
+          debugLog.add(`⚠️ ${e.message}`, 'warn');
         }
 
         try {
@@ -830,14 +868,14 @@
           } else if (isIOS() && video.webkitEnterFullscreen) {
             video.webkitEnterFullscreen();
           }
-          debugLog.add('✅ FS active', 'success');
+          debugLog.add('✅ FS', 'success');
         } catch (e) {
-          debugLog.add(`❌ FS: ${e.message}`, 'error');
+          debugLog.add(`❌ ${e.message}`, 'error');
         }
       }
 
       function exitFullscreenPortrait() {
-        debugLog.add('🚪 Exit FS', 'info');
+        debugLog.add('🚪 Exit', 'info');
         
         try {
           if (screen.orientation && screen.orientation.unlock) {
@@ -864,15 +902,13 @@
         const h = window.innerHeight;
         const isMobile = w <= 768 || h <= 500;
         
-        debugLog.add(`📱 ${isLandscape ? 'LAND' : 'PORT'} ${w}x${h}`, 'info');
+        debugLog.add(`📱 ${isLandscape ? 'L' : 'P'} ${w}x${h}`, 'info');
         
-        // Attiva fake fullscreen SOLO se landscape + mobile
         if (isLandscape && isMobile) {
           document.body.classList.add('landscape-fullscreen');
-          debugLog.add('🖼️ FAKE FS ON', 'success');
+          debugLog.add('🖼️ FAKE FS', 'success');
         } else {
           document.body.classList.remove('landscape-fullscreen');
-          debugLog.add('🖼️ FAKE FS OFF', 'info');
         }
       }
 
@@ -884,7 +920,7 @@
         hardReset();
       });
 
-      window.addEventListener('offline', () => debugLog.add('📡 OFFLINE', 'error'));
+      window.addEventListener('offline', () => debugLog.add('📡 OFF', 'error'));
 
       document.addEventListener('visibilitychange', () => {
         if (document.hidden) {
@@ -901,13 +937,8 @@
         }
       });
 
-      window.addEventListener('orientationchange', () => {
-        setTimeout(handleOrientationChange, 100);
-      });
-      
-      window.addEventListener('resize', () => {
-        handleOrientationChange();
-      });
+      window.addEventListener('orientationchange', () => setTimeout(handleOrientationChange, 100));
+      window.addEventListener('resize', handleOrientationChange);
 
       function whenReady(fn) {
         if (document.readyState === 'complete' || document.readyState === 'interactive') fn();
@@ -915,7 +946,7 @@
       }
 
       whenReady(() => {
-        debugLog.add('📄 DOM ready', 'success');
+        debugLog.add('📄 Ready', 'success');
 
         if (window.Plyr) {
           player = new Plyr(video, {
@@ -927,12 +958,12 @@
           });
 
           player.on('enterfullscreen', () => {
-            debugLog.add('🎬 ENTER FS', 'info');
+            debugLog.add('🎬 ENTER', 'info');
             enterFullscreenLandscape();
           });
 
           player.on('exitfullscreen', () => {
-            debugLog.add('🎬 EXIT FS', 'info');
+            debugLog.add('🎬 EXIT', 'info');
             exitFullscreenPortrait();
           });
         } else {
@@ -946,7 +977,7 @@
             const now = Date.now();
             if (now - lastTapTime < DOUBLE_TAP_THRESHOLD) {
               e.preventDefault();
-              debugLog.add('⚠️ DBL TAP', 'warn');
+              debugLog.add('⚠️ DBL', 'warn');
               return;
             }
             
@@ -955,18 +986,18 @@
           });
         }
 
-        video.addEventListener('waiting', () => debugLog.add('⏳ WAIT', 'warn'));
-        video.addEventListener('stalled', () => debugLog.add('⏸️ STALL', 'warn'));
+        video.addEventListener('waiting', () => debugLog.add('⏳', 'warn'));
+        video.addEventListener('stalled', () => debugLog.add('⏸️', 'warn'));
         
         video.addEventListener('playing', () => {
-          debugLog.add('▶️ PLAY', 'success');
+          debugLog.add('▶️', 'success');
           
           setTimeout(() => {
             try {
               const s = video.seekable;
               if (s && s.length) {
                 const behind = s.end(s.length - 1) - (video.currentTime || 0);
-                debugLog.add(`📊 Lat: ${behind.toFixed(1)}s`, behind > 15 ? 'warn' : 'info');
+                debugLog.add(`📊 ${behind.toFixed(1)}s`, behind > 15 ? 'warn' : 'info');
                 if (behind < 0.5 || behind > 20) jumpToLiveEdge();
               }
             } catch (_) {}
@@ -974,12 +1005,12 @@
         }, { once: true });
 
         video.addEventListener('error', () => {
-          debugLog.add(`❌ VID ERR`, 'error');
+          debugLog.add(`❌ ERR`, 'error');
           setTimeout(() => hardReset(), 1500);
         });
 
         video.addEventListener('ended', () => {
-          debugLog.add('🏁 END', 'warn');
+          debugLog.add('🏁', 'warn');
           hardReset();
         });
 
@@ -995,20 +1026,20 @@
           const t = video.currentTime || 0;
           
           if (stuckCount === 0) {
-            debugLog.add(`📊 ${t.toFixed(1)}s RS${video.readyState}`, 'info');
+            debugLog.add(`📊 ${t.toFixed(1)}`, 'info');
           }
 
           if (Math.abs(t - lastTime) < 0.1) {
             stuckCount++;
-            debugLog.add(`⚠️ STUCK ${stuckCount}/8`, 'warn');
+            debugLog.add(`⚠️ ${stuckCount}/8`, 'warn');
           } else {
-            if (stuckCount > 0) debugLog.add('✅ OK', 'success');
+            if (stuckCount > 0) debugLog.add('✅', 'success');
             stuckCount = 0;
           }
           lastTime = t;
 
           if (stuckCount >= 8) {
-            debugLog.add('💥 RESET', 'error');
+            debugLog.add('💥', 'error');
             hardReset();
             stuckCount = 0;
           }
@@ -1022,7 +1053,7 @@
         e.preventDefault();
         e.stopPropagation();
         retryCount = 0;
-        debugLog.add('👆 MANUAL', 'success');
+        debugLog.add('👆', 'success');
         attemptPlay();
       });
     })();
