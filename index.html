@@ -64,7 +64,10 @@
     }
 
     * { box-sizing: border-box; }
-    html, body { height: 100%; }
+    html, body { 
+      height: 100%; 
+      width: 100%;
+    }
     body {
       margin: 0;
       font-family: var(--plyr-font-family);
@@ -111,33 +114,69 @@
       position: relative;
       z-index: 2;
       height: 100%;
-      display: grid;
-      place-items: center;
-      padding: 20px;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
     }
 
     .video-wrapper {
       position: relative;
-      width: min(980px, 92vw);
+      width: 100%;
+      height: 100%;
+      max-width: 1200px;
+      max-height: 675px;
       aspect-ratio: 16 / 9;
-      border-radius: var(--radius-video);
+      border-radius: 0;
       overflow: hidden;
       background: #000;
-      box-shadow: var(--shadow-glow), var(--shadow-deep);
-      border: 1px solid var(--color-border);
-      isolation: isolate;
-    }
-
-    body.landscape-mode .video-wrapper {
-      width: 100vw;
-      height: 100vh;
-      max-width: 100vw;
-      max-height: 100vh;
-      aspect-ratio: auto;
-      border-radius: 0;
+      box-shadow: none;
       border: none;
+      isolation: isolate;
+      transition: all 0.3s ease;
     }
 
+    /* Desktop: dimensioni maggiori + bordi arrotondati + ombre */
+    @media (min-width: 769px) {
+      main {
+        padding: 20px;
+      }
+      .video-wrapper {
+        width: min(1200px, 94vw);
+        height: auto;
+        border-radius: var(--radius-video);
+        box-shadow: var(--shadow-glow), var(--shadow-deep);
+        border: 1px solid var(--color-border);
+      }
+    }
+
+    /* Mobile portrait: centrato verticalmente */
+    @media (max-width: 768px) and (orientation: portrait) {
+      .video-wrapper {
+        width: 100vw;
+        height: auto;
+        max-height: 56.25vw; /* 16:9 ratio */
+      }
+    }
+
+    /* Mobile landscape: fake fullscreen */
+    @media (max-width: 768px) and (orientation: landscape) {
+      body.landscape-mode main {
+        padding: 0;
+      }
+      body.landscape-mode .video-wrapper {
+        width: 100vw;
+        height: 100vh;
+        max-width: 100vw;
+        max-height: 100vh;
+        border-radius: 0;
+        border: none;
+        box-shadow: none;
+      }
+    }
+
+    /* Real fullscreen */
     .video-wrapper:fullscreen,
     .video-wrapper:-webkit-full-screen,
     .video-wrapper:-moz-full-screen,
@@ -146,9 +185,9 @@
       height: 100vh !important;
       max-width: 100vw !important;
       max-height: 100vh !important;
-      aspect-ratio: auto !important;
       border-radius: 0 !important;
       border: none !important;
+      box-shadow: none !important;
     }
 
     .video-wrapper .plyr {
@@ -218,6 +257,8 @@
     }
 
     .video-wrapper .plyr__tooltip { display: none !important; }
+    
+    /* FIX BLUR: applica blur PRIMA della transizione opacity */
     .video-wrapper .plyr__controls {
       position: absolute !important;
       left: auto !important;
@@ -231,6 +272,11 @@
       align-items: center !important;
       gap: 10px !important;
       z-index: 40 !important;
+      
+      /* BLUR SEMPRE ATTIVO - solo opacity cambia */
+      backdrop-filter: blur(var(--blur-ui-reduced)) !important;
+      -webkit-backdrop-filter: blur(var(--blur-ui-reduced)) !important;
+      
       opacity: 0 !important;
       visibility: hidden !important;
       pointer-events: none !important;
@@ -268,9 +314,11 @@
       will-change: transform;
       border: 1px solid rgba(255,255,255,0.20) !important;
       box-shadow: var(--shadow-button);
+      
+      /* BLUR GIÀ APPLICATO dal parent .plyr__controls */
       background: rgba(0,0,0,0.35) !important;
-      backdrop-filter: blur(var(--blur-ui-reduced)) !important;
-      -webkit-backdrop-filter: blur(var(--blur-ui-reduced)) !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
     }
     .video-wrapper .plyr__controls .plyr__control svg {
       width: 20px !important;
@@ -489,7 +537,6 @@
       const debugPanel = document.getElementById('debugPanel');
       const debugContent = document.getElementById('debugContent');
 
-      // ATTIVA DEBUG: aggiungi ?debug o #debug all'URL
       const DEBUG_ENABLED = window.location.search.includes('debug') || window.location.hash.includes('debug');
       if (DEBUG_ENABLED) {
         debugPanel.classList.add('visible');
@@ -529,6 +576,7 @@
       const isSafari = () => /Safari/.test(navigator.userAgent) && !/Chrome|CriOS|Edg|OPR/.test(navigator.userAgent);
       const supportsNativeHls = () => !!video.canPlayType('application/vnd.apple.mpegurl');
       const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+      const isMobile = window.innerWidth <= 768;
 
       let player = null;
       let hls = null;
@@ -539,9 +587,8 @@
       const DOUBLE_TAP_THRESHOLD = 300;
 
       debugLog.add('🚀 Sistema inizializzato', 'success');
-      debugLog.add(`Device: ${isTouchDevice ? 'Touch' : 'Desktop'}`, 'info');
+      debugLog.add(`Device: ${isTouchDevice ? 'Touch' : 'Desktop'}, Mobile: ${isMobile}`, 'info');
       debugLog.add(`iOS: ${isIOS()}, Safari: ${isSafari()}`, 'info');
-      debugLog.add(`Native HLS: ${supportsNativeHls()}`, 'info');
 
       function setReady() {
         wrapper.classList.add('is-ready');
@@ -550,7 +597,7 @@
         try { video.poster = ''; } catch (_) {}
         scheduleBackgroundVideo();
         retryCount = 0;
-        debugLog.add('✅ Stream pronto e attivo', 'success');
+        debugLog.add('✅ Stream pronto', 'success');
       }
 
       function setNeedsGesture() {
@@ -562,22 +609,19 @@
       function waitForFirstFrame() {
         debugLog.add('⏳ Attesa primo frame...', 'info');
         const done = () => {
-          debugLog.add('🎬 Primo frame ricevuto!', 'success');
+          debugLog.add('🎬 Primo frame ricevuto', 'success');
           setReady();
         };
-        
         video.addEventListener('playing', done, { once: true });
         video.addEventListener('timeupdate', () => {
           if (video.currentTime > 0) done();
         }, { once: true });
-        
         if ('requestVideoFrameCallback' in HTMLVideoElement.prototype) {
           try { video.requestVideoFrameCallback(() => done()); } catch (_) {}
         }
-        
         setTimeout(() => {
           if (!wrapper.classList.contains('is-ready') && !video.paused && video.readyState >= 3 && video.videoWidth > 0) {
-            debugLog.add('🕐 Primo frame da timeout (12s)', 'warn');
+            debugLog.add('🕐 Primo frame da timeout', 'warn');
             done();
           }
         }, 12000);
@@ -589,9 +633,8 @@
           if (s && s.length) {
             const end = s.end(s.length - 1);
             const oldTime = video.currentTime || 0;
-            const newTime = Math.max(0, end - 2.0);
-            video.currentTime = newTime;
-            debugLog.add(`⏩ Jump: ${oldTime.toFixed(1)}s → ${newTime.toFixed(1)}s (edge: ${end.toFixed(1)}s)`, 'warn');
+            video.currentTime = Math.max(0, end - 2.0);
+            debugLog.add(`⏩ Jump: ${oldTime.toFixed(1)}s → ${video.currentTime.toFixed(1)}s`, 'warn');
           }
         } catch (e) {
           debugLog.add(`❌ Errore jump: ${e.message}`, 'error');
@@ -609,7 +652,7 @@
           if (uiTimer) clearTimeout(uiTimer);
           uiTimer = setTimeout(() => {
             wrapper.classList.remove('show-ui');
-            debugLog.add('⏲️ UI auto-nascosta (3.5s)', 'info');
+            debugLog.add('⏲️ UI auto-nascosta', 'info');
           }, 3500);
           debugLog.add('👁️ UI mostrata', 'info');
         }
@@ -624,17 +667,17 @@
             hls.destroy();
             debugLog.add('🗑️ HLS distrutto', 'info');
           } catch (e) {
-            debugLog.add(`❌ Errore destroy HLS: ${e.message}`, 'error');
+            debugLog.add(`❌ Errore destroy: ${e.message}`, 'error');
           }
           hls = null;
         }
       }
 
       function hardReset() {
-        debugLog.add(`🔄 HARD RESET (tentativi: ${retryCount}/${MAX_RETRIES})`, 'warn');
+        debugLog.add(`🔄 RESET (${retryCount}/${MAX_RETRIES})`, 'warn');
         
         if (retryCount >= MAX_RETRIES) {
-          debugLog.add('❌ MAX TENTATIVI RAGGIUNTO - Richiesta click utente', 'error');
+          debugLog.add('❌ MAX TENTATIVI RAGGIUNTO', 'error');
           setNeedsGesture();
           retryCount = 0;
           return;
@@ -647,16 +690,14 @@
           video.removeAttribute('src');
           video.load();
           video.poster = '';
-          debugLog.add('🔃 Video resettato', 'info');
         } catch (e) {
-          debugLog.add(`❌ Errore reset video: ${e.message}`, 'error');
+          debugLog.add(`❌ Errore reset: ${e.message}`, 'error');
         }
         
         wrapper.classList.remove('is-ready');
         overlay.classList.remove('needs-gesture');
         overlay.setAttribute('aria-hidden', 'false');
 
-        debugLog.add('⏱️ Riconnessione tra 1.5s...', 'info');
         setTimeout(() => {
           attachStream().catch(() => setNeedsGesture());
         }, 1500);
@@ -667,9 +708,9 @@
           debugLog.add('▶️ Tentativo play...', 'info');
           await player.play();
           retryCount = 0;
-          debugLog.add('✅ Play avviato con successo', 'success');
+          debugLog.add('✅ Play avviato', 'success');
         } catch (e) {
-          debugLog.add(`❌ Play fallito: ${e.name} - ${e.message}`, 'error');
+          debugLog.add(`❌ Play fallito: ${e.message}`, 'error');
           setNeedsGesture();
         }
       }
@@ -683,7 +724,7 @@
         debugLog.add('🔗 Attaching stream...', 'info');
 
         if (supportsNativeHls() && (isIOS() || isSafari())) {
-          debugLog.add('📺 Modalità: Native HLS (iOS/Safari)', 'info');
+          debugLog.add('📺 Modalità: Native HLS', 'info');
           video.src = STREAM_URL;
           video.load();
           waitForFirstFrame();
@@ -691,7 +732,7 @@
         }
 
         if (!window.Hls || !window.Hls.isSupported()) {
-          debugLog.add('⚠️ Modalità: Fallback nativo (HLS.js non supportato)', 'warn');
+          debugLog.add('⚠️ Modalità: Fallback', 'warn');
           video.src = STREAM_URL;
           video.load();
           waitForFirstFrame();
@@ -721,65 +762,42 @@
         });
 
         hls.attachMedia(video);
-        debugLog.add('🔗 HLS media attached', 'info');
         
         hls.on(window.Hls.Events.MEDIA_ATTACHED, () => {
-          debugLog.add('✅ HLS MEDIA_ATTACHED', 'success');
+          debugLog.add('✅ MEDIA_ATTACHED', 'success');
           hls.loadSource(STREAM_URL);
-          debugLog.add('📡 Loading source...', 'info');
         });
 
         hls.on(window.Hls.Events.MANIFEST_PARSED, (evt, data) => {
-          debugLog.add(`📋 Manifest parsed: ${data.levels.length} livelli disponibili`, 'success');
-          data.levels.forEach((level, i) => {
-            debugLog.add(`  Livello ${i}: ${level.width}x${level.height} @ ${Math.round(level.bitrate/1000)}kbps`, 'info');
-          });
-        });
-
-        hls.on(window.Hls.Events.LEVEL_SWITCHED, (evt, data) => {
-          debugLog.add(`🔀 Switch livello: ${data.level}`, 'info');
+          debugLog.add(`📋 Manifest: ${data.levels.length} livelli`, 'success');
         });
 
         hls.on(window.Hls.Events.FRAG_LOADED, (evt, data) => {
-          const fragNum = data.frag.sn;
-          const fragDuration = data.frag.duration.toFixed(1);
-          debugLog.add(`📦 Fragment #${fragNum} caricato (${fragDuration}s)`, 'info');
+          debugLog.add(`📦 Fragment #${data.frag.sn} caricato`, 'info');
         });
 
         hls.on(window.Hls.Events.ERROR, (evt, data) => {
           if (!data) return;
 
-          const isFatal = data.fatal ? '🚨 FATALE' : '⚠️ NON-FATALE';
-          const errorMsg = `${isFatal} | ${data.type} | ${data.details}`;
-          debugLog.add(errorMsg, data.fatal ? 'error' : 'warn');
-
-          if (data.response) {
-            debugLog.add(`  HTTP ${data.response.code}: ${data.response.text}`, 'error');
-          }
+          const fatal = data.fatal ? '🚨 FATALE' : '⚠️';
+          debugLog.add(`${fatal} ${data.type} - ${data.details}`, data.fatal ? 'error' : 'warn');
 
           if (!data.fatal) {
             if (data.type === window.Hls.ErrorTypes.NETWORK_ERROR) {
-              debugLog.add('🔄 Tentativo restart caricamento...', 'warn');
-              try { 
-                setTimeout(() => hls.startLoad(-1), 500);
-              } catch (_) {}
+              try { setTimeout(() => hls.startLoad(-1), 500); } catch (_) {}
             }
             return;
           }
 
           try {
             if (data.type === window.Hls.ErrorTypes.NETWORK_ERROR) {
-              debugLog.add('🌐 Errore rete fatale - tentativo restart...', 'error');
               setTimeout(() => hls.startLoad(-1), 1000);
             } else if (data.type === window.Hls.ErrorTypes.MEDIA_ERROR) {
-              debugLog.add('🎬 Errore media fatale - tentativo recovery...', 'error');
               hls.recoverMediaError();
             } else {
-              debugLog.add('💥 Errore fatale altro tipo - hard reset necessario', 'error');
               hardReset();
             }
           } catch (e) {
-            debugLog.add(`❌ Errore durante recovery: ${e.message}`, 'error');
             hardReset();
           }
         });
@@ -793,102 +811,33 @@
         const et = navigator.connection && navigator.connection.effectiveType;
         const slow = et && (et.includes('2g') || et.includes('slow'));
         const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        
-        if (saveData || slow || reduceMotion) {
-          debugLog.add('🚫 Background video disabilitato (save-data o slow connection)', 'info');
-          return;
-        }
+        if (saveData || slow || reduceMotion) return;
 
         setTimeout(() => {
           if (!bgVideo.src) {
             bgVideo.src = 'galaxy.mp4';
             bgVideo.load();
-            debugLog.add('🌌 Background video caricato', 'info');
           }
           const p = bgVideo.play();
           if (p && typeof p.catch === 'function') p.catch(() => {});
         }, 2000);
       }
 
-      async function enterFullscreenLandscape() {
-        debugLog.add('🖼️ Richiesta fullscreen + landscape...', 'info');
-        
-        try {
-          if (screen.orientation && screen.orientation.lock) {
-            await screen.orientation.lock('landscape');
-            debugLog.add('✅ Orientamento locked: landscape', 'success');
-          }
-        } catch (e) {
-          debugLog.add(`⚠️ Lock orientamento fallito: ${e.message}`, 'warn');
-        }
-
-        try {
-          if (wrapper.requestFullscreen) {
-            await wrapper.requestFullscreen();
-          } else if (wrapper.webkitRequestFullscreen) {
-            await wrapper.webkitRequestFullscreen();
-          } else if (wrapper.mozRequestFullScreen) {
-            await wrapper.mozRequestFullScreen();
-          } else if (wrapper.msRequestFullscreen) {
-            await wrapper.msRequestFullscreen();
-          } else if (isIOS() && video.webkitEnterFullscreen) {
-            video.webkitEnterFullscreen();
-          }
-          debugLog.add('✅ Fullscreen attivato', 'success');
-        } catch (e) {
-          debugLog.add(`❌ Fullscreen fallito: ${e.message}`, 'error');
-        }
-      }
-
-      function exitFullscreenPortrait() {
-        debugLog.add('🚪 Uscita fullscreen...', 'info');
-        
-        try {
-          if (screen.orientation && screen.orientation.unlock) {
-            screen.orientation.unlock();
-            debugLog.add('✅ Orientamento unlocked', 'success');
-          }
-        } catch (_) {}
-
-        try {
-          if (document.exitFullscreen) {
-            document.exitFullscreen();
-          } else if (document.webkitExitFullscreen) {
-            document.webkitExitFullscreen();
-          } else if (document.mozCancelFullScreen) {
-            document.mozCancelFullScreen();
-          } else if (document.msExitFullscreen) {
-            document.msExitFullscreen();
-          }
-          debugLog.add('✅ Fullscreen disattivato', 'success');
-        } catch (e) {
-          debugLog.add(`❌ Exit fullscreen fallito: ${e.message}`, 'error');
-        }
-      }
-
       function handleOrientationChange() {
         const isLandscape = window.matchMedia('(orientation: landscape)').matches;
         debugLog.add(`📱 Orientamento: ${isLandscape ? 'LANDSCAPE' : 'PORTRAIT'}`, 'info');
         
-        if (isLandscape && isTouchDevice) {
+        // Solo su mobile + landscape: attiva fake fullscreen
+        if (isMobile && isLandscape) {
           document.body.classList.add('landscape-mode');
-          
-          if (!document.fullscreenElement && 
-              !document.webkitFullscreenElement && 
-              !document.mozFullScreenElement && 
-              !document.msFullscreenElement) {
-            debugLog.add('🔄 Auto-attivazione fullscreen da landscape', 'info');
-            enterFullscreenLandscape();
-          }
+          debugLog.add('🖼️ Fake fullscreen attivato', 'success');
         } else {
           document.body.classList.remove('landscape-mode');
+          debugLog.add('🖼️ Fake fullscreen disattivato', 'info');
         }
       }
 
-      bgVideo.addEventListener('playing', () => {
-        document.body.classList.add('bg-playing');
-        debugLog.add('🌌 Background video playing', 'info');
-      });
+      bgVideo.addEventListener('playing', () => document.body.classList.add('bg-playing'));
 
       window.addEventListener('online', () => {
         debugLog.add('⚡ CONNESSIONE RIPRISTINATA', 'success');
@@ -901,10 +850,9 @@
       });
 
       document.addEventListener('visibilitychange', () => {
-        const hidden = document.hidden;
-        debugLog.add(`👁️ Visibilità pagina: ${hidden ? 'HIDDEN' : 'VISIBLE'}`, 'info');
+        debugLog.add(`👁️ Visibilità: ${document.hidden ? 'HIDDEN' : 'VISIBLE'}`, 'info');
         
-        if (hidden) {
+        if (document.hidden) {
           try { bgVideo.pause(); } catch (_) {}
         } else {
           if (document.body.classList.contains('bg-playing')) {
@@ -912,7 +860,6 @@
             if (p && typeof p.catch === 'function') p.catch(() => {});
           }
           if (video.paused && wrapper.classList.contains('is-ready')) {
-            debugLog.add('🔄 Ripristino playback da visibilità', 'info');
             jumpToLiveEdge();
             attemptPlay();
           }
@@ -923,18 +870,14 @@
       window.addEventListener('resize', handleOrientationChange);
 
       function whenReady(fn) {
-        if (document.readyState === 'complete' || document.readyState === 'interactive') {
-          fn();
-        } else {
-          document.addEventListener('DOMContentLoaded', fn, { once: true });
-        }
+        if (document.readyState === 'complete' || document.readyState === 'interactive') fn();
+        else document.addEventListener('DOMContentLoaded', fn, { once: true });
       }
 
       whenReady(() => {
         debugLog.add('📄 DOM pronto', 'success');
 
         if (window.Plyr) {
-          debugLog.add('🎮 Plyr caricato', 'success');
           player = new Plyr(video, {
             controls: ['play-large', 'fullscreen'],
             clickToPlay: false,
@@ -944,37 +887,27 @@
           });
 
           player.on('enterfullscreen', () => {
-            debugLog.add('🎬 Evento: ENTER FULLSCREEN', 'info');
-            enterFullscreenLandscape();
+            debugLog.add('🎬 ENTER FULLSCREEN', 'info');
           });
 
           player.on('exitfullscreen', () => {
-            debugLog.add('🎬 Evento: EXIT FULLSCREEN', 'info');
-            exitFullscreenPortrait();
+            debugLog.add('🎬 EXIT FULLSCREEN', 'info');
           });
         } else {
-          debugLog.add('⚠️ Plyr non disponibile - usando fallback', 'warn');
-          player = { 
-            play: () => video.play(), 
-            on: () => {} 
-          };
+          debugLog.add('⚠️ Plyr fallback', 'warn');
+          player = { play: () => video.play(), on: () => {} };
         }
 
         if (isTouchDevice) {
-          debugLog.add('📱 Touch device - attivo controllo tap', 'info');
-          
           wrapper.addEventListener('click', (e) => {
-            if (e.target.closest('.plyr__control') || e.target.closest('.start-cta')) {
-              debugLog.add('👆 Tap su controllo - ignorato per toggle', 'info');
-              return;
-            }
+            if (e.target.closest('.plyr__control') || e.target.closest('.start-cta')) return;
             
             const now = Date.now();
             const timeSinceLastTap = now - lastTapTime;
             
             if (timeSinceLastTap < DOUBLE_TAP_THRESHOLD) {
               e.preventDefault();
-              debugLog.add('⚠️ DOPPIO TAP RILEVATO E BLOCCATO', 'warn');
+              debugLog.add('⚠️ DOPPIO TAP BLOCCATO', 'warn');
               return;
             }
             
@@ -983,96 +916,71 @@
           });
         }
 
-        video.addEventListener('waiting', () => {
-          debugLog.add('⏳ Video WAITING (buffering...)', 'warn');
-        });
-
-        video.addEventListener('stalled', () => {
-          debugLog.add('⏸️ Video STALLED (download fermato)', 'warn');
-        });
-
-        video.addEventListener('suspend', () => {
-          debugLog.add('🛑 Video SUSPEND (fetch fermato)', 'warn');
-        });
+        video.addEventListener('waiting', () => debugLog.add('⏳ WAITING', 'warn'));
+        video.addEventListener('stalled', () => debugLog.add('⏸️ STALLED', 'warn'));
         
         video.addEventListener('playing', () => {
-          debugLog.add('▶️ Video PLAYING', 'success');
+          debugLog.add('▶️ PLAYING', 'success');
           
           setTimeout(() => {
             try {
               const s = video.seekable;
               if (s && s.length) {
                 const end = s.end(s.length - 1);
-                const currentPos = video.currentTime || 0;
-                const behind = end - currentPos;
+                const behind = end - (video.currentTime || 0);
+                debugLog.add(`📊 Latenza: ${behind.toFixed(1)}s`, behind > 15 ? 'warn' : 'info');
                 
-                debugLog.add(`📊 Latenza live: ${behind.toFixed(2)}s dietro l'edge`, behind > 15 ? 'warn' : 'info');
-                
-                if (behind < 0.5 || behind > 20) {
-                  debugLog.add('⚠️ Latenza anomala - eseguo jump', 'warn');
-                  jumpToLiveEdge();
-                }
+                if (behind < 0.5 || behind > 20) jumpToLiveEdge();
               }
             } catch (e) {
-              debugLog.add(`❌ Errore check latenza: ${e.message}`, 'error');
+              debugLog.add(`❌ ${e.message}`, 'error');
             }
           }, 2500);
         }, { once: true });
 
         video.addEventListener('error', (e) => {
-          const errorCode = video.error ? video.error.code : 'unknown';
-          const errorMsg = video.error ? video.error.message : 'no details';
-          debugLog.add(`❌ VIDEO ERROR: Code ${errorCode} - ${errorMsg}`, 'error');
+          const code = video.error ? video.error.code : 'unknown';
+          debugLog.add(`❌ VIDEO ERROR: ${code}`, 'error');
           setTimeout(() => hardReset(), 1500);
         });
 
         video.addEventListener('ended', () => {
-          debugLog.add('🏁 Stream ENDED', 'warn');
+          debugLog.add('🏁 ENDED', 'warn');
           hardReset();
         });
 
         let lastTime = 0;
         let stuckCount = 0;
-        
         setInterval(() => {
           if (video.paused || !wrapper.classList.contains('is-ready')) {
-            if (stuckCount > 0) {
-              stuckCount = 0;
-              debugLog.add('✅ Reset stuck counter (video paused o non ready)', 'info');
-            }
+            stuckCount = 0;
             lastTime = video.currentTime;
             return;
           }
           
           const currentTime = video.currentTime || 0;
-          const readyState = video.readyState;
-          const buffered = video.buffered.length ? video.buffered.end(0) : 0;
-          const paused = video.paused;
           
           if (stuckCount === 0) {
-            debugLog.add(`📊 State=${readyState} Time=${currentTime.toFixed(1)}s Buf=${buffered.toFixed(1)}s Paused=${paused}`, 'info');
+            debugLog.add(`📊 Time=${currentTime.toFixed(1)}s RS=${video.readyState}`, 'info');
           }
 
           if (Math.abs(currentTime - lastTime) < 0.1) {
             stuckCount++;
-            debugLog.add(`⚠️ PLAYBACK BLOCCATO (${stuckCount}/8 controlli)`, 'warn');
+            debugLog.add(`⚠️ BLOCCATO (${stuckCount}/8)`, 'warn');
           } else {
-            if (stuckCount > 0) {
-              debugLog.add('✅ Playback RIPRESO - reset counter', 'success');
-              stuckCount = 0;
-            }
+            if (stuckCount > 0) debugLog.add('✅ RIPRESO', 'success');
+            stuckCount = 0;
           }
           lastTime = currentTime;
 
           if (stuckCount >= 8) {
-            debugLog.add('💥 PLAYBACK PERMANENTEMENTE BLOCCATO - HARD RESET', 'error');
+            debugLog.add('💥 BLOCCATO - RESET', 'error');
             hardReset();
             stuckCount = 0;
           }
         }, 5000);
 
         handleOrientationChange();
-        debugLog.add('🎬 Avvio stream iniziale...', 'info');
         attachStream().catch(() => setNeedsGesture());
       });
 
@@ -1080,11 +988,9 @@
         e.preventDefault();
         e.stopPropagation();
         retryCount = 0;
-        debugLog.add('👆 AVVIO MANUALE DA UTENTE', 'success');
+        debugLog.add('👆 AVVIO MANUALE', 'success');
         attemptPlay();
       });
-
-      debugLog.add('✅ Tutti gli event listener configurati', 'success');
     })();
   </script>
 </body>
