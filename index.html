@@ -135,7 +135,6 @@
       }
     }
 
-    /* LANDSCAPE MODE */
     body.landscape-mode {
       overflow: hidden;
     }
@@ -183,7 +182,6 @@
       background: #000;
     }
 
-    /* Play/Pause button */
     .video-wrapper .plyr__control--overlaid {
       width: 90px !important;
       height: 52px !important;
@@ -263,7 +261,6 @@
 
     .video-wrapper .plyr__tooltip { display: none !important; }
     
-    /* Bottom controls */
     .video-wrapper .plyr__controls {
       position: absolute !important;
       left: auto !important;
@@ -563,7 +560,7 @@
         try {
           const s = video.seekable;
           if (s && s.length) {
-            video.currentTime = s.end(s.length - 1) - 1;
+            video.currentTime = s.end(s.length - 1) - 0.5;
           }
         } catch (_) {}
       }
@@ -636,14 +633,14 @@
           return attemptPlay();
         }
 
+        // LOW LATENCY CONFIG - STARE AL LIVE EDGE!
         hls = new window.Hls({
-          // BUFFER GRANDI - NO LAG!
-          lowLatencyMode: false,
-          backBufferLength: 180,
-          maxBufferLength: 240,
-          maxMaxBufferLength: 360,
-          liveSyncDurationCount: 3,
-          liveMaxLatencyDurationCount: 8,
+          lowLatencyMode: true,  // MODALITÀ BASSA LATENZA!
+          backBufferLength: 30,
+          maxBufferLength: 60,
+          maxMaxBufferLength: 90,
+          liveSyncDurationCount: 1,  // STARE VICINISSIMO AL LIVE!
+          liveMaxLatencyDurationCount: 3,
           capLevelToPlayerSize: true,
           startLevel: -1,
           enableWorker: true,
@@ -657,7 +654,6 @@
         hls.on(window.Hls.Events.ERROR, (evt, data) => {
           if (!data || !data.fatal) return;
           
-          // Solo reset su errori VERAMENTE fatali
           if (data.type === window.Hls.ErrorTypes.NETWORK_ERROR) {
             setTimeout(() => hls.startLoad(-1), 2000);
           } else if (data.type === window.Hls.ErrorTypes.MEDIA_ERROR) {
@@ -716,7 +712,27 @@
         }
       }
 
-      // AUTO-RESUME DOPO 5 SEC DI PAUSA
+      // MONITORING LATENZA - OGNI 10 SEC
+      setInterval(() => {
+        if (video.paused || !wrapper.classList.contains('is-ready')) return;
+        
+        try {
+          const s = video.seekable;
+          if (s && s.length) {
+            const liveEdge = s.end(s.length - 1);
+            const currentTime = video.currentTime || 0;
+            const latency = liveEdge - currentTime;
+            
+            // SE OLTRE 5 SECONDI INDIETRO → SALTA!
+            if (latency > 5) {
+              console.log(`Latency ${latency.toFixed(1)}s - jumping to live`);
+              jumpToLive();
+            }
+          }
+        } catch (_) {}
+      }, 10000);
+
+      // PAUSA 5 SEC → SALTA AL LIVE
       video.addEventListener('pause', () => {
         if (pauseTimer) clearTimeout(pauseTimer);
         pauseTimer = setTimeout(() => {
@@ -743,7 +759,6 @@
           }
         }
         
-        // Gestione background video
         if (document.hidden) {
           try { bgVideo.pause(); } catch (_) {}
         } else {
