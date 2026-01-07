@@ -135,7 +135,7 @@
       }
     }
 
-    /* LANDSCAPE MODE - APPROCCIO CSS PULITO */
+    /* LANDSCAPE MODE - USA SVH per altezza REALE mobile */
     body.landscape-mode {
       overflow: hidden;
     }
@@ -143,29 +143,20 @@
     body.landscape-mode .video-container {
       padding: 0;
       margin: 0;
-      inset: 0;
     }
     
     body.landscape-mode .video-wrapper {
       position: fixed;
       top: 0;
       left: 0;
-      right: 0;
-      bottom: 0;
       width: 100vw;
-      height: 100vh;
+      height: 100svh; /* SMALL VIEWPORT HEIGHT - ALTEZZA REALE! */
       max-width: 100vw;
-      max-height: 100vh;
+      max-height: 100svh;
       aspect-ratio: auto;
       border-radius: 0;
       box-shadow: none;
       margin: 0;
-    }
-    
-    body.landscape-mode .video-wrapper .plyr,
-    body.landscape-mode .video-wrapper video {
-      width: 100%;
-      height: 100%;
     }
 
     .video-wrapper:fullscreen,
@@ -185,10 +176,11 @@
       width: 100%;
     }
     
+    /* VIDEO SEMPRE CONTAIN - MAI COVER! */
     .video-wrapper video {
       width: 100%;
       height: 100%;
-      object-fit: contain;
+      object-fit: contain !important;
       background: #000;
     }
 
@@ -548,7 +540,7 @@
     <video id="bgVideo" muted playsinline loop preload="none" poster="frame.webp"></video>
   </div>
 
-  <div class="video-container" id="videoContainer">
+  <div class="video-container">
     <section class="video-wrapper" id="videoWrapper" aria-label="Player live">
       <video id="liveVideo" controls playsinline muted preload="metadata" crossorigin="anonymous" poster="frame.webp"></video>
 
@@ -619,7 +611,6 @@
       let retryCount = 0;
       let lastTapTime = 0;
       const MAX_RETRIES = 5;
-      const DOUBLE_TAP_THRESHOLD = 300;
 
       debugLog.add('Init', 'success');
 
@@ -661,7 +652,6 @@
           const s = video.seekable;
           if (s && s.length) {
             video.currentTime = Math.max(0, s.end(s.length - 1) - 2.0);
-            debugLog.add('Jump', 'warn');
           }
         } catch (_) {}
       }
@@ -691,8 +681,6 @@
       }
 
       function hardReset() {
-        debugLog.add(`Reset ${retryCount}/${MAX_RETRIES}`, 'warn');
-        
         if (retryCount >= MAX_RETRIES) {
           debugLog.add('Max retry', 'error');
           setNeedsGesture();
@@ -700,6 +688,7 @@
           return;
         }
         retryCount++;
+        debugLog.add(`Reset ${retryCount}/${MAX_RETRIES}`, 'warn');
         
         destroyHls();
         try {
@@ -761,11 +750,7 @@
           enableWorker: true,
           fragLoadingMaxRetry: 6,
           fragLoadingRetryDelay: 1000,
-          fragLoadingMaxRetryTimeout: 25000,
-          manifestLoadingMaxRetry: 6,
-          manifestLoadingRetryDelay: 1000,
-          manifestLoadingMaxRetryTimeout: 25000,
-          maxFragLookUpTolerance: 0.5
+          manifestLoadingMaxRetry: 6
         });
 
         hls.attachMedia(video);
@@ -833,11 +818,8 @@
         try {
           if (screen.orientation && screen.orientation.lock) {
             await screen.orientation.lock('landscape');
-            debugLog.add('Locked', 'success');
           }
-        } catch (e) {
-          debugLog.add(`Lock: ${e.message}`, 'warn');
-        }
+        } catch (_) {}
 
         try {
           if (wrapper.requestFullscreen) {
@@ -851,10 +833,7 @@
           } else if (isIOS() && video.webkitEnterFullscreen) {
             video.webkitEnterFullscreen();
           }
-          debugLog.add('FS', 'success');
-        } catch (e) {
-          debugLog.add(`FS: ${e.message}`, 'error');
-        }
+        } catch (_) {}
       }
 
       function exitFullscreenPortrait() {
@@ -885,22 +864,21 @@
         
         if (isLandscape && isMobile) {
           document.body.classList.add('landscape-mode');
-          debugLog.add('LANDSCAPE MODE ON', 'success');
+          debugLog.add('LANDSCAPE ON', 'success');
         } else {
           document.body.classList.remove('landscape-mode');
-          debugLog.add('Normal', 'info');
         }
       }
 
       bgVideo.addEventListener('playing', () => document.body.classList.add('bg-playing'));
 
       window.addEventListener('online', () => {
-        debugLog.add('ONLINE', 'success');
         retryCount = 0;
         hardReset();
       });
 
-      window.addEventListener('offline', () => debugLog.add('OFFLINE', 'error'));
+      window.addEventListener('orientationchange', () => setTimeout(handleOrientationChange, 100));
+      window.addEventListener('resize', handleOrientationChange);
 
       document.addEventListener('visibilitychange', () => {
         if (document.hidden) {
@@ -917,17 +895,12 @@
         }
       });
 
-      window.addEventListener('orientationchange', () => setTimeout(handleOrientationChange, 100));
-      window.addEventListener('resize', handleOrientationChange);
-
       function whenReady(fn) {
         if (document.readyState === 'complete' || document.readyState === 'interactive') fn();
         else document.addEventListener('DOMContentLoaded', fn, { once: true });
       }
 
       whenReady(() => {
-        debugLog.add('DOM', 'success');
-
         if (window.Plyr) {
           player = new Plyr(video, {
             controls: ['play-large', 'fullscreen'],
@@ -937,15 +910,8 @@
             fullscreen: { enabled: true, fallback: true, iosNative: true }
           });
 
-          player.on('enterfullscreen', () => {
-            debugLog.add('ENTER FS', 'info');
-            enterFullscreenLandscape();
-          });
-
-          player.on('exitfullscreen', () => {
-            debugLog.add('EXIT FS', 'info');
-            exitFullscreenPortrait();
-          });
+          player.on('enterfullscreen', enterFullscreenLandscape);
+          player.on('exitfullscreen', exitFullscreenPortrait);
         } else {
           player = { play: () => video.play(), on: () => {} };
         }
@@ -955,9 +921,8 @@
             if (e.target.closest('.plyr__control') || e.target.closest('.start-cta')) return;
             
             const now = Date.now();
-            if (now - lastTapTime < DOUBLE_TAP_THRESHOLD) {
+            if (now - lastTapTime < 300) {
               e.preventDefault();
-              debugLog.add('DBL', 'warn');
               return;
             }
             
@@ -966,33 +931,20 @@
           });
         }
 
-        video.addEventListener('waiting', () => debugLog.add('WAIT', 'warn'));
-        video.addEventListener('stalled', () => debugLog.add('STALL', 'warn'));
-        
         video.addEventListener('playing', () => {
-          debugLog.add('PLAY', 'success');
-          
           setTimeout(() => {
             try {
               const s = video.seekable;
               if (s && s.length) {
                 const behind = s.end(s.length - 1) - (video.currentTime || 0);
-                debugLog.add(`Lat: ${behind.toFixed(1)}s`, behind > 15 ? 'warn' : 'info');
                 if (behind < 0.5 || behind > 20) jumpToLiveEdge();
               }
             } catch (_) {}
           }, 2500);
         }, { once: true });
 
-        video.addEventListener('error', () => {
-          debugLog.add('VID ERR', 'error');
-          setTimeout(() => hardReset(), 1500);
-        });
-
-        video.addEventListener('ended', () => {
-          debugLog.add('END', 'warn');
-          hardReset();
-        });
+        video.addEventListener('error', () => setTimeout(() => hardReset(), 1500));
+        video.addEventListener('ended', hardReset);
 
         let lastTime = 0;
         let stuckCount = 0;
@@ -1004,20 +956,16 @@
           }
           
           const t = video.currentTime || 0;
-          
-          if (stuckCount === 0) debugLog.add(`T=${t.toFixed(1)}s`, 'info');
 
           if (Math.abs(t - lastTime) < 0.1) {
             stuckCount++;
-            debugLog.add(`STUCK ${stuckCount}/8`, 'warn');
           } else {
-            if (stuckCount > 0) debugLog.add('OK', 'success');
             stuckCount = 0;
           }
           lastTime = t;
 
           if (stuckCount >= 8) {
-            debugLog.add('RESET', 'error');
+            debugLog.add('STUCK - RESET', 'error');
             hardReset();
             stuckCount = 0;
           }
@@ -1031,7 +979,6 @@
         e.preventDefault();
         e.stopPropagation();
         retryCount = 0;
-        debugLog.add('MANUAL', 'success');
         attemptPlay();
       });
     })();
