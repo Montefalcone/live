@@ -43,10 +43,9 @@
 
   <style>
     :root {
-      --radius-video: 26px;
+      --radius-video: 16px;
       --radius-pill: 999px;
       --blur-ui-reduced: 6px;
-      --color-border: rgba(255,255,255,0.18);
       --color-white: #fff;
       --color-live: #ff2b2b;
       --shadow-deep: 0 30px 120px rgba(0,0,0,0.60);
@@ -54,13 +53,7 @@
       --shadow-button: 0 10px 35px rgba(0,0,0,0.35);
       --transition-fast: 160ms ease;
       --plyr-color-main: rgba(255,255,255,0.92);
-      --plyr-control-radius: 999px;
-      --plyr-control-spacing: 10px;
       --plyr-font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
-      --plyr-video-control-background-hover: rgba(0,0,0,0.45);
-      --plyr-video-control-background: rgba(0,0,0,0.32);
-      --plyr-tooltip-background: rgba(0,0,0,0.7);
-      --plyr-tooltip-color: #fff;
     }
 
     * { 
@@ -115,10 +108,10 @@
       pointer-events: none;
     }
 
-    main {
+    .video-container {
       position: fixed;
       inset: 0;
-      z-index: 2;
+      z-index: 10;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -133,7 +126,6 @@
       overflow: hidden;
       background: #000;
       box-shadow: var(--shadow-glow), var(--shadow-deep);
-      border: 1px solid var(--color-border);
       isolation: isolate;
     }
 
@@ -147,15 +139,11 @@
     .video-wrapper:-webkit-full-screen,
     .video-wrapper:-moz-full-screen,
     .video-wrapper:-ms-fullscreen {
-      position: fixed !important;
-      inset: 0 !important;
       width: 100vw !important;
       height: 100vh !important;
       max-width: 100vw !important;
       max-height: 100vh !important;
-      aspect-ratio: auto !important;
       border-radius: 0 !important;
-      border: none !important;
       box-shadow: none !important;
     }
 
@@ -163,6 +151,7 @@
       height: 100%;
       width: 100%;
     }
+    
     .video-wrapper video {
       width: 100%;
       height: 100%;
@@ -170,6 +159,7 @@
       background: #000;
     }
 
+    /* Play/Pause button */
     .video-wrapper .plyr__control--overlaid {
       width: 90px !important;
       height: 52px !important;
@@ -249,6 +239,7 @@
 
     .video-wrapper .plyr__tooltip { display: none !important; }
     
+    /* Bottom controls */
     .video-wrapper .plyr__controls {
       position: absolute !important;
       left: auto !important;
@@ -315,6 +306,19 @@
       outline: none !important;
       -webkit-tap-highlight-color: transparent !important;
     }
+    
+    /* Mobile: fullscreen button più piccolo */
+    @media (max-width: 768px) {
+      .video-wrapper .plyr__controls .plyr__control {
+        width: 40px;
+        height: 40px;
+      }
+      .video-wrapper .plyr__controls .plyr__control svg {
+        width: 18px !important;
+        height: 18px !important;
+      }
+    }
+    
     .video-wrapper .plyr__controls .plyr__control svg {
       width: 20px !important;
       height: 20px !important;
@@ -415,13 +419,27 @@
       letter-spacing: 0.14em;
       text-transform: uppercase;
       background: rgba(0, 0, 0, 0.18);
-      border: 1px solid var(--color-border);
+      border: 1px solid rgba(255,255,255,0.18);
       box-shadow: var(--shadow-button);
       backdrop-filter: blur(var(--blur-ui-reduced));
       -webkit-backdrop-filter: blur(var(--blur-ui-reduced));
       pointer-events: none;
       user-select: none;
     }
+    
+    /* Mobile: LIVE badge più piccolo */
+    @media (max-width: 768px) {
+      .live-badge {
+        padding: 6px 10px;
+        font-size: 10px;
+        gap: 6px;
+      }
+      .live-dot {
+        width: 6px !important;
+        height: 6px !important;
+      }
+    }
+    
     .live-dot {
       width: 8px;
       height: 8px;
@@ -479,20 +497,12 @@
     @media (prefers-reduced-motion: reduce) {
       * { transition: none !important; animation: none !important; }
     }
-    @media (max-width: 720px) {
-      #bgPoster, #bgVideo { transform: none !important; }
-      #debugPanel {
-        font-size: 9px;
-        max-width: 280px;
-        padding: 8px 10px;
-      }
-    }
   </style>
 </head>
 
 <body>
   <div id="debugPanel" aria-hidden="true">
-    <div class="line title">🔧 DEBUG SYSTEM</div>
+    <div class="line title">🔧 DEBUG</div>
     <div id="debugContent"></div>
   </div>
 
@@ -501,7 +511,7 @@
     <video id="bgVideo" muted playsinline loop preload="none" poster="frame.webp"></video>
   </div>
 
-  <main id="mainContainer">
+  <div class="video-container" id="videoContainer">
     <section class="video-wrapper" id="videoWrapper" aria-label="Player live">
       <video id="liveVideo" controls playsinline muted preload="metadata" crossorigin="anonymous" poster="frame.webp"></video>
 
@@ -519,7 +529,7 @@
         <span>LIVE</span>
       </div>
     </section>
-  </main>
+  </div>
 
   <script src="https://cdn.plyr.io/3.8.3/plyr.polyfilled.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.18/dist/hls.min.js" defer></script>
@@ -529,7 +539,7 @@
       'use strict';
 
       const STREAM_URL = 'https://live.webcammontefalconedivalfortore.it/memfs/58e0bcbe-f1bd-4c8b-85f7-b4566a3e5392.m3u8';
-      const mainContainer = document.getElementById('mainContainer');
+      const container = document.getElementById('videoContainer');
       const wrapper = document.getElementById('videoWrapper');
       const video = document.getElementById('liveVideo');
       const overlay = document.getElementById('loadingOverlay');
@@ -539,18 +549,15 @@
       const debugContent = document.getElementById('debugContent');
 
       const DEBUG_ENABLED = window.location.search.includes('debug') || window.location.hash.includes('debug');
-      if (DEBUG_ENABLED) {
-        debugPanel.classList.add('visible');
-      }
+      if (DEBUG_ENABLED) debugPanel.classList.add('visible');
 
       const debugLog = {
         lines: [],
         add(msg, type = 'info') {
-          const timestamp = new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-          const line = `[${timestamp}] ${msg}`;
-          
+          const ts = new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          const line = `[${ts}] ${msg}`;
           if (DEBUG_ENABLED) {
-            console.log(`[${type.toUpperCase()}] ${msg}`);
+            console.log(`[${type}] ${msg}`);
             this.lines.push({ msg: line, type });
             if (this.lines.length > 15) this.lines.shift();
             this.render();
@@ -578,7 +585,7 @@
       const MAX_RETRIES = 5;
       const DOUBLE_TAP_THRESHOLD = 300;
 
-      debugLog.add('🚀 Init', 'success');
+      debugLog.add('Init', 'success');
 
       function setReady() {
         wrapper.classList.add('is-ready');
@@ -587,19 +594,18 @@
         try { video.poster = ''; } catch (_) {}
         scheduleBackgroundVideo();
         retryCount = 0;
-        debugLog.add('✅ Ready', 'success');
+        debugLog.add('Ready', 'success');
       }
 
       function setNeedsGesture() {
         overlay.classList.add('needs-gesture');
         overlay.setAttribute('aria-hidden', 'false');
-        debugLog.add('⚠️ Need gesture', 'warn');
+        debugLog.add('Need gesture', 'warn');
       }
 
       function waitForFirstFrame() {
-        debugLog.add('⏳ Wait', 'info');
         const done = () => {
-          debugLog.add('🎬 OK', 'success');
+          debugLog.add('Frame OK', 'success');
           setReady();
         };
         video.addEventListener('playing', done, { once: true });
@@ -619,7 +625,7 @@
           const s = video.seekable;
           if (s && s.length) {
             video.currentTime = Math.max(0, s.end(s.length - 1) - 2.0);
-            debugLog.add(`⏩`, 'warn');
+            debugLog.add('Jump', 'warn');
           }
         } catch (_) {}
       }
@@ -649,10 +655,10 @@
       }
 
       function hardReset() {
-        debugLog.add(`🔄 ${retryCount}/${MAX_RETRIES}`, 'warn');
+        debugLog.add(`Reset ${retryCount}/${MAX_RETRIES}`, 'warn');
         
         if (retryCount >= MAX_RETRIES) {
-          debugLog.add('❌ Max', 'error');
+          debugLog.add('Max retry', 'error');
           setNeedsGesture();
           retryCount = 0;
           return;
@@ -675,12 +681,11 @@
 
       async function attemptPlay() {
         try {
-          debugLog.add('▶️', 'info');
           await player.play();
           retryCount = 0;
-          debugLog.add('✅', 'success');
+          debugLog.add('Playing', 'success');
         } catch (e) {
-          debugLog.add(`❌`, 'error');
+          debugLog.add('Play fail', 'error');
           setNeedsGesture();
         }
       }
@@ -690,10 +695,8 @@
         wrapper.classList.remove('is-ready');
         overlay.classList.remove('needs-gesture');
 
-        debugLog.add('🔗', 'info');
-
         if (supportsNativeHls() && (isIOS() || isSafari())) {
-          debugLog.add('📺 Native', 'info');
+          debugLog.add('Native HLS', 'info');
           video.src = STREAM_URL;
           video.load();
           waitForFirstFrame();
@@ -701,14 +704,14 @@
         }
 
         if (!window.Hls || !window.Hls.isSupported()) {
-          debugLog.add('⚠️ FB', 'warn');
+          debugLog.add('Fallback', 'warn');
           video.src = STREAM_URL;
           video.load();
           waitForFirstFrame();
           return attemptPlay();
         }
 
-        debugLog.add('🎯 HLS', 'success');
+        debugLog.add('HLS.js', 'success');
 
         hls = new window.Hls({
           lowLatencyMode: false,
@@ -732,23 +735,22 @@
         hls.attachMedia(video);
         
         hls.on(window.Hls.Events.MEDIA_ATTACHED, () => {
-          debugLog.add('✅ ATT', 'success');
+          debugLog.add('Attached', 'success');
           hls.loadSource(STREAM_URL);
         });
 
         hls.on(window.Hls.Events.MANIFEST_PARSED, (evt, data) => {
-          debugLog.add(`📋 ${data.levels.length}`, 'success');
+          debugLog.add(`${data.levels.length}lvl`, 'success');
         });
 
         hls.on(window.Hls.Events.FRAG_LOADED, (evt, data) => {
-          debugLog.add(`📦${data.frag.sn}`, 'info');
+          debugLog.add(`Frag${data.frag.sn}`, 'info');
         });
 
         hls.on(window.Hls.Events.ERROR, (evt, data) => {
           if (!data) return;
 
-          const f = data.fatal ? '🚨' : '⚠️';
-          debugLog.add(`${f} ${data.type}`, data.fatal ? 'error' : 'warn');
+          debugLog.add(`${data.fatal ? 'FATAL' : 'ERR'} ${data.type}`, data.fatal ? 'error' : 'warn');
 
           if (!data.fatal) {
             if (data.type === window.Hls.ErrorTypes.NETWORK_ERROR) {
@@ -792,15 +794,13 @@
       }
 
       async function enterFullscreenLandscape() {
-        debugLog.add('🖼️ FS', 'info');
-        
         try {
           if (screen.orientation && screen.orientation.lock) {
             await screen.orientation.lock('landscape');
-            debugLog.add('✅ L', 'success');
+            debugLog.add('Locked landscape', 'success');
           }
         } catch (e) {
-          debugLog.add(`⚠️ ${e.message}`, 'warn');
+          debugLog.add(`Lock fail: ${e.message}`, 'warn');
         }
 
         try {
@@ -815,15 +815,13 @@
           } else if (isIOS() && video.webkitEnterFullscreen) {
             video.webkitEnterFullscreen();
           }
-          debugLog.add('✅ FS', 'success');
+          debugLog.add('FS active', 'success');
         } catch (e) {
-          debugLog.add(`❌ ${e.message}`, 'error');
+          debugLog.add(`FS fail: ${e.message}`, 'error');
         }
       }
 
       function exitFullscreenPortrait() {
-        debugLog.add('🚪', 'info');
-        
         try {
           if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock();
         } catch (_) {}
@@ -841,42 +839,33 @@
         } catch (_) {}
       }
 
-      // NUOVO APPROCCIO: JavaScript forza stili inline per landscape mobile
       function applyLandscapeFullscreen() {
-        debugLog.add('🖼️ FORCE FS', 'success');
+        const w = window.innerWidth;
+        const h = window.innerHeight;
         
-        // Main container
-        mainContainer.style.cssText = `
-          position: fixed !important;
-          inset: 0 !important;
-          padding: 0 !important;
-          margin: 0 !important;
-        `;
+        debugLog.add(`LANDSCAPE FS: ${w}x${h}`, 'success');
         
-        // Video wrapper
+        container.style.cssText = 'padding: 0 !important; margin: 0 !important;';
         wrapper.style.cssText = `
           position: fixed !important;
-          inset: 0 !important;
-          width: 100vw !important;
-          height: 100vh !important;
-          max-width: 100vw !important;
-          max-height: 100vh !important;
-          aspect-ratio: auto !important;
+          top: 0 !important;
+          left: 0 !important;
+          width: ${w}px !important;
+          height: ${h}px !important;
+          max-width: ${w}px !important;
+          max-height: ${h}px !important;
           border-radius: 0 !important;
-          border: none !important;
           box-shadow: none !important;
           margin: 0 !important;
         `;
-        
-        // Video deve riempire tutto
         video.style.objectFit = 'cover';
+        
+        setTimeout(() => window.scrollTo(0, 1), 100);
       }
 
       function removeLandscapeFullscreen() {
-        debugLog.add('📱 NORMAL', 'info');
-        
-        // Remove inline styles
-        mainContainer.style.cssText = '';
+        debugLog.add('Normal mode', 'info');
+        container.style.cssText = '';
         wrapper.style.cssText = '';
         video.style.objectFit = 'contain';
       }
@@ -887,25 +876,26 @@
         const h = window.innerHeight;
         const isMobile = w <= 768 || h <= 500;
         
-        debugLog.add(`📱 ${isLandscape ? 'L' : 'P'} ${w}x${h}`, 'info');
+        debugLog.add(`${isLandscape ? 'LAND' : 'PORT'} ${w}x${h}`, 'info');
         
-        // Applica/rimuovi fullscreen finto con JavaScript inline styles
-        if (isLandscape && isMobile) {
-          applyLandscapeFullscreen();
-        } else {
-          removeLandscapeFullscreen();
-        }
+        setTimeout(() => {
+          if (isLandscape && isMobile) {
+            applyLandscapeFullscreen();
+          } else {
+            removeLandscapeFullscreen();
+          }
+        }, 100);
       }
 
       bgVideo.addEventListener('playing', () => document.body.classList.add('bg-playing'));
 
       window.addEventListener('online', () => {
-        debugLog.add('⚡', 'success');
+        debugLog.add('ONLINE', 'success');
         retryCount = 0;
         hardReset();
       });
 
-      window.addEventListener('offline', () => debugLog.add('📡', 'error'));
+      window.addEventListener('offline', () => debugLog.add('OFFLINE', 'error'));
 
       document.addEventListener('visibilitychange', () => {
         if (document.hidden) {
@@ -922,7 +912,7 @@
         }
       });
 
-      window.addEventListener('orientationchange', () => setTimeout(handleOrientationChange, 100));
+      window.addEventListener('orientationchange', handleOrientationChange);
       window.addEventListener('resize', handleOrientationChange);
 
       function whenReady(fn) {
@@ -931,7 +921,7 @@
       }
 
       whenReady(() => {
-        debugLog.add('📄', 'success');
+        debugLog.add('DOM ready', 'success');
 
         if (window.Plyr) {
           player = new Plyr(video, {
@@ -943,12 +933,12 @@
           });
 
           player.on('enterfullscreen', () => {
-            debugLog.add('🎬 ENTER', 'info');
+            debugLog.add('ENTER FS', 'info');
             enterFullscreenLandscape();
           });
 
           player.on('exitfullscreen', () => {
-            debugLog.add('🎬 EXIT', 'info');
+            debugLog.add('EXIT FS', 'info');
             exitFullscreenPortrait();
           });
         } else {
@@ -962,7 +952,7 @@
             const now = Date.now();
             if (now - lastTapTime < DOUBLE_TAP_THRESHOLD) {
               e.preventDefault();
-              debugLog.add('⚠️', 'warn');
+              debugLog.add('DBL TAP', 'warn');
               return;
             }
             
@@ -971,18 +961,18 @@
           });
         }
 
-        video.addEventListener('waiting', () => debugLog.add('⏳', 'warn'));
-        video.addEventListener('stalled', () => debugLog.add('⏸️', 'warn'));
+        video.addEventListener('waiting', () => debugLog.add('WAIT', 'warn'));
+        video.addEventListener('stalled', () => debugLog.add('STALL', 'warn'));
         
         video.addEventListener('playing', () => {
-          debugLog.add('▶️', 'success');
+          debugLog.add('PLAY', 'success');
           
           setTimeout(() => {
             try {
               const s = video.seekable;
               if (s && s.length) {
                 const behind = s.end(s.length - 1) - (video.currentTime || 0);
-                debugLog.add(`📊 ${behind.toFixed(1)}`, behind > 15 ? 'warn' : 'info');
+                debugLog.add(`Lat: ${behind.toFixed(1)}s`, behind > 15 ? 'warn' : 'info');
                 if (behind < 0.5 || behind > 20) jumpToLiveEdge();
               }
             } catch (_) {}
@@ -990,12 +980,12 @@
         }, { once: true });
 
         video.addEventListener('error', () => {
-          debugLog.add(`❌`, 'error');
+          debugLog.add('VID ERR', 'error');
           setTimeout(() => hardReset(), 1500);
         });
 
         video.addEventListener('ended', () => {
-          debugLog.add('🏁', 'warn');
+          debugLog.add('END', 'warn');
           hardReset();
         });
 
@@ -1010,19 +1000,19 @@
           
           const t = video.currentTime || 0;
           
-          if (stuckCount === 0) debugLog.add(`📊 ${t.toFixed(1)}`, 'info');
+          if (stuckCount === 0) debugLog.add(`T=${t.toFixed(1)}s`, 'info');
 
           if (Math.abs(t - lastTime) < 0.1) {
             stuckCount++;
-            debugLog.add(`⚠️ ${stuckCount}/8`, 'warn');
+            debugLog.add(`STUCK ${stuckCount}/8`, 'warn');
           } else {
-            if (stuckCount > 0) debugLog.add('✅', 'success');
+            if (stuckCount > 0) debugLog.add('OK', 'success');
             stuckCount = 0;
           }
           lastTime = t;
 
           if (stuckCount >= 8) {
-            debugLog.add('💥', 'error');
+            debugLog.add('RESET', 'error');
             hardReset();
             stuckCount = 0;
           }
@@ -1036,7 +1026,7 @@
         e.preventDefault();
         e.stopPropagation();
         retryCount = 0;
-        debugLog.add('👆', 'success');
+        debugLog.add('MANUAL', 'success');
         attemptPlay();
       });
     })();
