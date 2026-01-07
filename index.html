@@ -45,14 +45,14 @@
     :root {
       --radius-video: 26px;
       --radius-pill: 999px;
-      --blur-ui: 18px;
+      --blur-ui-reduced: 6px;
       --color-border: rgba(255,255,255,0.18);
       --color-white: #fff;
       --color-live: #ff2b2b;
       --shadow-deep: 0 30px 120px rgba(0,0,0,0.60);
       --shadow-glow: 0 0 60px rgba(255, 255, 255, 0.06);
       --shadow-button: 0 10px 35px rgba(0,0,0,0.35);
-      --transition-medium: 320ms ease;
+      --transition-fast: 160ms ease;
       --plyr-color-main: rgba(255,255,255,0.92);
       --plyr-control-radius: 999px;
       --plyr-control-spacing: 10px;
@@ -73,7 +73,6 @@
       overflow: hidden;
     }
 
-    /* Background */
     #bg {
       position: fixed;
       inset: 0;
@@ -108,7 +107,6 @@
       pointer-events: none;
     }
 
-    /* Layout */
     main {
       position: relative;
       z-index: 2;
@@ -130,15 +128,27 @@
       isolation: isolate;
     }
 
+    body.landscape-mode .video-wrapper {
+      width: 100vw;
+      height: 100vh;
+      max-width: 100vw;
+      max-height: 100vh;
+      aspect-ratio: auto;
+      border-radius: 0;
+      border: none;
+    }
+
     .video-wrapper:fullscreen,
     .video-wrapper:-webkit-full-screen,
     .video-wrapper:-moz-full-screen,
     .video-wrapper:-ms-fullscreen {
-      width: 100vw;
-      height: 100vh;
-      aspect-ratio: auto;
-      border-radius: 0;
-      border: none;
+      width: 100vw !important;
+      height: 100vh !important;
+      max-width: 100vw !important;
+      max-height: 100vh !important;
+      aspect-ratio: auto !important;
+      border-radius: 0 !important;
+      border: none !important;
     }
 
     .video-wrapper .plyr {
@@ -148,11 +158,10 @@
     .video-wrapper video {
       width: 100%;
       height: 100%;
-      object-fit: cover;
+      object-fit: contain;
       background: #000;
     }
 
-    /* Plyr overlaid play button */
     .video-wrapper .plyr__control--overlaid {
       width: 90px !important;
       height: 52px !important;
@@ -163,7 +172,7 @@
       visibility: hidden !important;
       pointer-events: none !important;
       transform: translate(-50%, -50%) translateY(8px) !important;
-      transition: opacity 220ms ease, transform 220ms ease, visibility 0ms linear 220ms !important;
+      transition: opacity var(--transition-fast), transform var(--transition-fast), visibility 0ms linear var(--transition-fast) !important;
       background: rgba(0,0,0,0.22) !important;
       -webkit-backdrop-filter: blur(6px) !important;
       backdrop-filter: blur(6px) !important;
@@ -175,7 +184,7 @@
       visibility: visible !important;
       pointer-events: auto !important;
       transform: translate(-50%, -50%) translateY(0) !important;
-      transition: opacity 220ms ease, transform 220ms ease, visibility 0ms linear 0ms !important;
+      transition: opacity var(--transition-fast), transform var(--transition-fast), visibility 0ms linear 0ms !important;
     }
 
     @media (hover: hover) and (pointer: fine) {
@@ -185,7 +194,7 @@
         visibility: visible !important;
         pointer-events: auto !important;
         transform: translate(-50%, -50%) translateY(0) !important;
-        transition: opacity 220ms ease, transform 220ms ease, visibility 0ms linear 0ms !important;
+        transition: opacity var(--transition-fast), transform var(--transition-fast), visibility 0ms linear 0ms !important;
       }
     }
 
@@ -208,7 +217,6 @@
       mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%3E%3Cpath%20d%3D%27M6%205h4v14H6zM14%205h4v14h-4z%27%2F%3E%3C%2Fsvg%3E") center / contain no-repeat;
     }
 
-    /* Plyr controls */
     .video-wrapper .plyr__tooltip { display: none !important; }
     .video-wrapper .plyr__controls {
       position: absolute !important;
@@ -227,7 +235,7 @@
       visibility: hidden !important;
       pointer-events: none !important;
       transform: translateY(8px) !important;
-      transition: opacity 220ms ease, transform 220ms ease, visibility 0ms linear 220ms !important;
+      transition: opacity var(--transition-fast), transform var(--transition-fast), visibility 0ms linear var(--transition-fast) !important;
     }
 
     .video-wrapper.show-ui .plyr__controls {
@@ -235,7 +243,7 @@
       visibility: visible !important;
       pointer-events: auto !important;
       transform: translateY(0) !important;
-      transition: opacity 220ms ease, transform 220ms ease, visibility 0ms linear 0ms !important;
+      transition: opacity var(--transition-fast), transform var(--transition-fast), visibility 0ms linear 0ms !important;
     }
 
     @media (hover: hover) and (pointer: fine) {
@@ -245,7 +253,7 @@
         visibility: visible !important;
         pointer-events: auto !important;
         transform: translateY(0) !important;
-        transition: opacity 220ms ease, transform 220ms ease, visibility 0ms linear 0ms !important;
+        transition: opacity var(--transition-fast), transform var(--transition-fast), visibility 0ms linear 0ms !important;
       }
     }
 
@@ -256,13 +264,13 @@
       border-radius: 16px !important;
       display: grid !important;
       place-items: center !important;
-      transition: transform 220ms cubic-bezier(.2,.9,.2,1), box-shadow 220ms ease !important;
+      transition: transform var(--transition-fast) cubic-bezier(.2,.9,.2,1), box-shadow var(--transition-fast) ease !important;
       will-change: transform;
       border: 1px solid rgba(255,255,255,0.20) !important;
       box-shadow: var(--shadow-button);
-      background: rgba(0,0,0,0.32) !important;
-      backdrop-filter: blur(var(--blur-ui)) !important;
-      -webkit-backdrop-filter: blur(var(--blur-ui)) !important;
+      background: rgba(0,0,0,0.35) !important;
+      backdrop-filter: blur(var(--blur-ui-reduced)) !important;
+      -webkit-backdrop-filter: blur(var(--blur-ui-reduced)) !important;
     }
     .video-wrapper .plyr__controls .plyr__control svg {
       width: 20px !important;
@@ -277,7 +285,6 @@
       box-shadow: 0 10px 28px rgba(0,0,0,0.35);
     }
 
-    /* Loading overlay */
     .loading-overlay {
       position: absolute;
       inset: 0;
@@ -287,14 +294,14 @@
       background: #000;
       opacity: 1;
       visibility: visible;
-      transition: opacity var(--transition-medium), visibility 0ms linear 0ms;
+      transition: opacity 320ms ease, visibility 0ms linear 0ms;
       pointer-events: auto;
     }
     .video-wrapper.is-ready .loading-overlay {
       opacity: 0;
       visibility: hidden;
       pointer-events: none;
-      transition: opacity var(--transition-medium), visibility 0ms linear var(--transition-medium);
+      transition: opacity 320ms ease, visibility 0ms linear 320ms;
     }
     .loading-overlay .preview {
       position: absolute;
@@ -329,8 +336,8 @@
       border-radius: var(--radius-pill);
       border: 1px solid rgba(255,255,255,0.22);
       background: rgba(0,0,0,0.38);
-      backdrop-filter: blur(var(--blur-ui));
-      -webkit-backdrop-filter: blur(var(--blur-ui));
+      backdrop-filter: blur(var(--blur-ui-reduced));
+      -webkit-backdrop-filter: blur(var(--blur-ui-reduced));
       box-shadow: var(--shadow-button);
       color: #fff;
       font-weight: 700;
@@ -343,7 +350,6 @@
     .loading-overlay.needs-gesture .spinner { display: none; }
     .loading-overlay.needs-gesture .start-cta { display: inline-flex; }
 
-    /* LIVE badge */
     .live-badge {
       position: absolute;
       left: 14px;
@@ -363,8 +369,8 @@
       background: rgba(0, 0, 0, 0.18);
       border: 1px solid var(--color-border);
       box-shadow: var(--shadow-button);
-      backdrop-filter: blur(var(--blur-ui));
-      -webkit-backdrop-filter: blur(var(--blur-ui));
+      backdrop-filter: blur(var(--blur-ui-reduced));
+      -webkit-backdrop-filter: blur(var(--blur-ui-reduced));
       pointer-events: none;
       user-select: none;
     }
@@ -381,16 +387,67 @@
       50% { opacity: 0.45; }
     }
 
+    #debugPanel {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      z-index: 9999;
+      background: rgba(0,0,0,0.90);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(0,255,0,0.25);
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-family: 'Courier New', monospace;
+      font-size: 10px;
+      line-height: 1.4;
+      color: #0f0;
+      max-width: 340px;
+      max-height: 50vh;
+      overflow-y: auto;
+      pointer-events: none;
+      user-select: none;
+      display: none;
+    }
+    #debugPanel.visible { display: block; }
+    #debugPanel .line {
+      margin: 1px 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    #debugPanel .error { color: #ff4444; font-weight: bold; }
+    #debugPanel .warn { color: #ffaa00; }
+    #debugPanel .success { color: #00ff00; }
+    #debugPanel .info { color: #00aaff; }
+    #debugPanel .title {
+      color: #fff;
+      font-weight: bold;
+      margin-bottom: 4px;
+      border-bottom: 1px solid rgba(0,255,0,0.3);
+      padding-bottom: 3px;
+    }
+
     @media (prefers-reduced-motion: reduce) {
       * { transition: none !important; animation: none !important; }
     }
     @media (max-width: 720px) {
       #bgPoster, #bgVideo { transform: none !important; }
+      #debugPanel {
+        font-size: 9px;
+        max-width: 280px;
+        padding: 8px 10px;
+      }
     }
   </style>
 </head>
 
 <body>
+  <div id="debugPanel" aria-hidden="true">
+    <div class="line title">🔧 DEBUG SYSTEM</div>
+    <div id="debugContent"></div>
+  </div>
+
   <div id="bg" aria-hidden="true">
     <img id="bgPoster" src="frame.webp" alt="" />
     <video id="bgVideo" muted playsinline loop preload="none" poster="frame.webp"></video>
@@ -429,6 +486,41 @@
       const overlay = document.getElementById('loadingOverlay');
       const startBtn = document.getElementById('startBtn');
       const bgVideo = document.getElementById('bgVideo');
+      const debugPanel = document.getElementById('debugPanel');
+      const debugContent = document.getElementById('debugContent');
+
+      // ATTIVA DEBUG: aggiungi ?debug o #debug all'URL
+      const DEBUG_ENABLED = window.location.search.includes('debug') || window.location.hash.includes('debug');
+      if (DEBUG_ENABLED) {
+        debugPanel.classList.add('visible');
+        console.log('%c🔧 DEBUG MODE ATTIVO', 'color: #0f0; font-size: 16px; font-weight: bold;');
+      }
+
+      const debugLog = {
+        lines: [],
+        add(msg, type = 'info') {
+          const timestamp = new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          const line = `[${timestamp}] ${msg}`;
+          
+          if (DEBUG_ENABLED) {
+            console.log(`%c[${type.toUpperCase()}] ${msg}`, `color: ${
+              type === 'error' ? '#f44' : 
+              type === 'warn' ? '#fa0' : 
+              type === 'success' ? '#0f0' : '#0af'
+            }`);
+            
+            this.lines.push({ msg: line, type });
+            if (this.lines.length > 15) this.lines.shift();
+            this.render();
+          }
+        },
+        render() {
+          if (!DEBUG_ENABLED) return;
+          debugContent.innerHTML = this.lines
+            .map(l => `<div class="line ${l.type}">${l.msg}</div>`)
+            .join('');
+        }
+      };
 
       video.muted = true;
       video.playsInline = true;
@@ -442,7 +534,14 @@
       let hls = null;
       let uiTimer = null;
       let retryCount = 0;
+      let lastTapTime = 0;
       const MAX_RETRIES = 5;
+      const DOUBLE_TAP_THRESHOLD = 300;
+
+      debugLog.add('🚀 Sistema inizializzato', 'success');
+      debugLog.add(`Device: ${isTouchDevice ? 'Touch' : 'Desktop'}`, 'info');
+      debugLog.add(`iOS: ${isIOS()}, Safari: ${isSafari()}`, 'info');
+      debugLog.add(`Native HLS: ${supportsNativeHls()}`, 'info');
 
       function setReady() {
         wrapper.classList.add('is-ready');
@@ -451,25 +550,37 @@
         try { video.poster = ''; } catch (_) {}
         scheduleBackgroundVideo();
         retryCount = 0;
+        debugLog.add('✅ Stream pronto e attivo', 'success');
       }
 
       function setNeedsGesture() {
         overlay.classList.add('needs-gesture');
         overlay.setAttribute('aria-hidden', 'false');
+        debugLog.add('⚠️ Richiesta interazione utente', 'warn');
       }
 
       function waitForFirstFrame() {
-        const done = () => setReady();
+        debugLog.add('⏳ Attesa primo frame...', 'info');
+        const done = () => {
+          debugLog.add('🎬 Primo frame ricevuto!', 'success');
+          setReady();
+        };
+        
         video.addEventListener('playing', done, { once: true });
         video.addEventListener('timeupdate', () => {
           if (video.currentTime > 0) done();
         }, { once: true });
+        
         if ('requestVideoFrameCallback' in HTMLVideoElement.prototype) {
           try { video.requestVideoFrameCallback(() => done()); } catch (_) {}
         }
+        
         setTimeout(() => {
-          if (!wrapper.classList.contains('is-ready') && !video.paused && video.readyState >= 3 && video.videoWidth > 0) done();
-        }, 10000);
+          if (!wrapper.classList.contains('is-ready') && !video.paused && video.readyState >= 3 && video.videoWidth > 0) {
+            debugLog.add('🕐 Primo frame da timeout (12s)', 'warn');
+            done();
+          }
+        }, 12000);
       }
 
       function jumpToLiveEdge() {
@@ -477,31 +588,53 @@
           const s = video.seekable;
           if (s && s.length) {
             const end = s.end(s.length - 1);
-            video.currentTime = Math.max(0, end - 2.5);
+            const oldTime = video.currentTime || 0;
+            const newTime = Math.max(0, end - 2.0);
+            video.currentTime = newTime;
+            debugLog.add(`⏩ Jump: ${oldTime.toFixed(1)}s → ${newTime.toFixed(1)}s (edge: ${end.toFixed(1)}s)`, 'warn');
           }
-        } catch (_) {}
+        } catch (e) {
+          debugLog.add(`❌ Errore jump: ${e.message}`, 'error');
+        }
       }
 
-      function showTouchUI() {
-        if (!isTouchDevice) return;
-        wrapper.classList.add('show-ui');
-        if (uiTimer) clearTimeout(uiTimer);
-        uiTimer = setTimeout(() => wrapper.classList.remove('show-ui'), 3000);
+      function toggleUI() {
+        const isVisible = wrapper.classList.contains('show-ui');
+        if (isVisible) {
+          wrapper.classList.remove('show-ui');
+          if (uiTimer) clearTimeout(uiTimer);
+          debugLog.add('👁️ UI nascosta', 'info');
+        } else {
+          wrapper.classList.add('show-ui');
+          if (uiTimer) clearTimeout(uiTimer);
+          uiTimer = setTimeout(() => {
+            wrapper.classList.remove('show-ui');
+            debugLog.add('⏲️ UI auto-nascosta (3.5s)', 'info');
+          }, 3500);
+          debugLog.add('👁️ UI mostrata', 'info');
+        }
       }
 
       function destroyHls() {
         if (hls) {
           try {
             hls.off(window.Hls.Events.ERROR);
+            hls.off(window.Hls.Events.MANIFEST_PARSED);
+            hls.off(window.Hls.Events.FRAG_LOADED);
             hls.destroy();
-          } catch (_) {}
+            debugLog.add('🗑️ HLS distrutto', 'info');
+          } catch (e) {
+            debugLog.add(`❌ Errore destroy HLS: ${e.message}`, 'error');
+          }
           hls = null;
         }
       }
 
       function hardReset() {
+        debugLog.add(`🔄 HARD RESET (tentativi: ${retryCount}/${MAX_RETRIES})`, 'warn');
+        
         if (retryCount >= MAX_RETRIES) {
-          console.warn('Max retries reached');
+          debugLog.add('❌ MAX TENTATIVI RAGGIUNTO - Richiesta click utente', 'error');
           setNeedsGesture();
           retryCount = 0;
           return;
@@ -514,23 +647,29 @@
           video.removeAttribute('src');
           video.load();
           video.poster = '';
-        } catch (_) {}
+          debugLog.add('🔃 Video resettato', 'info');
+        } catch (e) {
+          debugLog.add(`❌ Errore reset video: ${e.message}`, 'error');
+        }
         
         wrapper.classList.remove('is-ready');
         overlay.classList.remove('needs-gesture');
         overlay.setAttribute('aria-hidden', 'false');
 
+        debugLog.add('⏱️ Riconnessione tra 1.5s...', 'info');
         setTimeout(() => {
           attachStream().catch(() => setNeedsGesture());
-        }, 1000);
+        }, 1500);
       }
 
       async function attemptPlay() {
         try {
+          debugLog.add('▶️ Tentativo play...', 'info');
           await player.play();
           retryCount = 0;
+          debugLog.add('✅ Play avviato con successo', 'success');
         } catch (e) {
-          console.warn('Play failed:', e);
+          debugLog.add(`❌ Play fallito: ${e.name} - ${e.message}`, 'error');
           setNeedsGesture();
         }
       }
@@ -541,7 +680,10 @@
         overlay.classList.remove('needs-gesture');
         overlay.setAttribute('aria-hidden', 'false');
 
+        debugLog.add('🔗 Attaching stream...', 'info');
+
         if (supportsNativeHls() && (isIOS() || isSafari())) {
+          debugLog.add('📺 Modalità: Native HLS (iOS/Safari)', 'info');
           video.src = STREAM_URL;
           video.load();
           waitForFirstFrame();
@@ -549,55 +691,95 @@
         }
 
         if (!window.Hls || !window.Hls.isSupported()) {
+          debugLog.add('⚠️ Modalità: Fallback nativo (HLS.js non supportato)', 'warn');
           video.src = STREAM_URL;
           video.load();
           waitForFirstFrame();
           return attemptPlay();
         }
 
+        debugLog.add('🎯 Modalità: HLS.js', 'success');
+
         hls = new window.Hls({
           lowLatencyMode: false,
           backBufferLength: 90,
           maxBufferLength: 90,
           maxMaxBufferLength: 180,
-          liveSyncDurationCount: 6,
-          liveMaxLatencyDurationCount: 12,
+          liveSyncDurationCount: 5,
+          liveMaxLatencyDurationCount: 10,
           capLevelToPlayerSize: true,
           startLevel: -1,
           enableWorker: true,
-          fragLoadingMaxRetry: 4,
+          fragLoadingMaxRetry: 6,
           fragLoadingRetryDelay: 1000,
-          fragLoadingMaxRetryTimeout: 20000,
-          manifestLoadingMaxRetry: 4,
+          fragLoadingMaxRetryTimeout: 25000,
+          manifestLoadingMaxRetry: 6,
           manifestLoadingRetryDelay: 1000,
-          manifestLoadingMaxRetryTimeout: 20000,
-          maxFragLookUpTolerance: 0.5
+          manifestLoadingMaxRetryTimeout: 25000,
+          maxFragLookUpTolerance: 0.5,
+          debug: false
         });
 
         hls.attachMedia(video);
+        debugLog.add('🔗 HLS media attached', 'info');
         
         hls.on(window.Hls.Events.MEDIA_ATTACHED, () => {
+          debugLog.add('✅ HLS MEDIA_ATTACHED', 'success');
           hls.loadSource(STREAM_URL);
+          debugLog.add('📡 Loading source...', 'info');
         });
 
-        hls.on(window.Hls.Events.MANIFEST_PARSED, () => {
-          console.log('Manifest parsed');
+        hls.on(window.Hls.Events.MANIFEST_PARSED, (evt, data) => {
+          debugLog.add(`📋 Manifest parsed: ${data.levels.length} livelli disponibili`, 'success');
+          data.levels.forEach((level, i) => {
+            debugLog.add(`  Livello ${i}: ${level.width}x${level.height} @ ${Math.round(level.bitrate/1000)}kbps`, 'info');
+          });
         });
 
-        hls.on(window.Hls.Events.ERROR, (_evt, data) => {
-          if (!data || !data.fatal) return;
+        hls.on(window.Hls.Events.LEVEL_SWITCHED, (evt, data) => {
+          debugLog.add(`🔀 Switch livello: ${data.level}`, 'info');
+        });
 
-          console.error('HLS fatal error:', data.type, data.details);
+        hls.on(window.Hls.Events.FRAG_LOADED, (evt, data) => {
+          const fragNum = data.frag.sn;
+          const fragDuration = data.frag.duration.toFixed(1);
+          debugLog.add(`📦 Fragment #${fragNum} caricato (${fragDuration}s)`, 'info');
+        });
+
+        hls.on(window.Hls.Events.ERROR, (evt, data) => {
+          if (!data) return;
+
+          const isFatal = data.fatal ? '🚨 FATALE' : '⚠️ NON-FATALE';
+          const errorMsg = `${isFatal} | ${data.type} | ${data.details}`;
+          debugLog.add(errorMsg, data.fatal ? 'error' : 'warn');
+
+          if (data.response) {
+            debugLog.add(`  HTTP ${data.response.code}: ${data.response.text}`, 'error');
+          }
+
+          if (!data.fatal) {
+            if (data.type === window.Hls.ErrorTypes.NETWORK_ERROR) {
+              debugLog.add('🔄 Tentativo restart caricamento...', 'warn');
+              try { 
+                setTimeout(() => hls.startLoad(-1), 500);
+              } catch (_) {}
+            }
+            return;
+          }
 
           try {
             if (data.type === window.Hls.ErrorTypes.NETWORK_ERROR) {
-              setTimeout(() => hls.startLoad(-1), 500);
+              debugLog.add('🌐 Errore rete fatale - tentativo restart...', 'error');
+              setTimeout(() => hls.startLoad(-1), 1000);
             } else if (data.type === window.Hls.ErrorTypes.MEDIA_ERROR) {
+              debugLog.add('🎬 Errore media fatale - tentativo recovery...', 'error');
               hls.recoverMediaError();
             } else {
+              debugLog.add('💥 Errore fatale altro tipo - hard reset necessario', 'error');
               hardReset();
             }
-          } catch (_) {
+          } catch (e) {
+            debugLog.add(`❌ Errore durante recovery: ${e.message}`, 'error');
             hardReset();
           }
         });
@@ -611,27 +793,118 @@
         const et = navigator.connection && navigator.connection.effectiveType;
         const slow = et && (et.includes('2g') || et.includes('slow'));
         const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        if (saveData || slow || reduceMotion) return;
+        
+        if (saveData || slow || reduceMotion) {
+          debugLog.add('🚫 Background video disabilitato (save-data o slow connection)', 'info');
+          return;
+        }
 
         setTimeout(() => {
           if (!bgVideo.src) {
             bgVideo.src = 'galaxy.mp4';
             bgVideo.load();
+            debugLog.add('🌌 Background video caricato', 'info');
           }
           const p = bgVideo.play();
           if (p && typeof p.catch === 'function') p.catch(() => {});
         }, 2000);
       }
 
-      bgVideo.addEventListener('playing', () => document.body.classList.add('bg-playing'));
+      async function enterFullscreenLandscape() {
+        debugLog.add('🖼️ Richiesta fullscreen + landscape...', 'info');
+        
+        try {
+          if (screen.orientation && screen.orientation.lock) {
+            await screen.orientation.lock('landscape');
+            debugLog.add('✅ Orientamento locked: landscape', 'success');
+          }
+        } catch (e) {
+          debugLog.add(`⚠️ Lock orientamento fallito: ${e.message}`, 'warn');
+        }
+
+        try {
+          if (wrapper.requestFullscreen) {
+            await wrapper.requestFullscreen();
+          } else if (wrapper.webkitRequestFullscreen) {
+            await wrapper.webkitRequestFullscreen();
+          } else if (wrapper.mozRequestFullScreen) {
+            await wrapper.mozRequestFullScreen();
+          } else if (wrapper.msRequestFullscreen) {
+            await wrapper.msRequestFullscreen();
+          } else if (isIOS() && video.webkitEnterFullscreen) {
+            video.webkitEnterFullscreen();
+          }
+          debugLog.add('✅ Fullscreen attivato', 'success');
+        } catch (e) {
+          debugLog.add(`❌ Fullscreen fallito: ${e.message}`, 'error');
+        }
+      }
+
+      function exitFullscreenPortrait() {
+        debugLog.add('🚪 Uscita fullscreen...', 'info');
+        
+        try {
+          if (screen.orientation && screen.orientation.unlock) {
+            screen.orientation.unlock();
+            debugLog.add('✅ Orientamento unlocked', 'success');
+          }
+        } catch (_) {}
+
+        try {
+          if (document.exitFullscreen) {
+            document.exitFullscreen();
+          } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+          } else if (document.mozCancelFullScreen) {
+            document.mozCancelFullScreen();
+          } else if (document.msExitFullscreen) {
+            document.msExitFullscreen();
+          }
+          debugLog.add('✅ Fullscreen disattivato', 'success');
+        } catch (e) {
+          debugLog.add(`❌ Exit fullscreen fallito: ${e.message}`, 'error');
+        }
+      }
+
+      function handleOrientationChange() {
+        const isLandscape = window.matchMedia('(orientation: landscape)').matches;
+        debugLog.add(`📱 Orientamento: ${isLandscape ? 'LANDSCAPE' : 'PORTRAIT'}`, 'info');
+        
+        if (isLandscape && isTouchDevice) {
+          document.body.classList.add('landscape-mode');
+          
+          if (!document.fullscreenElement && 
+              !document.webkitFullscreenElement && 
+              !document.mozFullScreenElement && 
+              !document.msFullscreenElement) {
+            debugLog.add('🔄 Auto-attivazione fullscreen da landscape', 'info');
+            enterFullscreenLandscape();
+          }
+        } else {
+          document.body.classList.remove('landscape-mode');
+        }
+      }
+
+      bgVideo.addEventListener('playing', () => {
+        document.body.classList.add('bg-playing');
+        debugLog.add('🌌 Background video playing', 'info');
+      });
 
       window.addEventListener('online', () => {
+        debugLog.add('⚡ CONNESSIONE RIPRISTINATA', 'success');
         retryCount = 0;
         hardReset();
       });
 
+      window.addEventListener('offline', () => {
+        debugLog.add('📡 CONNESSIONE PERSA', 'error');
+      });
+
       document.addEventListener('visibilitychange', () => {
-        if (document.hidden) {
+        const hidden = document.hidden;
+        debugLog.add(`👁️ Visibilità pagina: ${hidden ? 'HIDDEN' : 'VISIBLE'}`, 'info');
+        
+        if (hidden) {
           try { bgVideo.pause(); } catch (_) {}
         } else {
           if (document.body.classList.contains('bg-playing')) {
@@ -639,97 +912,167 @@
             if (p && typeof p.catch === 'function') p.catch(() => {});
           }
           if (video.paused && wrapper.classList.contains('is-ready')) {
+            debugLog.add('🔄 Ripristino playback da visibilità', 'info');
             jumpToLiveEdge();
             attemptPlay();
           }
         }
       });
 
+      window.addEventListener('orientationchange', handleOrientationChange);
+      window.addEventListener('resize', handleOrientationChange);
+
       function whenReady(fn) {
-        if (document.readyState === 'complete' || document.readyState === 'interactive') fn();
-        else document.addEventListener('DOMContentLoaded', fn, { once: true });
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+          fn();
+        } else {
+          document.addEventListener('DOMContentLoaded', fn, { once: true });
+        }
       }
 
       whenReady(() => {
+        debugLog.add('📄 DOM pronto', 'success');
+
         if (window.Plyr) {
+          debugLog.add('🎮 Plyr caricato', 'success');
           player = new Plyr(video, {
             controls: ['play-large', 'fullscreen'],
-            clickToPlay: !isTouchDevice,
+            clickToPlay: false,
             hideControls: true,
             tooltips: { controls: false, seek: false },
             fullscreen: { enabled: true, fallback: true, iosNative: true }
           });
 
           player.on('enterfullscreen', () => {
-            if (isIOS()) {
-              try {
-                if (video.webkitEnterFullscreen) video.webkitEnterFullscreen();
-              } catch (_) {}
-            }
+            debugLog.add('🎬 Evento: ENTER FULLSCREEN', 'info');
+            enterFullscreenLandscape();
+          });
+
+          player.on('exitfullscreen', () => {
+            debugLog.add('🎬 Evento: EXIT FULLSCREEN', 'info');
+            exitFullscreenPortrait();
           });
         } else {
-          player = { play: () => video.play(), on: () => {} };
+          debugLog.add('⚠️ Plyr non disponibile - usando fallback', 'warn');
+          player = { 
+            play: () => video.play(), 
+            on: () => {} 
+          };
         }
 
         if (isTouchDevice) {
+          debugLog.add('📱 Touch device - attivo controllo tap', 'info');
+          
           wrapper.addEventListener('click', (e) => {
-            if (e.target.closest('.plyr__control') || e.target.closest('.start-cta')) return;
-            showTouchUI();
-          }, { passive: true });
-
-          video.addEventListener('pause', () => showTouchUI());
-          video.addEventListener('play', () => showTouchUI());
+            if (e.target.closest('.plyr__control') || e.target.closest('.start-cta')) {
+              debugLog.add('👆 Tap su controllo - ignorato per toggle', 'info');
+              return;
+            }
+            
+            const now = Date.now();
+            const timeSinceLastTap = now - lastTapTime;
+            
+            if (timeSinceLastTap < DOUBLE_TAP_THRESHOLD) {
+              e.preventDefault();
+              debugLog.add('⚠️ DOPPIO TAP RILEVATO E BLOCCATO', 'warn');
+              return;
+            }
+            
+            lastTapTime = now;
+            toggleUI();
+          });
         }
 
-        video.addEventListener('waiting', () => console.log('Video waiting...'));
-        video.addEventListener('stalled', () => console.log('Video stalled'));
+        video.addEventListener('waiting', () => {
+          debugLog.add('⏳ Video WAITING (buffering...)', 'warn');
+        });
+
+        video.addEventListener('stalled', () => {
+          debugLog.add('⏸️ Video STALLED (download fermato)', 'warn');
+        });
+
+        video.addEventListener('suspend', () => {
+          debugLog.add('🛑 Video SUSPEND (fetch fermato)', 'warn');
+        });
         
         video.addEventListener('playing', () => {
+          debugLog.add('▶️ Video PLAYING', 'success');
+          
           setTimeout(() => {
             try {
               const s = video.seekable;
               if (s && s.length) {
                 const end = s.end(s.length - 1);
-                const behind = end - (video.currentTime || 0);
-                if (behind < 0.5 || behind > 15) {
-                  video.currentTime = Math.max(0, end - 2.5);
+                const currentPos = video.currentTime || 0;
+                const behind = end - currentPos;
+                
+                debugLog.add(`📊 Latenza live: ${behind.toFixed(2)}s dietro l'edge`, behind > 15 ? 'warn' : 'info');
+                
+                if (behind < 0.5 || behind > 20) {
+                  debugLog.add('⚠️ Latenza anomala - eseguo jump', 'warn');
+                  jumpToLiveEdge();
                 }
               }
-            } catch (_) {}
-          }, 2000);
+            } catch (e) {
+              debugLog.add(`❌ Errore check latenza: ${e.message}`, 'error');
+            }
+          }, 2500);
         }, { once: true });
 
         video.addEventListener('error', (e) => {
-          console.error('Video error:', e);
-          setTimeout(() => hardReset(), 1000);
+          const errorCode = video.error ? video.error.code : 'unknown';
+          const errorMsg = video.error ? video.error.message : 'no details';
+          debugLog.add(`❌ VIDEO ERROR: Code ${errorCode} - ${errorMsg}`, 'error');
+          setTimeout(() => hardReset(), 1500);
         });
 
-        video.addEventListener('ended', () => hardReset());
+        video.addEventListener('ended', () => {
+          debugLog.add('🏁 Stream ENDED', 'warn');
+          hardReset();
+        });
 
         let lastTime = 0;
         let stuckCount = 0;
+        
         setInterval(() => {
           if (video.paused || !wrapper.classList.contains('is-ready')) {
-            stuckCount = 0;
+            if (stuckCount > 0) {
+              stuckCount = 0;
+              debugLog.add('✅ Reset stuck counter (video paused o non ready)', 'info');
+            }
             lastTime = video.currentTime;
             return;
           }
           
           const currentTime = video.currentTime || 0;
+          const readyState = video.readyState;
+          const buffered = video.buffered.length ? video.buffered.end(0) : 0;
+          const paused = video.paused;
+          
+          if (stuckCount === 0) {
+            debugLog.add(`📊 State=${readyState} Time=${currentTime.toFixed(1)}s Buf=${buffered.toFixed(1)}s Paused=${paused}`, 'info');
+          }
+
           if (Math.abs(currentTime - lastTime) < 0.1) {
             stuckCount++;
+            debugLog.add(`⚠️ PLAYBACK BLOCCATO (${stuckCount}/8 controlli)`, 'warn');
           } else {
-            stuckCount = 0;
+            if (stuckCount > 0) {
+              debugLog.add('✅ Playback RIPRESO - reset counter', 'success');
+              stuckCount = 0;
+            }
           }
           lastTime = currentTime;
 
-          if (stuckCount >= 6) {
-            console.warn('Playback stuck, resetting...');
+          if (stuckCount >= 8) {
+            debugLog.add('💥 PLAYBACK PERMANENTEMENTE BLOCCATO - HARD RESET', 'error');
             hardReset();
             stuckCount = 0;
           }
         }, 5000);
 
+        handleOrientationChange();
+        debugLog.add('🎬 Avvio stream iniziale...', 'info');
         attachStream().catch(() => setNeedsGesture());
       });
 
@@ -737,8 +1080,11 @@
         e.preventDefault();
         e.stopPropagation();
         retryCount = 0;
+        debugLog.add('👆 AVVIO MANUALE DA UTENTE', 'success');
         attemptPlay();
       });
+
+      debugLog.add('✅ Tutti gli event listener configurati', 'success');
     })();
   </script>
 </body>
