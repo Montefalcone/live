@@ -64,10 +64,7 @@
     }
 
     * { box-sizing: border-box; }
-    html, body { 
-      height: 100%; 
-      width: 100%;
-    }
+    html, body { height: 100%; }
     body {
       margin: 0;
       font-family: var(--plyr-font-family);
@@ -114,66 +111,40 @@
       position: relative;
       z-index: 2;
       height: 100%;
-      width: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0;
+      display: grid;
+      place-items: center;
+      padding: 20px;
     }
 
     .video-wrapper {
       position: relative;
-      width: 100%;
-      height: 100%;
-      max-width: 1200px;
-      max-height: 675px;
+      width: min(1200px, 94vw);
       aspect-ratio: 16 / 9;
-      border-radius: 0;
+      border-radius: var(--radius-video);
       overflow: hidden;
       background: #000;
-      box-shadow: none;
-      border: none;
+      box-shadow: var(--shadow-glow), var(--shadow-deep);
+      border: 1px solid var(--color-border);
       isolation: isolate;
-      transition: all 0.3s ease;
     }
 
-    /* Desktop: dimensioni maggiori + bordi arrotondati + ombre */
-    @media (min-width: 769px) {
-      main {
-        padding: 20px;
-      }
+    /* Mobile: centrato, dimensioni normali */
+    @media (max-width: 768px) {
       .video-wrapper {
-        width: min(1200px, 94vw);
-        height: auto;
-        border-radius: var(--radius-video);
-        box-shadow: var(--shadow-glow), var(--shadow-deep);
-        border: 1px solid var(--color-border);
+        width: min(980px, 92vw);
       }
     }
 
-    /* Mobile portrait: centrato verticalmente */
-    @media (max-width: 768px) and (orientation: portrait) {
-      .video-wrapper {
-        width: 100vw;
-        height: auto;
-        max-height: 56.25vw; /* 16:9 ratio */
-      }
-    }
-
-    /* Mobile landscape: fake fullscreen */
-    @media (max-width: 768px) and (orientation: landscape) {
-      body.landscape-mode main {
-        padding: 0;
-      }
-      body.landscape-mode .video-wrapper {
-        width: 100vw;
-        height: 100vh;
-        max-width: 100vw;
-        max-height: 100vh;
-        border-radius: 0;
-        border: none;
-        box-shadow: none;
-      }
+    /* Landscape fake fullscreen */
+    body.landscape-fullscreen .video-wrapper {
+      width: 100vw !important;
+      height: 100vh !important;
+      max-width: 100vw !important;
+      max-height: 100vh !important;
+      aspect-ratio: auto !important;
+      border-radius: 0 !important;
+      border: none !important;
+      box-shadow: none !important;
     }
 
     /* Real fullscreen */
@@ -185,6 +156,7 @@
       height: 100vh !important;
       max-width: 100vw !important;
       max-height: 100vh !important;
+      aspect-ratio: auto !important;
       border-radius: 0 !important;
       border: none !important;
       box-shadow: none !important;
@@ -201,6 +173,7 @@
       background: #000;
     }
 
+    /* Play/Pause button (center) con zoom animation */
     .video-wrapper .plyr__control--overlaid {
       width: 90px !important;
       height: 52px !important;
@@ -215,6 +188,7 @@
       background: rgba(0,0,0,0.22) !important;
       -webkit-backdrop-filter: blur(6px) !important;
       backdrop-filter: blur(6px) !important;
+      will-change: transform;
     }
 
     .video-wrapper .plyr.plyr--paused .plyr__control--overlaid,
@@ -224,6 +198,16 @@
       pointer-events: auto !important;
       transform: translate(-50%, -50%) translateY(0) !important;
       transition: opacity var(--transition-fast), transform var(--transition-fast), visibility 0ms linear 0ms !important;
+    }
+
+    /* Zoom animation on hover/active - ANCHE PER PLAY BUTTON */
+    .video-wrapper .plyr__control--overlaid:hover {
+      transform: translate(-50%, -50%) translateY(-1px) scale(1.04) !important;
+      box-shadow: 0 14px 40px rgba(0,0,0,0.45);
+    }
+    .video-wrapper .plyr__control--overlaid:active {
+      transform: translate(-50%, -50%) scale(0.98) !important;
+      box-shadow: 0 10px 28px rgba(0,0,0,0.35);
     }
 
     @media (hover: hover) and (pointer: fine) {
@@ -258,7 +242,7 @@
 
     .video-wrapper .plyr__tooltip { display: none !important; }
     
-    /* FIX BLUR: applica blur PRIMA della transizione opacity */
+    /* Bottom controls container - blur sempre attivo per evitare ritardo */
     .video-wrapper .plyr__controls {
       position: absolute !important;
       left: auto !important;
@@ -273,9 +257,10 @@
       gap: 10px !important;
       z-index: 40 !important;
       
-      /* BLUR SEMPRE ATTIVO - solo opacity cambia */
+      /* Blur applicato al contenitore - sempre presente */
       backdrop-filter: blur(var(--blur-ui-reduced)) !important;
       -webkit-backdrop-filter: blur(var(--blur-ui-reduced)) !important;
+      border-radius: 18px;
       
       opacity: 0 !important;
       visibility: hidden !important;
@@ -315,10 +300,13 @@
       border: 1px solid rgba(255,255,255,0.20) !important;
       box-shadow: var(--shadow-button);
       
-      /* BLUR GIÀ APPLICATO dal parent .plyr__controls */
+      /* NO blur sui singoli pulsanti - solo background solido */
       background: rgba(0,0,0,0.35) !important;
       backdrop-filter: none !important;
       -webkit-backdrop-filter: none !important;
+      
+      /* CLIP blur overflow - importantissimo! */
+      overflow: hidden;
     }
     .video-wrapper .plyr__controls .plyr__control svg {
       width: 20px !important;
@@ -576,7 +564,6 @@
       const isSafari = () => /Safari/.test(navigator.userAgent) && !/Chrome|CriOS|Edg|OPR/.test(navigator.userAgent);
       const supportsNativeHls = () => !!video.canPlayType('application/vnd.apple.mpegurl');
       const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-      const isMobile = window.innerWidth <= 768;
 
       let player = null;
       let hls = null;
@@ -587,7 +574,7 @@
       const DOUBLE_TAP_THRESHOLD = 300;
 
       debugLog.add('🚀 Sistema inizializzato', 'success');
-      debugLog.add(`Device: ${isTouchDevice ? 'Touch' : 'Desktop'}, Mobile: ${isMobile}`, 'info');
+      debugLog.add(`Device: ${isTouchDevice ? 'Touch' : 'Desktop'}`, 'info');
       debugLog.add(`iOS: ${isIOS()}, Safari: ${isSafari()}`, 'info');
 
       function setReady() {
@@ -773,7 +760,7 @@
         });
 
         hls.on(window.Hls.Events.FRAG_LOADED, (evt, data) => {
-          debugLog.add(`📦 Fragment #${data.frag.sn} caricato`, 'info');
+          debugLog.add(`📦 Fragment #${data.frag.sn}`, 'info');
         });
 
         hls.on(window.Hls.Events.ERROR, (evt, data) => {
@@ -823,35 +810,89 @@
         }, 2000);
       }
 
+      async function enterFullscreenLandscape() {
+        debugLog.add('🖼️ Fullscreen + landscape lock', 'info');
+        
+        try {
+          if (screen.orientation && screen.orientation.lock) {
+            await screen.orientation.lock('landscape');
+            debugLog.add('✅ Landscape locked', 'success');
+          }
+        } catch (e) {
+          debugLog.add(`⚠️ Lock fallito: ${e.message}`, 'warn');
+        }
+
+        try {
+          if (wrapper.requestFullscreen) {
+            await wrapper.requestFullscreen();
+          } else if (wrapper.webkitRequestFullscreen) {
+            await wrapper.webkitRequestFullscreen();
+          } else if (wrapper.mozRequestFullScreen) {
+            await wrapper.mozRequestFullScreen();
+          } else if (wrapper.msRequestFullscreen) {
+            await wrapper.msRequestFullscreen();
+          } else if (isIOS() && video.webkitEnterFullscreen) {
+            video.webkitEnterFullscreen();
+          }
+          debugLog.add('✅ Fullscreen attivato', 'success');
+        } catch (e) {
+          debugLog.add(`❌ Fullscreen fallito: ${e.message}`, 'error');
+        }
+      }
+
+      function exitFullscreenPortrait() {
+        debugLog.add('🚪 Exit fullscreen', 'info');
+        
+        try {
+          if (screen.orientation && screen.orientation.unlock) {
+            screen.orientation.unlock();
+            debugLog.add('✅ Orientation unlocked', 'success');
+          }
+        } catch (_) {}
+
+        try {
+          if (document.exitFullscreen) {
+            document.exitFullscreen();
+          } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+          } else if (document.mozCancelFullScreen) {
+            document.mozCancelFullScreen();
+          } else if (document.msExitFullscreen) {
+            document.msExitFullscreen();
+          }
+        } catch (e) {
+          debugLog.add(`❌ Exit fallito: ${e.message}`, 'error');
+        }
+      }
+
       function handleOrientationChange() {
         const isLandscape = window.matchMedia('(orientation: landscape)').matches;
-        debugLog.add(`📱 Orientamento: ${isLandscape ? 'LANDSCAPE' : 'PORTRAIT'}`, 'info');
+        const isMobile = window.innerWidth <= 768;
         
-        // Solo su mobile + landscape: attiva fake fullscreen
-        if (isMobile && isLandscape) {
-          document.body.classList.add('landscape-mode');
-          debugLog.add('🖼️ Fake fullscreen attivato', 'success');
+        debugLog.add(`📱 Orient: ${isLandscape ? 'LAND' : 'PORT'}, Mobile: ${isMobile}`, 'info');
+        
+        if (isLandscape && isMobile) {
+          document.body.classList.add('landscape-fullscreen');
+          debugLog.add('🖼️ Fake fullscreen ON', 'success');
         } else {
-          document.body.classList.remove('landscape-mode');
-          debugLog.add('🖼️ Fake fullscreen disattivato', 'info');
+          document.body.classList.remove('landscape-fullscreen');
+          debugLog.add('🖼️ Fake fullscreen OFF', 'info');
         }
       }
 
       bgVideo.addEventListener('playing', () => document.body.classList.add('bg-playing'));
 
       window.addEventListener('online', () => {
-        debugLog.add('⚡ CONNESSIONE RIPRISTINATA', 'success');
+        debugLog.add('⚡ CONNESSIONE OK', 'success');
         retryCount = 0;
         hardReset();
       });
 
       window.addEventListener('offline', () => {
-        debugLog.add('📡 CONNESSIONE PERSA', 'error');
+        debugLog.add('📡 OFFLINE', 'error');
       });
 
       document.addEventListener('visibilitychange', () => {
-        debugLog.add(`👁️ Visibilità: ${document.hidden ? 'HIDDEN' : 'VISIBLE'}`, 'info');
-        
         if (document.hidden) {
           try { bgVideo.pause(); } catch (_) {}
         } else {
@@ -888,10 +929,12 @@
 
           player.on('enterfullscreen', () => {
             debugLog.add('🎬 ENTER FULLSCREEN', 'info');
+            enterFullscreenLandscape();
           });
 
           player.on('exitfullscreen', () => {
             debugLog.add('🎬 EXIT FULLSCREEN', 'info');
+            exitFullscreenPortrait();
           });
         } else {
           debugLog.add('⚠️ Plyr fallback', 'warn');
@@ -940,7 +983,7 @@
 
         video.addEventListener('error', (e) => {
           const code = video.error ? video.error.code : 'unknown';
-          debugLog.add(`❌ VIDEO ERROR: ${code}`, 'error');
+          debugLog.add(`❌ ERROR: ${code}`, 'error');
           setTimeout(() => hardReset(), 1500);
         });
 
@@ -961,12 +1004,12 @@
           const currentTime = video.currentTime || 0;
           
           if (stuckCount === 0) {
-            debugLog.add(`📊 Time=${currentTime.toFixed(1)}s RS=${video.readyState}`, 'info');
+            debugLog.add(`📊 T=${currentTime.toFixed(1)}s RS=${video.readyState}`, 'info');
           }
 
           if (Math.abs(currentTime - lastTime) < 0.1) {
             stuckCount++;
-            debugLog.add(`⚠️ BLOCCATO (${stuckCount}/8)`, 'warn');
+            debugLog.add(`⚠️ STUCK (${stuckCount}/8)`, 'warn');
           } else {
             if (stuckCount > 0) debugLog.add('✅ RIPRESO', 'success');
             stuckCount = 0;
@@ -974,7 +1017,7 @@
           lastTime = currentTime;
 
           if (stuckCount >= 8) {
-            debugLog.add('💥 BLOCCATO - RESET', 'error');
+            debugLog.add('💥 STUCK - RESET', 'error');
             hardReset();
             stuckCount = 0;
           }
