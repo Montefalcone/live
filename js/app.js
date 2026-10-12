@@ -1,5 +1,5 @@
 import { CAMERA, SHARE_URL } from './config.js';
-import { LivePlayer } from './player.js';
+import { LivePlayer } from './player.js?v=2.1';
 
 const $ = id => document.getElementById(id);
 const video = $('liveVideo');

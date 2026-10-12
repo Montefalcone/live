@@ -6,6 +6,8 @@ const realClock = {
   clearInterval: id => clearInterval(id),
 };
 
+const BUFFERING_DELAY_MS = 2000;
+
 /** Owns one playback session. Every async callback is tied to its generation. */
 export class LivePlayer {
   constructor({ video, url, Hls, onState = () => {}, clock = realClock }) {
@@ -128,7 +130,11 @@ export class LivePlayer {
       this._state('playing');
     };
     const buffer = () => {
-      if (!active() || !hasProgress) return;
+      if (!active()) return;
+      // Network events can fire between HLS segments while playback continues.
+      // Only cover the picture after a sustained lack of video progress.
+      progress();
+      if (!hasProgress || this.clock.now() - lastProgress < BUFFERING_DELAY_MS) return;
       stableSince = null;
       this._state('buffering');
     };
@@ -162,7 +168,7 @@ export class LivePlayer {
       const elapsed = this.clock.now() - lastProgress;
       if (!hasProgress && this.clock.now() - started >= 20000) { fail(); return; }
       if (hasProgress && elapsed >= 12000) { fail(); return; }
-      if (hasProgress && elapsed >= 3000) buffer();
+      if (hasProgress && elapsed >= BUFFERING_DELAY_MS) buffer();
     }, 1000);
 
     try {

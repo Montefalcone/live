@@ -146,3 +146,56 @@ test('destroy cancels every future retry and stale callback', () => {
   s.clock.tick(120000); old.emit('manifest'); s.player.start();
   assert.equal(s.instances.length, 1); assert.equal(s.clock.jobs.size, 0);
 });
+
+for (const native of [false, true]) {
+  const mode = native ? 'native HLS' : 'HLS.js';
+  test(`${mode}: brief waiting every five seconds never flashes the buffering state`, () => {
+    const s = setup({ native }); play(s);
+    for (let step = 1; step <= 240; step++) {
+      s.clock.tick(250);
+      if (step % 20 === 0) {
+        s.video.dispatchEvent(new Event('waiting'));
+        s.video.dispatchEvent(new Event('stalled'));
+        s.clock.tick(1);
+      }
+      s.video.progress(1 + step / 4);
+    }
+    assert.deepEqual(s.states.map(({ state }) => state), ['loading', 'playing']);
+    assert.equal(s.instances.length, native ? 0 : 1);
+  });
+
+  test(`${mode}: real stalls show buffering, then clear on progress`, () => {
+    const s = setup({ native }); play(s);
+    s.video.dispatchEvent(new Event('waiting'));
+    s.clock.tick(1999); assert.equal(s.player.state, 'playing');
+    s.clock.tick(1); assert.equal(s.player.state, 'buffering');
+    s.video.progress(2); assert.equal(s.player.state, 'playing');
+    s.clock.tick(1500); s.video.progress(3);
+    s.clock.tick(1500); s.video.progress(4);
+    assert.equal(s.player.state, 'playing');
+    assert.equal(s.instances.length, native ? 0 : 1);
+    s.clock.tick(12000); assert.equal(s.player.state, 'offline');
+  });
+}
+
+test('stalled network events cannot cover advancing video without timeupdate events', () => {
+  const s = setup(); play(s);
+  for (let second = 1; second <= 30; second++) {
+    s.video.currentTime += 1;
+    s.video.dispatchEvent(new Event('stalled'));
+    s.clock.tick(1000);
+  }
+  assert.deepEqual(s.states.map(({ state }) => state), ['loading', 'playing']);
+});
+
+test('a transient waiting event leaves no delayed UI change after pausing or hiding', () => {
+  for (const stop of [s => s.player.pause(), s => s.player.setHidden(true), s => s.player.destroy()]) {
+    const s = setup(); play(s);
+    s.video.dispatchEvent(new Event('waiting'));
+    s.clock.tick(500); stop(s);
+    const count = s.states.length;
+    s.clock.tick(60000);
+    assert.equal(s.states.length, count);
+    assert.equal(s.clock.jobs.size, 0);
+  }
+});

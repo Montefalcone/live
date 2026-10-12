@@ -4,7 +4,7 @@ Sito statico per una webcam, pubblicato su GitHub Pages. Non richiede un server 
 
 ## Pubblicazione
 
-1. Estrarre `webcam-montefalcone-v2.zip` sul proprio computer.
+1. Estrarre `webcam-montefalcone-v2.1.zip` sul proprio computer.
 2. Aprire `https://github.com/Montefalcone/live`, quindi **Add file → Upload files**.
 3. Trascinare **il contenuto** della cartella estratta nella radice della repository, comprese le cartelle `assets`, `js` e `vendor`. Non caricare lo ZIP e non aggiungere una cartella superiore.
 4. Confermare il commit. Mantenere la configurazione GitHub Pages già in uso: branch `main`, cartella `/ (root)`.
@@ -13,6 +13,12 @@ Sito statico per una webcam, pubblicato su GitHub Pages. Non richiede un server 
 Il file `CNAME` mantiene `www.webcammontefalconedivalfortore.it`. I vecchi file `galaxy.mp4`, `q.webp`, `p.png` e `last.otf` non sono più richiamati dal nuovo sito: possono restare nella repository e non vengono scaricati dal player.
 
 Prima di pubblicare è possibile leggere le modifiche del branch locale `codex/player-refresh`. Il pacchetto non pubblica nulla automaticamente.
+
+## Aggiornamento 2.1
+
+- Nessun avviso per brevi eventi `waiting`/`stalled` mentre il video prosegue; restano attivi rilevamento dei blocchi e riconnessione.
+- Footer eliminato. Su desktop da 901 × 600 pixel CSS, header e spazi ridotti: il player usa lo spazio verticale disponibile e mantiene tutta l’inquadratura. Nelle finestre più piccole o con zoom elevato è consentito lo scorrimento per mantenere leggibili i controlli.
+- Le informazioni espanse scorrono nel proprio riquadro su desktop. I riferimenti CSS e JavaScript aggiornati usano `?v=2.1` per evitare il riutilizzo della vecchia versione dalla cache.
 
 ## Struttura
 
@@ -30,7 +36,7 @@ Prima di pubblicare è possibile leggere le modifiche del branch locale `codex/p
 - Tenta l'avvio automatico senza audio, salvo richiesta `Save-Data` del browser. Se il browser blocca l'avvio, mostra un pulsante.
 - Usa HLS nativo dove disponibile, altrimenti HLS.js.
 - Segna la diretta come attiva solo quando la riproduzione avanza.
-- Dopo 3 secondi senza avanzamento mostra attesa; dopo 12 secondi ricrea la connessione. Il primo avvio ha una scadenza di 20 secondi.
+- Ignora gli eventi di attesa transitori tra segmenti HLS. Dopo almeno 2 secondi senza avanzamento mostra attesa (controllo ogni secondo); dopo 12 secondi ricrea la connessione. Il primo avvio ha una scadenza di 20 secondi.
 - Dopo un errore fatale ritenta dopo 2, 5, 10, 20, poi 30 secondi. I tentativi tornano al ritmo iniziale dopo almeno 15 secondi di riproduzione stabile o un comando esplicito.
 - La pausa chiude la sessione HLS e viene rispettata al cambio scheda. Riprendere significa ricollegarsi alla diretta attuale, senza mantenere un archivio del punto di pausa.
 - Sospende il caricamento quando la scheda viene nascosta, tranne una riproduzione Picture-in-Picture o fullscreen nativo rilevata. Le scelte del sistema operativo possono comunque limitare l'attività in background.
