@@ -9,14 +9,14 @@ let toastTimer;
 let fullscreenBusy = false;
 
 const messages = {
-  idle: ['PRONTO', 'La piazza ti aspetta.', 'Avvia la webcam per guardare la diretta.', 'Guarda la diretta'],
-  loading: ['COLLEGAMENTO', 'Uno sguardo sulla piazza…', 'Stiamo collegando la webcam.', null],
-  playing: ['IN DIRETTA', '', '', null],
+  idle: ['PRONTO', 'Webcam pronta', 'Avvia la webcam per guardare la diretta.', 'Guarda la diretta'],
+  loading: ['COLLEGAMENTO', 'Collegamento alla webcam…', 'Stiamo collegando la webcam.', null],
+  playing: ['LIVE', '', '', null],
   buffering: ['ATTENDI', 'La diretta sta riprendendo.', 'La connessione sta recuperando il video.', null],
-  paused: ['IN PAUSA', 'Prenditi il tuo tempo.', 'Quando vuoi, torna a guardare la piazza.', 'Riprendi la diretta'],
-  suspended: ['SOSPESA', 'Ci ritrovi qui.', 'La diretta riprende quando torni su questa scheda.', null],
-  offline: ['NON DISPONIBILE', 'La piazza torna tra poco.', 'Il collegamento alla webcam non è disponibile.', 'Riprova ora'],
-  gesture: ['PRONTO', 'La piazza ti aspetta.', 'Tocca il pulsante per avviare il video.', 'Guarda la diretta'],
+  paused: ['IN PAUSA', 'Diretta in pausa', 'Premi il pulsante per riprendere la diretta.', 'Riprendi la diretta'],
+  suspended: ['SOSPESA', 'Riproduzione sospesa', 'La diretta riprende quando torni su questa scheda.', null],
+  offline: ['NON DISPONIBILE', 'Webcam non disponibile', 'Il collegamento alla webcam non è disponibile.', 'Riprova ora'],
+  gesture: ['PRONTO', 'Webcam pronta', 'Tocca il pulsante per avviare il video.', 'Guarda la diretta'],
   unsupported: ['NON SUPPORTATO', 'Questo browser non riproduce la diretta.', 'Prova con una versione aggiornata di Safari, Chrome, Edge o Firefox.', null],
 };
 
@@ -24,7 +24,7 @@ function render(state, details = {}) {
   const [badge, title, text, action] = messages[state] || messages.offline;
   $('playerStage').dataset.state = state;
   $('statusBadge').dataset.state = state;
-  $('statusLabel').textContent = badge;
+  $('statusLabel').textContent = `${badge} - MEDAGLIA D'ORO`;
   $('messageTitle').textContent = title;
   $('messageText').textContent = details.reason === 'network'
     ? 'La connessione Internet è assente. La riproduzione riprenderà quando tornerà disponibile.'
