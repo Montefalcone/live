@@ -1,4 +1,4 @@
-import { CAMERA, SHARE_URL } from './config.js';
+import { CAMERA, SHARE_URL } from './config.js?v=2.7';
 import { LivePlayer } from './player.js?v=2.1';
 
 const $ = id => document.getElementById(id);
@@ -13,7 +13,7 @@ const messages = {
   loading: ['COLLEGAMENTO', 'Collegamento alla webcam…', 'Stiamo collegando la webcam.', null],
   playing: ['LIVE', '', '', null],
   buffering: ['ATTENDI', 'La diretta sta riprendendo.', 'La connessione sta recuperando il video.', null],
-  paused: ['IN PAUSA', 'Diretta in pausa', 'Premi il pulsante per riprendere la diretta.', 'Riprendi la diretta'],
+  paused: ['IN PAUSA', 'Diretta in pausa', '', 'Riprendi la diretta'],
   suspended: ['SOSPESA', 'Riproduzione sospesa', 'La diretta riprende quando torni su questa scheda.', null],
   offline: ['NON DISPONIBILE', 'Webcam non disponibile', 'Il collegamento alla webcam non è disponibile.', 'Riprova ora'],
   gesture: ['PRONTO', 'Webcam pronta', 'Tocca il pulsante per avviare il video.', 'Guarda la diretta'],
@@ -29,6 +29,7 @@ function render(state, details = {}) {
   $('messageText').textContent = details.reason === 'network'
     ? 'La connessione Internet è assente. La riproduzione riprenderà quando tornerà disponibile.'
     : details.retryIn ? `${text} Nuovo tentativo tra ${details.retryIn} secondi.` : text;
+  $('messageText').hidden = !$('messageText').textContent;
   $('mainActionText').textContent = action || 'Riprova';
   const actionHadFocus = document.activeElement === $('mainAction');
   $('mainAction').hidden = !action;
@@ -55,7 +56,6 @@ render('idle');
 $('mainAction').addEventListener('click', () => player.start());
 $('playButton').addEventListener('click', () => player.wanted ? player.pause() : player.start());
 $('liveButton').addEventListener('click', () => player.reconnect());
-$('retryButton').addEventListener('click', () => player.reconnect());
 video.addEventListener('loadedmetadata', () => {
   if (video.videoHeight) $('qualityLabel').textContent = `${video.videoHeight}p · Originale`;
   fitVideoSurface();
@@ -131,11 +131,6 @@ document.addEventListener('keydown', event => {
       first.focus();
     }
   }
-});
-$('focusButton').addEventListener('click', () => {
-  const wide = document.body.classList.toggle('wide-view');
-  $('focusButton').setAttribute('aria-pressed', String(wide));
-  $('focusButton').setAttribute('aria-label', wide ? 'Disattiva vista ampia' : 'Attiva vista ampia');
 });
 
 function showToast(text) {
