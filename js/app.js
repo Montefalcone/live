@@ -1,7 +1,7 @@
-import { createLandscapeController } from './interface.js?v=2.12';
-import { CAMERA, SHARE_URL } from './config.js?v=2.12';
-import { createPrivacyLayer } from './privacy.js?v=2.12';
-import { PRIVACY_CALIBRATION } from './privacy-calibration.js?v=2.12';
+import { createLandscapeController } from './interface.js?v=2.14';
+import { CAMERA, SHARE_URL } from './config.js?v=2.14';
+import { createPrivacyLayer } from './privacy.js?v=2.14';
+import { PRIVACY_CALIBRATION } from './privacy-calibration.js?v=2.14';
 import { LivePlayer } from './player.js?v=2.1';
 
 const $ = id => document.getElementById(id);
@@ -81,8 +81,8 @@ window.addEventListener('offline', () => player.setOnline(false));
 window.addEventListener('pagehide', () => player.setHidden(true));
 window.addEventListener('pageshow', syncVisibility);
 
-// Inline: size the frame to the picture instead of letterboxing a stretched frame.
-// Fullscreen: keep the whole picture, even when the screen has another aspect ratio.
+// Inline: video and canvas share the same contain box inside the viewport-fit frame.
+// Fullscreen: explicitly contain their shared surface, preserving the full picture.
 function fitVideoSurface() {
   const aspect = video.videoWidth && video.videoHeight ? video.videoWidth / video.videoHeight : 16 / 9;
   const stage = $('playerStage');
@@ -90,14 +90,6 @@ function fitVideoSurface() {
   viewer.style.setProperty('--video-aspect', String(aspect));
   const full = document.fullscreenElement === viewer || nativeFullscreen || viewer.classList.contains('is-fullscreen-fallback');
   if (!full) {
-    const slot = $('playerSlot').getBoundingClientRect();
-    const compact = window.matchMedia('(min-width: 901px) and (min-height: 600px)').matches;
-    const frameStyle = getComputedStyle(viewer);
-    const borderX = parseFloat(frameStyle.borderLeftWidth) + parseFloat(frameStyle.borderRightWidth);
-    const borderY = parseFloat(frameStyle.borderTopWidth) + parseFloat(frameStyle.borderBottomWidth);
-    const availableHeight = Math.max(0, slot.height - $('playerToolbar').getBoundingClientRect().height - borderY);
-    const width = compact ? Math.min(slot.width, availableHeight * aspect + borderX) : slot.width;
-    viewer.style.setProperty('--inline-player-width', `${width}px`);
     surface.style.width = '100%';
     surface.style.height = '100%';
     return;

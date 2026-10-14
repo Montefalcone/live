@@ -2,24 +2,9 @@
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 const luminance = rgb => .2126 * rgb[0] + .7152 * rgb[1] + .0722 * rgb[2];
 
-export function estimateCorrection(samples, references) {
-  if (!samples.length || samples.length !== references.length) return null;
-  const gains = samples.map((rgb, i) => rgb.map((value, c) => value / Math.max(1, references[i][c])));
-  if (samples.some(rgb => rgb.some(v => !Number.isFinite(v)) || luminance(rgb) < 8)) return null;
-  const gain = [0, 1, 2].map(c => gains.reduce((sum, rgb) => sum + rgb[c], 0) / gains.length);
-  if (gain.some(v => v < .12 || v > 3)) return null;
-  // Near-monochrome surroundings suggest B/W mode; this is not a calibrated night texture.
-  const monochrome = samples.every(rgb => (Math.max(...rgb) - Math.min(...rgb)) / Math.max(1, Math.max(...rgb)) < .06);
-  return { gain, saturation: monochrome ? 0 : 1 };
-}
-
-export function smoothCorrection(previous, next) {
-  if (!previous) return next;
-  return {
-    gain: next.gain.map((v, i) => previous.gain[i] + .25 * (v - previous.gain[i])),
-    saturation: previous.saturation + .25 * (next.saturation - previous.saturation),
-  };
-}
+// Preserve the approved photograph's hue and brightness. No RGB white balance,
+// no automatic monochrome/IR inference, and no light-dependent desaturation.
+export const PHOTO_CORRECTION = Object.freeze({ gain: Object.freeze([1, 1, 1]), saturation: .97 });
 
 export function tintPatch(source, correction) {
   const result = new Uint8ClampedArray(source);
@@ -52,14 +37,13 @@ export function analyzeFrame(frame, config) {
   return config.regions.map(region => {
     const core = { x: region.x + 5, y: region.y + 5, width: region.width - 10, height: region.height - 10 };
     if (sampleMean(frame, core, config.width, config.height).black < .95) return null;
-    const samples = region.samples.map(s => sampleMean(frame, s, config.width, config.height).rgb);
-    return estimateCorrection(samples, region.samples.map(s => s.reference));
+    return PHOTO_CORRECTION;
   });
 }
 
 export function createPrivacyLayer({ video, canvas, config, document: doc = document, timers = globalThis }) {
   let active = false, ready = false, timer = null, destroyed = false;
-  let patches = [], corrections = [];
+  let patches = [];
   canvas.hidden = true;
   const output = canvas.getContext('2d');
   const probe = doc.createElement('canvas');
@@ -72,7 +56,6 @@ export function createPrivacyLayer({ video, canvas, config, document: doc = docu
     timers.clearTimeout(timer); timer = null;
     canvas.hidden = true;
     canvas.dataset.coverage = reason;
-    corrections = [];
   }
   function tick() {
     timer = null;
@@ -88,16 +71,13 @@ export function createPrivacyLayer({ video, canvas, config, document: doc = docu
       output.clearRect(0, 0, canvas.width, canvas.height);
       let visible = 0;
       next.forEach((value, i) => {
-        if (!value) { corrections[i] = null; return; }
-        corrections[i] = smoothCorrection(corrections[i], value);
+        if (!value) return;
         const patch = patches[i];
-        const pixels = output.createImageData(patch.width, patch.height);
-        pixels.data.set(tintPatch(patch.data, corrections[i]));
-        output.putImageData(pixels, patch.x, patch.y);
+        output.putImageData(patch.pixels, patch.x, patch.y);
         visible++;
       });
       canvas.hidden = visible === 0;
-      canvas.dataset.coverage = visible === config.regions.length ? 'adaptive' : 'partial-or-unmatched';
+      canvas.dataset.coverage = visible === config.regions.length ? 'photographic' : 'partial-or-unmatched';
     } catch {
       // Tainted canvas/CORS, device limitations or decode failures must not break playback.
       stop('unavailable'); return;
@@ -121,7 +101,9 @@ export function createPrivacyLayer({ video, canvas, config, document: doc = docu
         const x = Math.max(0, region.x - 16), y = Math.max(0, region.y - 16);
         const width = Math.min(config.width - x, region.width + 32);
         const height = Math.min(config.height - y, region.height + 32);
-        return { x, y, width, height, data: context.getImageData(x, y, width, height).data };
+        const pixels = output.createImageData(width, height);
+        pixels.data.set(tintPatch(context.getImageData(x, y, width, height).data, PHOTO_CORRECTION));
+        return { x, y, pixels };
       });
       ready = true; refresh();
     } catch { stop('asset-unavailable'); }

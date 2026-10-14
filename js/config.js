@@ -3,7 +3,7 @@ export const CAMERA = Object.freeze({
   id: 'piazza',
   streamUrl: 'https://live.webcammontefalconedivalfortore.it/piazza/index.m3u8',
   poster: './assets/images/piazza-poster.webp',
-  // Adaptive cosmetic layer; camera masks MUST remain enabled.
+  // Fixed-color photographic cover; camera masks MUST remain enabled.
   // Set false to return to the original masked video without changing the stream.
   privacyAdaptive: true,
 });
