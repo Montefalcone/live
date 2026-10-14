@@ -1,3 +1,4 @@
+import { createLandscapeController } from './interface.js?v=2.9';
 import { CAMERA, SHARE_URL } from './config.js?v=2.7';
 import { LivePlayer } from './player.js?v=2.1';
 
@@ -86,8 +87,16 @@ if ('ResizeObserver' in window) new ResizeObserver(fitVideoSurface).observe($('p
 else window.addEventListener('resize', fitVideoSurface);
 fitVideoSurface();
 
+const landscape = createLandscapeController({
+  orientation: window.screen.orientation,
+  isFullscreen: () => Boolean(document.fullscreenElement === viewer || nativeFullscreen || viewer.classList.contains('is-fullscreen-fallback')),
+  isMobile: () => window.matchMedia('(pointer: coarse)').matches,
+});
+window.addEventListener('pagehide', () => landscape.exit());
+
 function fullState() {
   const full = Boolean(document.fullscreenElement || nativeFullscreen || viewer.classList.contains('is-fullscreen-fallback'));
+  if (!full) landscape.exit();
   $('fullscreenButton').setAttribute('aria-label', full ? 'Esci da schermo intero' : 'Schermo intero');
   $('fullscreenButton').title = full ? 'Esci da schermo intero' : 'Schermo intero';
   fitVideoSurface();
@@ -104,7 +113,7 @@ $('fullscreenButton').addEventListener('click', async () => {
     if (document.fullscreenElement) { await document.exitFullscreen(); return; }
     if (viewer.classList.contains('is-fullscreen-fallback')) { exitFallback(); return; }
     if (viewer.requestFullscreen) {
-      try { await viewer.requestFullscreen(); return; } catch { /* Use the fallback below. */ }
+      try { await viewer.requestFullscreen(); void landscape.enter(); return; } catch { /* Use the fallback below. */ }
     }
     // Native iOS fullscreen has its own controls. Burned-in camera masks remain.
     if (video.webkitEnterFullscreen && video.readyState >= 2) {
@@ -112,10 +121,11 @@ $('fullscreenButton').addEventListener('click', async () => {
     }
     viewer.classList.add('is-fullscreen-fallback');
     document.body.classList.add('fallback-open');
+    void landscape.enter();
   } finally { fullscreenBusy = false; fullState(); }
 });
 document.addEventListener('fullscreenchange', fullState);
-video.addEventListener('webkitbeginfullscreen', () => { nativeFullscreen = true; video.controls = true; syncVisibility(); fullState(); });
+video.addEventListener('webkitbeginfullscreen', () => { nativeFullscreen = true; video.controls = true; syncVisibility(); fullState(); void landscape.enter(); });
 video.addEventListener('webkitendfullscreen', () => { nativeFullscreen = false; video.controls = false; syncVisibility(); fullState(); });
 document.addEventListener('keydown', event => {
   if (event.key === 'Escape') exitFallback();

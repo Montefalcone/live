@@ -18,12 +18,13 @@
   <link rel="icon" href="./assets/images/favicon.svg" type="image/svg+xml">
   <link rel="icon" href="./assets/images/favicon-96x96.png" sizes="96x96" type="image/png">
   <link rel="apple-touch-icon" href="./assets/images/apple-touch-icon.png">
-  <link rel="manifest" href="./site.webmanifest?v=2.8">
+  <link rel="manifest" href="./site.webmanifest?v=2.9">
   <link rel="preconnect" href="https://live.webcammontefalconedivalfortore.it">
   <link rel="preload" href="./assets/fonts/Montserrat-variable.woff" as="font" type="font/woff" crossorigin>
-  <link rel="stylesheet" href="./assets/site.css?v=2.8">
+  <link rel="stylesheet" href="./assets/site.css?v=2.9">
+  <script type="module" src="./js/interface.js?v=2.9"></script>
   <script src="./vendor/hls-1.7.3.min.js" defer></script>
-  <script type="module" src="./js/app.js?v=2.8"></script>
+  <script type="module" src="./js/app.js?v=2.9"></script>
 </head>
 <body>
   <a class="skip-link" href="#player">Vai alla webcam</a>
@@ -42,7 +43,7 @@
     </header>
     <main>
       <div class="intro">
-        <div><h1>Montefalcone, <span class="camera-name">Piazza Medaglia d'Oro</span></h1></div>
+        <div><h1>Montefalcone, <span class="camera-name" id="cameraName">Piazza Medaglia d'Oro</span></h1></div>
         <div class="local-time"><span>ORA A MONTEFALCONE</span><time id="localClock">—</time><span id="localDate">Italia · Europe/Rome</span></div>
       </div>
       <section class="viewer" id="player" tabindex="-1" aria-label="Webcam di Piazza Medaglia d'Oro">
