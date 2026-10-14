@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createLandscapeController, enhanceDisclosure, typeTitle } from '../js/interface.js';
+import { createLandscapeController, enhanceDisclosure, typeTitle, limitPlayerZoom } from '../js/interface.js';
 
 function orientationSetup(overrides = {}) {
   const state = { full: true, mobile: true, locks: 0, unlocks: 0 };
@@ -124,21 +124,91 @@ test('reduced motion and missing animation API preserve working manual toggles',
   assert.equal(details.open, true);
   assert.equal(details.style.height, '');
 });
-test('typewriter preserves the full accessible name, word boundaries and apostrophe', () => {
-  const doc = {
-    createElement() { return { ownerDocument: doc, children: [], style: {}, attributes: {}, setAttribute(k, v) { this.attributes[k] = v; }, appendChild(child) { this.children.push(child); } }; },
-    createTextNode(textContent) { return { textContent }; },
-  };
-  const element = doc.createElement('span');
+function titleSetup(reduced = false) {
+  const doc = new EventTarget();
+  doc.defaultView = new EventTarget();
+  doc.createElement = () => ({
+    ownerDocument: doc, children: [], style: {}, attributes: {},
+    setAttribute(k, v) { this.attributes[k] = v; },
+    appendChild(child) { this.children.push(child); },
+    set textContent(value) { this.text = value; this.children = []; },
+    get textContent() { return this.children.length ? this.children.map(child => child.textContent).join('') : this.text; },
+  });
+  doc.createTextNode = textContent => ({ textContent });
   const title = "Piazza Medaglia d'Oro";
+  const element = doc.createElement();
   element.textContent = title;
-  typeTitle(element, { matches: false });
+  const media = new EventTarget();
+  media.matches = reduced;
+  const pending = new Map();
+  let next = 0;
+  const timers = {
+    setTimeout(fn, at) { pending.set(++next, { fn, at }); return next; },
+    clearTimeout(id) { pending.delete(id); },
+  };
+  typeTitle(element, media, timers);
+  function advance(until) {
+    for (const [id, task] of [...pending].sort((a, b) => a[1].at - b[1].at)) {
+      if (task.at <= until && pending.has(id)) { pending.delete(id); task.fn(); }
+    }
+  }
+  return { doc, element, media, title, pending, advance };
+}
+test('typewriter preserves accessible name, word boundaries and apostrophe, then restores complete plain text', () => {
+  const { element, title, pending, advance } = titleSetup();
   assert.equal(element.children[0].textContent, title);
   const visual = element.children[1];
   assert.equal(visual.attributes['aria-hidden'], 'true');
-  assert.equal(visual.children.map(word => word.children ? word.children.map(letter => letter.textContent).join('') : word.textContent).join(''), title);
+  assert.equal(visual.textContent, title);
   assert.equal(visual.children.filter(word => word.className === 'typing-word').length, 3);
-  const reducedElement = { textContent: title };
-  typeTitle(reducedElement, { matches: true });
-  assert.equal(reducedElement.textContent, title);
+  const firstLetter = visual.children[0].children[0];
+  assert.equal(firstLetter.style.visibility, 'hidden');
+  advance(140);
+  assert.equal(firstLetter.style.visibility, 'visible');
+  advance(2000);
+  assert.equal(element.textContent, title);
+  assert.equal(element.children.length, 0, 'no hidden or animated spans survive completion');
+  assert.equal(pending.size, 0);
+  advance(5000);
+  assert.equal(element.textContent, title, 'Oro stays visible after the animation');
+});
+test('interrupted title always settles to complete text and cancels every pending reveal', () => {
+  for (const event of ['resize', 'pagehide', 'visibilitychange', 'change']) {
+    const { doc, element, media, title, pending, advance } = titleSetup();
+    advance(350);
+    const target = event === 'change' ? media : event === 'visibilitychange' ? doc : doc.defaultView;
+    target.dispatchEvent(new Event(event));
+    assert.equal(element.textContent, title, event);
+    assert.equal(element.children.length, 0);
+    assert.equal(pending.size, 0);
+    advance(5000);
+    assert.equal(element.textContent, title);
+  }
+  const reduced = titleSetup(true);
+  assert.equal(reduced.element.textContent, reduced.title);
+  assert.equal(reduced.element.children.length, 0);
+  assert.equal(reduced.pending.size, 0);
+});
+test('player cancels local zoom gestures but preserves scrolling, single touches and control clicks', () => {
+  const viewer = new EventTarget();
+  const outside = new EventTarget();
+  limitPlayerZoom(viewer);
+  function dispatch(target, name, values = {}, cancelable = true) {
+    const event = Object.assign(new Event(name, { cancelable }), values);
+    target.dispatchEvent(event);
+    return event.defaultPrevented;
+  }
+  for (const name of ['gesturestart', 'gesturechange', 'gestureend', 'dblclick']) {
+    assert.equal(dispatch(viewer, name), true, name);
+    assert.equal(dispatch(outside, name), false, 'outside the player remains unaffected');
+  }
+  assert.equal(dispatch(viewer, 'wheel', { ctrlKey: true }), true);
+  assert.equal(dispatch(viewer, 'wheel', { metaKey: true }), true);
+  assert.equal(dispatch(viewer, 'wheel'), false);
+  for (const name of ['touchstart', 'touchmove']) {
+    assert.equal(dispatch(viewer, name, { touches: [{}, {}] }), true);
+    assert.equal(dispatch(viewer, name, { touches: [{}] }), false);
+  }
+  assert.equal(dispatch(viewer, 'click'), false);
+  assert.equal(dispatch(viewer, 'gesturechange', {}, false), false);
 });

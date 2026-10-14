@@ -1,4 +1,4 @@
-import { createLandscapeController } from './interface.js?v=2.9';
+import { createLandscapeController } from './interface.js?v=2.10';
 import { CAMERA, SHARE_URL } from './config.js?v=2.7';
 import { LivePlayer } from './player.js?v=2.1';
 

@@ -46,9 +46,10 @@
 
 /* Fixed text footprint: reveal letters without changing title wrapping. */
 .typing-word{white-space:nowrap}
-.typing-letter{opacity:0;animation:reveal-letter 1ms step-end forwards}
-@keyframes reveal-letter{to{opacity:1}}
-@media(prefers-reduced-motion:reduce){.typing-letter{opacity:1}}
+@media(prefers-reduced-motion:reduce){.typing-letter{visibility:visible!important}}
+/* Allow ordinary page scrolling, excluding browser pinch/double-tap gestures
+   that begin on the embedded player. Native fullscreen remains browser-owned. */
+.viewer,.viewer *{touch-action:pan-x pan-y}
 /* Keep 44px touch targets while removing the toolbar's unused padding. */
 @media(pointer:coarse){
   .player-toolbar{min-height:45px;padding-top:0;padding-bottom:0}

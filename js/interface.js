@@ -1,5 +1,5 @@
 // Progressive UI effects: the static title and native details work without JS.
-export function typeTitle(element, reducedMotion) {
+export function typeTitle(element, reducedMotion, timers = globalThis) {
   if (!element || reducedMotion.matches) return;
   const text = element.textContent;
   const doc = element.ownerDocument;
@@ -8,6 +8,20 @@ export function typeTitle(element, reducedMotion) {
   accessibleText.textContent = text;
   const visualText = doc.createElement('span');
   visualText.setAttribute('aria-hidden', 'true');
+  const scheduled = [];
+  let finished = false;
+  function finish() {
+    if (finished) return;
+    finished = true;
+    scheduled.forEach(id => timers.clearTimeout(id));
+    // The settled title must be ordinary text, with no hidden glyphs or fill state.
+    element.textContent = text;
+    doc.removeEventListener?.('visibilitychange', finish);
+    doc.defaultView?.removeEventListener('pagehide', finish);
+    doc.defaultView?.removeEventListener('resize', finish);
+    if (reducedMotion.removeEventListener) reducedMotion.removeEventListener('change', finish);
+    else reducedMotion.removeListener?.(finish);
+  }
   let index = 0;
   for (const token of text.split(/(\s+)/)) {
     if (/^\s+$/.test(token)) {
@@ -21,7 +35,10 @@ export function typeTitle(element, reducedMotion) {
       const letter = doc.createElement('span');
       letter.className = 'typing-letter';
       letter.textContent = character;
-      letter.style.animationDelay = `${140 + index++ * 48}ms`;
+      letter.style.visibility = 'hidden';
+      scheduled.push(timers.setTimeout(() => {
+        if (!finished) letter.style.visibility = 'visible';
+      }, 140 + index++ * 48));
       word.appendChild(letter);
     }
     visualText.appendChild(word);
@@ -29,6 +46,32 @@ export function typeTitle(element, reducedMotion) {
   element.textContent = '';
   element.appendChild(accessibleText);
   element.appendChild(visualText);
+  scheduled.push(timers.setTimeout(finish, 140 + index * 48));
+  doc.addEventListener?.('visibilitychange', finish);
+  doc.defaultView?.addEventListener('pagehide', finish);
+  doc.defaultView?.addEventListener('resize', finish);
+  if (reducedMotion.addEventListener) reducedMotion.addEventListener('change', finish);
+  else reducedMotion.addListener?.(finish);
+  return finish;
+}
+
+// Best effort inside the page only: browser/OS zoom and native video fullscreen
+// cannot be secured by page JavaScript. Privacy masks belong in the source video.
+export function limitPlayerZoom(viewer) {
+  if (!viewer) return;
+  const prevent = event => { if (event.cancelable) event.preventDefault(); };
+  const options = { passive: false, capture: true };
+  viewer.addEventListener('wheel', event => {
+    if (event.ctrlKey || event.metaKey) prevent(event);
+  }, options);
+  for (const name of ['gesturestart', 'gesturechange', 'gestureend', 'dblclick']) {
+    viewer.addEventListener(name, prevent, options);
+  }
+  for (const name of ['touchstart', 'touchmove']) {
+    viewer.addEventListener(name, event => {
+      if (event.touches.length > 1) prevent(event);
+    }, options);
+  }
 }
 
 export function enhanceDisclosure(details, reducedMotion) {
@@ -136,6 +179,7 @@ export function createLandscapeController({ orientation, isFullscreen, isMobile 
 if (typeof document !== 'undefined') {
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   typeTitle(document.getElementById('cameraName'), reducedMotion);
+  limitPlayerZoom(document.getElementById('player'));
   const details = document.getElementById('aboutVillage');
   if (details) enhanceDisclosure(details, reducedMotion);
 }
