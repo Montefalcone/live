@@ -1,6 +1,32 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { PHOTO_CORRECTION, tintPatch, analyzeFrame, createPrivacyLayer } from '../js/privacy.js';
+import { PHOTO_CORRECTION, tintPatch, applyBrightness, estimateBrightness, analyzeFrame, createPrivacyLayer } from '../js/privacy.js';
+
+test('brightness adaptation preserves warm RGB proportions and alpha, including highlights', () => {
+  const source = new Uint8ClampedArray([120, 80, 40, 255, 240, 160, 80, 128]);
+  const bright = applyBrightness(source, 1.5);
+  assert.deepEqual([...bright], [180, 120, 60, 255, 255, 170, 85, 128]);
+  const dark = applyBrightness(source, .75);
+  assert.deepEqual([...dark], [90, 60, 30, 255, 180, 120, 60, 128]);
+  assert.equal(source[0], 120, 'the reference is immutable');
+});
+
+test('wall light controls one bounded brightness factor, independent of its color', () => {
+  const region = { samples: [{ x: 2, y: 2, width: 8, height: 8, reference: [100, 100, 100] }] };
+  assert.equal(estimateBrightness(frame(true, [150, 150, 150]), region, config), 1.5);
+  assert.equal(estimateBrightness(frame(true, [200, 200, 200]), region, config), 1.65);
+  assert.equal(estimateBrightness(frame(true, [30, 30, 30]), region, config), .65);
+  const gain = estimateBrightness(frame(true, [180, 120, 60]), region, config);
+  assert.ok(Math.abs(gain - 1.28424) < .00001);
+});
+
+test('unreliable wall readings do not request a new brightness correction', () => {
+  const sample = { x: 2, y: 2, width: 8, height: 8, reference: [100, 100, 100] };
+  for (const background of [[0, 0, 0], [255, 255, 255]]) {
+    assert.equal(estimateBrightness(frame(true, background), { samples: [sample] }, config), null);
+  }
+  assert.equal(estimateBrightness(frame(), { samples: [sample, { ...sample, reference: [50, 50, 50] }] }, config), null);
+});
 
 test('photographic cover keeps its warm color and opacity with only a subtle fixed desaturation', () => {
   const source = new Uint8ClampedArray([120, 100, 80, 255, 80, 70, 60, 128, 0, 0, 0, 0]);

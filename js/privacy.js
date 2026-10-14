@@ -2,9 +2,34 @@
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 const luminance = rgb => .2126 * rgb[0] + .7152 * rgb[1] + .0722 * rgb[2];
 
-// Preserve the approved photograph's hue and brightness. No RGB white balance,
+// Preserve the approved photograph's hue. No RGB white balance,
 // no automatic monochrome/IR inference, and no light-dependent desaturation.
 export const PHOTO_CORRECTION = Object.freeze({ gain: Object.freeze([1, 1, 1]), saturation: .97 });
+
+// One shared multiplier preserves RGB ratios. Limit the whole pixel before
+// clipping, so bright colors never become white through separate channel clamps.
+export function applyBrightness(source, gain, destination = new Uint8ClampedArray(source.length)) {
+  for (let i = 0; i < source.length; i += 4) {
+    const safeGain = Math.min(gain, 255 / Math.max(1, source[i], source[i + 1], source[i + 2]));
+    for (let c = 0; c < 3; c++) destination[i + c] = source[i + c] * safeGain;
+    destination[i + 3] = source[i + 3];
+  }
+  return destination;
+}
+
+export function estimateBrightness(frame, region, config) {
+  if (!region.samples?.length) return 1;
+  const ratios = [];
+  for (const sample of region.samples) {
+    const current = sampleMean(frame, sample, config.width, config.height);
+    const actual = luminance(current.rgb), reference = luminance(sample.reference);
+    // Very dark, clipped or inconsistent references are not reliable light meters.
+    if (actual < 20 || actual > 235 || reference < 20 || current.black > .1) return null;
+    ratios.push(actual / reference);
+  }
+  if (Math.max(...ratios) / Math.min(...ratios) > 1.35) return null;
+  return clamp(ratios.reduce((sum, value) => sum + value, 0) / ratios.length, .65, 1.65);
+}
 
 export function tintPatch(source, correction) {
   const result = new Uint8ClampedArray(source);
@@ -13,7 +38,7 @@ export function tintPatch(source, correction) {
     const rgb = [0, 1, 2].map(c => source[i + c] * correction.gain[c]);
     const gray = luminance(rgb);
     for (let c = 0; c < 3; c++) result[i + c] = clamp(gray + (rgb[c] - gray) * correction.saturation, 0, 255);
-    // Alpha is immutable: adapting light must never make the patch translucent.
+    // Alpha is immutable: correction must never make the patch translucent.
   }
   return result;
 }
@@ -73,6 +98,11 @@ export function createPrivacyLayer({ video, canvas, config, document: doc = docu
       next.forEach((value, i) => {
         if (!value) return;
         const patch = patches[i];
+        const target = estimateBrightness(frame, config.regions[i], config);
+        if (target !== null) {
+          patch.brightness = patch.brightness === null ? target : patch.brightness + .15 * (target - patch.brightness);
+        }
+        applyBrightness(patch.base, patch.brightness ?? 1, patch.pixels.data);
         output.putImageData(patch.pixels, patch.x, patch.y);
         visible++;
       });
@@ -103,7 +133,7 @@ export function createPrivacyLayer({ video, canvas, config, document: doc = docu
         const height = Math.min(config.height - y, region.height + 32);
         const pixels = output.createImageData(width, height);
         pixels.data.set(tintPatch(context.getImageData(x, y, width, height).data, PHOTO_CORRECTION));
-        return { x, y, pixels };
+        return { x, y, pixels, base: new Uint8ClampedArray(pixels.data), brightness: null };
       });
       ready = true; refresh();
     } catch { stop('asset-unavailable'); }
