@@ -18,13 +18,13 @@
   <link rel="icon" href="./assets/images/favicon.svg" type="image/svg+xml">
   <link rel="icon" href="./assets/images/favicon-96x96.png" sizes="96x96" type="image/png">
   <link rel="apple-touch-icon" href="./assets/images/apple-touch-icon.png">
-  <link rel="manifest" href="./site.webmanifest?v=2.10">
+  <link rel="manifest" href="./site.webmanifest?v=2.11">
   <link rel="preconnect" href="https://live.webcammontefalconedivalfortore.it">
   <link rel="preload" href="./assets/fonts/Montserrat-variable.woff" as="font" type="font/woff" crossorigin>
-  <link rel="stylesheet" href="./assets/site.css?v=2.10">
-  <script type="module" src="./js/interface.js?v=2.10"></script>
+  <link rel="stylesheet" href="./assets/site.css?v=2.11">
+  <script type="module" src="./js/interface.js?v=2.11"></script>
   <script src="./vendor/hls-1.7.3.min.js" defer></script>
-  <script type="module" src="./js/app.js?v=2.10"></script>
+  <script type="module" src="./js/app.js?v=2.11"></script>
 </head>
 <body>
   <a class="skip-link" href="#player">Vai alla webcam</a>
@@ -46,6 +46,7 @@
         <div><h1>Montefalcone, <span class="camera-name" id="cameraName">Piazza Medaglia d'Oro</span></h1></div>
         <div class="local-time"><span>ORA A MONTEFALCONE</span><time id="localClock">—</time><span id="localDate">Italia · Europe/Rome</span></div>
       </div>
+      <div class="player-slot" id="playerSlot">
       <section class="viewer" id="player" tabindex="-1" aria-label="Webcam di Piazza Medaglia d'Oro">
         <div class="player-stage" id="playerStage" data-state="idle">
           <div class="video-surface" id="videoSurface"><video id="liveVideo" playsinline muted preload="none" controls poster="./assets/images/piazza-poster.webp" aria-label="Diretta da Piazza Medaglia d'Oro, Montefalcone di Val Fortore"></video><img id="privacyArtwork" class="privacy-artwork" alt="" hidden></div>
@@ -57,7 +58,8 @@
           <div class="toolbar-group"><button class="icon-button" id="fullscreenButton" type="button" aria-label="Schermo intero" title="Schermo intero"><svg><use href="#i-expand"/></svg></button></div>
         </div>
       </section>
-      <details class="about" id="aboutVillage"><summary>Scopri Montefalcone <span aria-hidden="true">+</span></summary><div class="about-copy"><p><strong>Montefalcone di Val Fortore</strong> è un comune della provincia di Benevento, situato nell'entroterra campano. Con circa 1.250 abitanti, è il comune posto alla maggiore altitudine della provincia e si distingue per il suo patrimonio storico, culturale e paesaggistico.</p><p>Le sue origini risalgono all'epoca normanna, quando era conosciuto come <em>Mons Falconis</em>, nome probabilmente legato alla famiglia Falcone, prima a governare il feudo. Nel corso dei secoli, il territorio passò sotto il dominio di diverse famiglie nobili, tra cui i Mansella, i Caracciolo e i Loffredo. Nel 1439 il castello ospitò il re Alfonso d'Aragona, durante la signoria di Giannotto di Montefalcone.</p><p>Ancora oggi, il borgo conserva la propria identità storica e le tradizioni locali, rappresentando una preziosa testimonianza del patrimonio culturale del Fortore.</p></div></details>
+      </div>
+      <details class="about" id="aboutVillage"><summary>Scopri Montefalcone <span aria-hidden="true">+</span></summary><div class="about-copy"><p><strong>Montefalcone di Val Fortore</strong> è un comune della provincia di Benevento, situato nell'entroterra campano. Con circa 1.250 abitanti, è il comune più alto della provincia e si distingue per il suo patrimonio storico e paesaggistico.</p><p>Di origini normanne, era conosciuto come <em>Mons Falconis</em>, nome probabilmente legato alla famiglia Falcone. Nel corso dei secoli fu governato da diverse famiglie nobili, tra cui i Mansella, i Caracciolo e i Loffredo. Nel 1439 il castello ospitò il re Alfonso d'Aragona.</p><p>Ancora oggi, il borgo conserva la propria identità storica e le tradizioni locali, testimoniando il ricco patrimonio culturale del Fortore.</p></div></details>
       <script>
         // Set the initial state once; subsequent user toggles stay under user control.
         document.getElementById('aboutVillage').open = window.matchMedia(

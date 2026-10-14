@@ -1,4 +1,4 @@
-import { createLandscapeController } from './interface.js?v=2.10';
+import { createLandscapeController } from './interface.js?v=2.11';
 import { CAMERA, SHARE_URL } from './config.js?v=2.7';
 import { LivePlayer } from './player.js?v=2.1';
 
@@ -75,16 +75,40 @@ window.addEventListener('offline', () => player.setOnline(false));
 window.addEventListener('pagehide', () => player.setHidden(true));
 window.addEventListener('pageshow', syncVisibility);
 
-// Keep optional artwork on the actual picture, including letterboxed fullscreen.
+// Inline: size the frame to the picture instead of letterboxing a stretched frame.
+// Fullscreen: keep the whole picture, even when the screen has another aspect ratio.
 function fitVideoSurface() {
-  const bounds = $('playerStage').getBoundingClientRect();
   const aspect = video.videoWidth && video.videoHeight ? video.videoWidth / video.videoHeight : 16 / 9;
+  const stage = $('playerStage');
+  const surface = $('videoSurface');
+  viewer.style.setProperty('--video-aspect', String(aspect));
+  const full = document.fullscreenElement === viewer || nativeFullscreen || viewer.classList.contains('is-fullscreen-fallback');
+  if (!full) {
+    const slot = $('playerSlot').getBoundingClientRect();
+    const compact = window.matchMedia('(min-width: 901px) and (min-height: 600px)').matches;
+    const frameStyle = getComputedStyle(viewer);
+    const borderX = parseFloat(frameStyle.borderLeftWidth) + parseFloat(frameStyle.borderRightWidth);
+    const borderY = parseFloat(frameStyle.borderTopWidth) + parseFloat(frameStyle.borderBottomWidth);
+    const availableHeight = Math.max(0, slot.height - $('playerToolbar').getBoundingClientRect().height - borderY);
+    const width = compact ? Math.min(slot.width, availableHeight * aspect + borderX) : slot.width;
+    viewer.style.setProperty('--inline-player-width', `${width}px`);
+    surface.style.width = '100%';
+    surface.style.height = '100%';
+    return;
+  }
+  const bounds = stage.getBoundingClientRect();
   const width = Math.min(bounds.width, bounds.height * aspect);
-  $('videoSurface').style.width = `${width}px`;
-  $('videoSurface').style.height = `${width / aspect}px`;
+  surface.style.width = `${width}px`;
+  surface.style.height = `${width / aspect}px`;
 }
-if ('ResizeObserver' in window) new ResizeObserver(fitVideoSurface).observe($('playerStage'));
-else window.addEventListener('resize', fitVideoSurface);
+if ('ResizeObserver' in window) {
+  const layoutObserver = new ResizeObserver(fitVideoSurface);
+  for (const id of ['playerSlot', 'playerStage', 'playerToolbar']) layoutObserver.observe($(id));
+}
+window.addEventListener('resize', fitVideoSurface);
+video.addEventListener('resize', fitVideoSurface);
+// Fallback for older browsers without ResizeObserver; measurements include text wrapping.
+$('aboutVillage').addEventListener('toggle', fitVideoSurface);
 fitVideoSurface();
 
 const landscape = createLandscapeController({
