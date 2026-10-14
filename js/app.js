@@ -1,5 +1,7 @@
-import { createLandscapeController } from './interface.js?v=2.11';
-import { CAMERA, SHARE_URL } from './config.js?v=2.7';
+import { createLandscapeController } from './interface.js?v=2.12';
+import { CAMERA, SHARE_URL } from './config.js?v=2.12';
+import { createPrivacyLayer } from './privacy.js?v=2.12';
+import { PRIVACY_CALIBRATION } from './privacy-calibration.js?v=2.12';
 import { LivePlayer } from './player.js?v=2.1';
 
 const $ = id => document.getElementById(id);
@@ -8,6 +10,7 @@ const viewer = $('player');
 let nativeFullscreen = false;
 let toastTimer;
 let fullscreenBusy = false;
+let privacy = null;
 
 const messages = {
   idle: ['PRONTO', 'Webcam pronta', 'Avvia la webcam per guardare la diretta.', 'Guarda la diretta'],
@@ -42,7 +45,7 @@ function render(state, details = {}) {
   $('playButton').title = active ? 'Metti in pausa' : 'Avvia la diretta';
   $('liveButton').dataset.live = String(state === 'playing');
   $('playerAnnouncement').textContent = state === 'playing' ? 'Webcam in diretta.' : `${title} ${$('messageText').textContent}`;
-  $('privacyArtwork').hidden = !CAMERA.privacyArtwork || state !== 'playing';
+  privacy?.setActive(state === 'playing');
   if (actionHadFocus && !action) $('playButton').focus({ preventScroll: true });
 }
 
@@ -50,7 +53,10 @@ const player = new LivePlayer({ video, url: CAMERA.streamUrl, Hls: window.Hls, o
 video.controls = false;
 video.poster = CAMERA.poster;
 video.muted = true;
-if (CAMERA.privacyArtwork) $('privacyArtwork').src = CAMERA.privacyArtwork;
+if (CAMERA.privacyAdaptive) {
+  try { privacy = createPrivacyLayer({ video, canvas: $('privacyArtwork'), config: PRIVACY_CALIBRATION }); }
+  catch { $('privacyArtwork').hidden = true; }
+}
 $('playerToolbar').hidden = false;
 render('idle');
 
@@ -139,8 +145,9 @@ $('fullscreenButton').addEventListener('click', async () => {
     if (viewer.requestFullscreen) {
       try { await viewer.requestFullscreen(); void landscape.enter(); return; } catch { /* Use the fallback below. */ }
     }
-    // Native iOS fullscreen has its own controls. Burned-in camera masks remain.
-    if (video.webkitEnterFullscreen && video.readyState >= 2) {
+    // Keep the composite in the page when native wrapper fullscreen is unavailable.
+    // Native video fullscreen and PiP cannot carry this separate cosmetic layer.
+    if (!CAMERA.privacyAdaptive && video.webkitEnterFullscreen && video.readyState >= 2) {
       try { video.webkitEnterFullscreen(); return; } catch { /* CSS fallback. */ }
     }
     viewer.classList.add('is-fullscreen-fallback');
