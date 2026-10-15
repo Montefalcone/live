@@ -1,5 +1,5 @@
-// Fixed framing and adjacent wall references from the approved still.
-// References control luminance only; never independent RGB gains or saturation.
+// Day/night references: same 2048x1152 camera framing.
+// Sky/facade contrast selects the photographic profile, never the device clock.
 export const PRIVACY_CALIBRATION = {
   "width": 2048,
   "height": 1152,
@@ -21,6 +21,11 @@ export const PRIVACY_CALIBRATION = {
             133.415,
             112.97,
             83.562
+          ],
+          "nightReference": [
+            187.596,
+            180.959,
+            168.768
           ]
         },
         {
@@ -32,6 +37,11 @@ export const PRIVACY_CALIBRATION = {
             145.412,
             121.639,
             89.769
+          ],
+          "nightReference": [
+            200.251,
+            189.196,
+            172.665
           ]
         }
       ]
@@ -52,6 +62,11 @@ export const PRIVACY_CALIBRATION = {
             140.339,
             118.464,
             91.551
+          ],
+          "nightReference": [
+            201.836,
+            192.662,
+            176.381
           ]
         },
         {
@@ -63,6 +78,11 @@ export const PRIVACY_CALIBRATION = {
             151.603,
             121.752,
             81.162
+          ],
+          "nightReference": [
+            206.978,
+            195.205,
+            178.144
           ]
         }
       ]
@@ -83,6 +103,11 @@ export const PRIVACY_CALIBRATION = {
             127.365,
             106.058,
             66.656
+          ],
+          "nightReference": [
+            144.644,
+            138.842,
+            125.075
           ]
         },
         {
@@ -94,8 +119,64 @@ export const PRIVACY_CALIBRATION = {
             111.64,
             88.448,
             62.702
+          ],
+          "nightReference": [
+            144.867,
+            136.615,
+            129.783
           ]
         }
+      ]
+    }
+  ],
+  "nightArtwork": "./assets/images/privacy-night-dark.png",
+  "skySamples": [
+    {
+      "x": 200,
+      "y": 120,
+      "width": 160,
+      "height": 100,
+      "reference": [
+        84.967,
+        163.504,
+        235.523
+      ],
+      "nightReference": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "x": 800,
+      "y": 80,
+      "width": 180,
+      "height": 100,
+      "reference": [
+        176.033,
+        225.074,
+        254.552
+      ],
+      "nightReference": [
+        0.0,
+        0.0,
+        0.003
+      ]
+    },
+    {
+      "x": 1680,
+      "y": 120,
+      "width": 160,
+      "height": 100,
+      "reference": [
+        241.982,
+        251.236,
+        253.646
+      ],
+      "nightReference": [
+        0.0,
+        0.0,
+        0.0
       ]
     }
   ]

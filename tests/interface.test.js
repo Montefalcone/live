@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createLandscapeController, enhanceDisclosure, typeTitle, limitPlayerZoom } from '../js/interface.js';
+import { createLandscapeController, enhanceDisclosure, typeTitle, limitPlayerZoom, preventPictureInPicture } from '../js/interface.js';
 
 function orientationSetup(overrides = {}) {
   const state = { full: true, mobile: true, locks: 0, unlocks: 0 };
@@ -211,4 +211,53 @@ test('player cancels local zoom gestures but preserves scrolling, single touches
   }
   assert.equal(dispatch(viewer, 'click'), false);
   assert.equal(dispatch(viewer, 'gesturechange', {}, false), false);
+});
+
+
+function pipSetup() {
+  const video = new EventTarget(), doc = new EventTarget(), attributes = new Map();
+  video.setAttribute = (name, value) => attributes.set(name, value);
+  video.removeAttribute = name => attributes.delete(name);
+  return { video, doc, attributes };
+}
+test('PiP is disabled and standard entry exits once even with duplicate events', async () => {
+  const { video, doc, attributes } = pipSetup();
+  let resolveExit, exits = 0;
+  doc.exitPictureInPicture = () => { exits++; return new Promise(resolve => { resolveExit = resolve; }); };
+  const dispose = preventPictureInPicture(video, doc);
+  assert.equal(video.disablePictureInPicture, true);
+  assert.equal(video.autoPictureInPicture, false);
+  assert.ok(attributes.has('disablepictureinpicture'));
+  doc.pictureInPictureElement = video;
+  video.dispatchEvent(new Event('enterpictureinpicture'));
+  doc.dispatchEvent(new Event('visibilitychange'));
+  assert.equal(exits, 1);
+  doc.pictureInPictureElement = null; resolveExit(); await Promise.resolve();
+  dispose(); doc.pictureInPictureElement = video;
+  video.dispatchEvent(new Event('enterpictureinpicture'));
+  assert.equal(exits, 1);
+});
+test('Safari PiP returns inline while normal fullscreen is left unchanged', () => {
+  const { video, doc } = pipSetup();
+  const calls = [];
+  video.webkitSetPresentationMode = mode => { calls.push(mode); video.webkitPresentationMode = mode; };
+  preventPictureInPicture(video, doc);
+  video.webkitPresentationMode = 'fullscreen';
+  video.dispatchEvent(new Event('webkitpresentationmodechanged'));
+  assert.deepEqual(calls, []);
+  video.webkitPresentationMode = 'picture-in-picture';
+  video.dispatchEvent(new Event('webkitpresentationmodechanged'));
+  assert.deepEqual(calls, ['inline']);
+});
+test('PiP exit rejection and unavailable APIs do not break playback handling', async () => {
+  const { video, doc } = pipSetup();
+  preventPictureInPicture(video, doc);
+  doc.pictureInPictureElement = video;
+  video.dispatchEvent(new Event('enterpictureinpicture'));
+  doc.exitPictureInPicture = async () => { throw new Error('NotAllowedError'); };
+  video.webkitPresentationMode = 'picture-in-picture';
+  video.webkitSetPresentationMode = () => { throw new Error('NotSupportedError'); };
+  video.dispatchEvent(new Event('enterpictureinpicture'));
+  await Promise.resolve(); await Promise.resolve();
+  assert.equal(video.disablePictureInPicture, true);
 });

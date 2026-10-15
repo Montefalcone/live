@@ -1,3 +1,35 @@
+// Request inline playback for the composite player. Browser-owned PiP can
+// override this request, so also leave it through each supported API.
+export function preventPictureInPicture(video, doc = video?.ownerDocument) {
+  if (!video || !doc) return () => {};
+  video.setAttribute('disablepictureinpicture', '');
+  video.removeAttribute('autopictureinpicture');
+  try { video.disablePictureInPicture = true; video.autoPictureInPicture = false; } catch { /* Read-only implementations. */ }
+  let exiting = false, destroyed = false;
+  async function leave() {
+    if (destroyed || exiting) return;
+    exiting = true;
+    try {
+      if (doc.pictureInPictureElement === video && typeof doc.exitPictureInPicture === 'function') {
+        try { await doc.exitPictureInPicture(); } catch { /* Browser/user policy can refuse. */ }
+      }
+      if (!destroyed && video.webkitPresentationMode === 'picture-in-picture' && typeof video.webkitSetPresentationMode === 'function') {
+        try { video.webkitSetPresentationMode('inline'); } catch { /* Native presentation remains browser-owned. */ }
+      }
+    } finally { exiting = false; }
+  }
+  video.addEventListener('enterpictureinpicture', leave);
+  video.addEventListener('webkitpresentationmodechanged', leave);
+  doc.addEventListener('visibilitychange', leave);
+  void leave();
+  return () => {
+    destroyed = true;
+    video.removeEventListener('enterpictureinpicture', leave);
+    video.removeEventListener('webkitpresentationmodechanged', leave);
+    doc.removeEventListener('visibilitychange', leave);
+  };
+}
+
 // Progressive UI effects: the static title and native details work without JS.
 export function typeTitle(element, reducedMotion, timers = globalThis) {
   if (!element || reducedMotion.matches) return;
@@ -177,6 +209,7 @@ export function createLandscapeController({ orientation, isFullscreen, isMobile 
 }
 
 if (typeof document !== 'undefined') {
+  preventPictureInPicture(document.getElementById('liveVideo'), document);
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   typeTitle(document.getElementById('cameraName'), reducedMotion);
   limitPlayerZoom(document.getElementById('player'));

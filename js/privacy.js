@@ -6,29 +6,71 @@ const luminance = rgb => .2126 * rgb[0] + .7152 * rgb[1] + .0722 * rgb[2];
 // no automatic monochrome/IR inference, and no light-dependent desaturation.
 export const PHOTO_CORRECTION = Object.freeze({ gain: Object.freeze([1, 1, 1]), saturation: .97 });
 
-// One shared multiplier preserves RGB ratios. Limit the whole pixel before
-// clipping, so bright colors never become white through separate channel clamps.
-export function applyBrightness(source, gain, destination = new Uint8ClampedArray(source.length)) {
-  for (let i = 0; i < source.length; i += 4) {
-    const safeGain = Math.min(gain, 255 / Math.max(1, source[i], source[i + 1], source[i + 2]));
-    for (let c = 0; c < 3; c++) destination[i + c] = source[i + c] * safeGain;
-    destination[i + 3] = source[i + 3];
-  }
-  return destination;
-}
-
-export function estimateBrightness(frame, region, config) {
+export function estimateBrightness(frame, region, config, mix = 0) {
   if (!region.samples?.length) return 1;
   const ratios = [];
   for (const sample of region.samples) {
     const current = sampleMean(frame, sample, config.width, config.height);
-    const actual = luminance(current.rgb), reference = luminance(sample.reference);
+    const actual = luminance(current.rgb);
+    const reference = luminance(sample.reference.map((value, c) => value * (1 - mix) + (sample.nightReference ?? sample.reference)[c] * mix));
     // Very dark, clipped or inconsistent references are not reliable light meters.
     if (actual < 20 || actual > 235 || reference < 20 || current.black > .1) return null;
     ratios.push(actual / reference);
   }
   if (Math.max(...ratios) / Math.min(...ratios) > 1.35) return null;
-  return clamp(ratios.reduce((sum, value) => sum + value, 0) / ratios.length, .65, 1.65);
+  return clamp(ratios.reduce((sum, value) => sum + value, 0) / ratios.length, .9, 1.1);
+}
+
+const median = values => {
+  const sorted = [...values].sort((a, b) => a - b);
+  const middle = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
+};
+const smoothstep = value => { const t = clamp(value, 0, 1); return t * t * (3 - 2 * t); };
+
+export function estimateNightMix(frame, config) {
+  if (!config.skySamples?.length) return 0;
+  const wall = config.regions.flatMap(region => region.samples ?? []);
+  if (!wall.length) return null;
+  const currentWall = median(wall.map(sample => luminance(sampleMean(frame, sample, config.width, config.height).rgb)));
+  if (currentWall < 12 || currentWall > 245) return null;
+  const currentSky = median(config.skySamples.map(sample => luminance(sampleMean(frame, sample, config.width, config.height).rgb)));
+  const referenceRatio = key => median(config.skySamples.map(sample => luminance(sample[key]))) /
+    Math.max(1, median(wall.map(sample => luminance(sample[key]))));
+  const day = referenceRatio('reference'), night = referenceRatio('nightReference');
+  if (!Number.isFinite(day + night) || day <= night) return null;
+  const low = night + .08 * (day - night), high = night + .6 * (day - night);
+  return 1 - smoothstep((currentSky / currentWall - low) / (high - low));
+}
+
+// First valid reading is immediate. Later changes must persist for six 500ms
+// samples, then move gradually. A brief headlight/flash cannot switch profiles.
+export function advanceScene(state, target) {
+  if (target === null || !Number.isFinite(target)) { state.count = 0; return state.mix; }
+  target = clamp(target, 0, 1);
+  if (state.mix === null) { state.mix = target; state.count = 0; return target; }
+  if (Math.abs(target - state.mix) < .025) {
+    if (state.count >= 6) state.mix = target;
+    state.count = 0; return state.mix;
+  }
+  if (state.candidate === undefined || Math.abs(target - state.candidate) > .08) state.count = 0;
+  state.candidate = target;
+  if (++state.count >= 6) {
+    state.mix += .15 * (target - state.mix);
+    if (Math.abs(target - state.mix) < .01) state.mix = target;
+  }
+  return state.mix;
+}
+
+// Blend RGB in one opaque layer, never two partially transparent overlays.
+export function mixPatches(day, night, mix, gain, destination = new Uint8ClampedArray(day.length)) {
+  for (let i = 0; i < day.length; i += 4) {
+    const rgb = [0, 1, 2].map(c => day[i + c] * (1 - mix) + night[i + c] * mix);
+    const safeGain = Math.min(gain, 255 / Math.max(1, ...rgb));
+    for (let c = 0; c < 3; c++) destination[i + c] = rgb[c] * safeGain;
+    destination[i + 3] = day[i + 3];
+  }
+  return destination;
 }
 
 export function tintPatch(source, correction) {
@@ -69,6 +111,8 @@ export function analyzeFrame(frame, config) {
 export function createPrivacyLayer({ video, canvas, config, document: doc = document, timers = globalThis }) {
   let active = false, ready = false, timer = null, destroyed = false;
   let patches = [];
+  let failed = false;
+  const scene = { mix: null, count: 0 };
   canvas.hidden = true;
   const output = canvas.getContext('2d');
   const probe = doc.createElement('canvas');
@@ -81,6 +125,8 @@ export function createPrivacyLayer({ video, canvas, config, document: doc = docu
     timers.clearTimeout(timer); timer = null;
     canvas.hidden = true;
     canvas.dataset.coverage = reason;
+    scene.mix = null; scene.count = 0;
+    for (const patch of patches) patch.brightness = null;
   }
   function tick() {
     timer = null;
@@ -93,21 +139,24 @@ export function createPrivacyLayer({ video, canvas, config, document: doc = docu
       probeContext.drawImage(video, 0, 0, probe.width, probe.height);
       const frame = probeContext.getImageData(0, 0, probe.width, probe.height);
       const next = analyzeFrame(frame, config);
+      const mix = advanceScene(scene, estimateNightMix(frame, config));
+      if (mix === null) { canvas.hidden = true; timer = timers.setTimeout(tick, 500); return; }
       output.clearRect(0, 0, canvas.width, canvas.height);
       let visible = 0;
       next.forEach((value, i) => {
         if (!value) return;
         const patch = patches[i];
-        const target = estimateBrightness(frame, config.regions[i], config);
+        const target = estimateBrightness(frame, config.regions[i], config, mix);
         if (target !== null) {
           patch.brightness = patch.brightness === null ? target : patch.brightness + .15 * (target - patch.brightness);
         }
-        applyBrightness(patch.base, patch.brightness ?? 1, patch.pixels.data);
+        mixPatches(patch.day, patch.night, mix, patch.brightness ?? 1, patch.pixels.data);
         output.putImageData(patch.pixels, patch.x, patch.y);
         visible++;
       });
       canvas.hidden = visible === 0;
       canvas.dataset.coverage = visible === config.regions.length ? 'photographic' : 'partial-or-unmatched';
+      canvas.dataset.profile = mix < .01 ? 'day' : mix > .99 ? 'night' : 'transition';
     } catch {
       // Tainted canvas/CORS, device limitations or decode failures must not break playback.
       stop('unavailable'); return;
@@ -118,28 +167,41 @@ export function createPrivacyLayer({ video, canvas, config, document: doc = docu
     timers.clearTimeout(timer); timer = null;
     if (active && ready && !destroyed) tick();
   }
-  const image = doc.createElement('img');
-  image.onload = () => {
-    if (destroyed) return;
-    try {
-      if (image.naturalWidth !== config.width || image.naturalHeight !== config.height) { stop('asset-mismatch'); return; }
-      const source = doc.createElement('canvas');
-      source.width = config.width; source.height = config.height;
-      const context = source.getContext('2d', { willReadFrequently: true });
-      context.drawImage(image, 0, 0);
-      patches = config.regions.map(region => {
-        const x = Math.max(0, region.x - 16), y = Math.max(0, region.y - 16);
-        const width = Math.min(config.width - x, region.width + 32);
-        const height = Math.min(config.height - y, region.height + 32);
-        const pixels = output.createImageData(width, height);
-        pixels.data.set(tintPatch(context.getImageData(x, y, width, height).data, PHOTO_CORRECTION));
-        return { x, y, pixels, base: new Uint8ClampedArray(pixels.data), brightness: null };
-      });
-      ready = true; refresh();
-    } catch { stop('asset-unavailable'); }
-  };
-  image.onerror = () => stop('asset-unavailable');
-  image.src = config.artwork;
+  const images = [], loaded = {};
+  const profiles = [['day', config.artwork], ['night', config.nightArtwork ?? config.artwork]];
+  function fail(reason) { failed = true; ready = false; stop(reason); }
+  for (const [name, url] of profiles) {
+    const image = doc.createElement('img');
+    images.push(image);
+    image.onload = () => {
+      if (destroyed || failed) return;
+      try {
+        if (image.naturalWidth !== config.width || image.naturalHeight !== config.height) { fail('asset-mismatch'); return; }
+        const source = doc.createElement('canvas');
+        source.width = config.width; source.height = config.height;
+        const context = source.getContext('2d', { willReadFrequently: true });
+        context.drawImage(image, 0, 0);
+        loaded[name] = config.regions.map(region => {
+          const x = Math.max(0, region.x - 16), y = Math.max(0, region.y - 16);
+          const width = Math.min(config.width - x, region.width + 32);
+          const height = Math.min(config.height - y, region.height + 32);
+          return { x, y, width, height, data: tintPatch(context.getImageData(x, y, width, height).data, PHOTO_CORRECTION) };
+        });
+        if (!loaded.day || !loaded.night) return;
+        patches = loaded.day.map((day, i) => {
+          const night = loaded.night[i];
+          for (let p = 3; p < day.data.length; p += 4) {
+            if (day.data[p] !== night.data[p]) throw new Error('Profile alpha mismatch');
+          }
+          return { x: day.x, y: day.y, day: day.data, night: night.data,
+            pixels: output.createImageData(day.width, day.height), brightness: null };
+        });
+        ready = true; refresh();
+      } catch { fail('asset-unavailable'); }
+    };
+    image.onerror = () => fail('asset-unavailable');
+    image.src = url;
+  }
   for (const event of ['loadeddata', 'resize', 'playing']) video.addEventListener(event, refresh);
   doc.addEventListener('visibilitychange', refresh);
   return {
@@ -150,7 +212,7 @@ export function createPrivacyLayer({ video, canvas, config, document: doc = docu
     },
     destroy() {
       destroyed = true; active = false; stop('destroyed');
-      image.onload = null; image.onerror = null;
+      for (const image of images) { image.onload = null; image.onerror = null; }
       for (const event of ['loadeddata', 'resize', 'playing']) video.removeEventListener(event, refresh);
       doc.removeEventListener('visibilitychange', refresh);
     },
