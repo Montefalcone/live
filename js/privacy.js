@@ -1,8 +1,9 @@
 // Cosmetic layer only. The camera must deliver the permanently masked picture.
+import { prepareEdgeBlend, measureEdgeDeltas, updateEdgeDeltas, applyEdgeBlend } from './privacy-edge.js?v=2.18';
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 const luminance = rgb => .2126 * rgb[0] + .7152 * rgb[1] + .0722 * rgb[2];
 
-// Preserve the approved photograph's hue. No RGB white balance,
+// Preserve the approved apertures' hue. No global RGB white balance,
 // no automatic monochrome/IR inference, and no light-dependent desaturation.
 export const PHOTO_CORRECTION = Object.freeze({ gain: Object.freeze([1, 1, 1]), saturation: .97 });
 
@@ -118,6 +119,8 @@ export function createPrivacyLayer({ video, canvas, config, document: doc = docu
   const probe = doc.createElement('canvas');
   probe.width = 512; probe.height = 288;
   const probeContext = probe.getContext('2d', { willReadFrequently: true });
+  const detail = doc.createElement('canvas');
+  const detailContext = detail.getContext('2d', { willReadFrequently: true });
   if (!output || !probeContext) return { setActive() {}, destroy() {} };
   canvas.width = config.width; canvas.height = config.height;
 
@@ -126,7 +129,7 @@ export function createPrivacyLayer({ video, canvas, config, document: doc = docu
     canvas.hidden = true;
     canvas.dataset.coverage = reason;
     scene.mix = null; scene.count = 0;
-    for (const patch of patches) patch.brightness = null;
+    for (const patch of patches) { patch.brightness = null; patch.edgeState = []; }
   }
   function tick() {
     timer = null;
@@ -144,13 +147,30 @@ export function createPrivacyLayer({ video, canvas, config, document: doc = docu
       output.clearRect(0, 0, canvas.width, canvas.height);
       let visible = 0;
       next.forEach((value, i) => {
-        if (!value) return;
         const patch = patches[i];
+        if (!value) { patch.brightness = null; patch.edgeState = []; return; }
         const target = estimateBrightness(frame, config.regions[i], config, mix);
         if (target !== null) {
           patch.brightness = patch.brightness === null ? target : patch.brightness + .15 * (target - patch.brightness);
         }
         mixPatches(patch.day, patch.night, mix, patch.brightness ?? 1, patch.pixels.data);
+        if (patch.edge && detailContext) {
+          let targets;
+          try {
+            // Sample the native-sized local wall, not the low-resolution mask probe.
+            if (detail.width !== patch.width) detail.width = patch.width;
+            if (detail.height !== patch.height) detail.height = patch.height;
+            const sx = video.videoWidth / config.width, sy = video.videoHeight / config.height;
+            detailContext.drawImage(video, patch.x * sx, patch.y * sy, patch.width * sx, patch.height * sy,
+              0, 0, patch.width, patch.height);
+            const local = detailContext.getImageData(0, 0, patch.width, patch.height);
+            targets = measureEdgeDeltas(local, patch, patch.edge, mix, patch.brightness ?? 1, PHOTO_CORRECTION.saturation);
+          } catch {
+            // Local adaptation is optional: keep the photographic cover if it fails.
+            targets = patch.edge.samples.map(() => null);
+          }
+          applyEdgeBlend(patch.pixels.data, patch.edge, updateEdgeDeltas(patch.edgeState, targets));
+        }
         output.putImageData(patch.pixels, patch.x, patch.y);
         visible++;
       });
@@ -193,7 +213,8 @@ export function createPrivacyLayer({ video, canvas, config, document: doc = docu
           for (let p = 3; p < day.data.length; p += 4) {
             if (day.data[p] !== night.data[p]) throw new Error('Profile alpha mismatch');
           }
-          return { x: day.x, y: day.y, day: day.data, night: night.data,
+          return { x: day.x, y: day.y, width: day.width, height: day.height,
+            day: day.data, night: night.data, edge: prepareEdgeBlend(config.regions[i], day, day.data, night.data), edgeState: [],
             pixels: output.createImageData(day.width, day.height), brightness: null };
         });
         ready = true; refresh();

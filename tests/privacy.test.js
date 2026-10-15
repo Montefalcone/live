@@ -75,12 +75,19 @@ test('missing or moved black masks reject the cosmetic patch', () => {
   assert.equal(analyzeFrame(frame(false), config)[0], null);
 });
 
-function setup() {
+function setup(configuration = config) {
   const doc = new EventTarget(); doc.hidden = false;
   const video = new EventTarget(); Object.assign(video, { videoWidth: 64, videoHeight: 36, readyState: 2 });
-  const state = { denied: false, writes: 0, images: [], contexts: 0, wrongAlpha: false };
+  const state = { denied: false, detailDenied: false, detailReads: 0, writes: 0, images: [], contexts: 0, wrongAlpha: false };
   const context = {
-    drawImage(image) { if (state.denied) throw new Error('SecurityError'); state.source = image.src; },
+    drawImage(image, ...coordinates) {
+      if (state.denied) throw new Error('SecurityError');
+      if (image === video && coordinates.length === 8) {
+        state.detailReads++;
+        if (state.detailDenied) throw new Error('Local read failed');
+      }
+      state.source = image.src;
+    },
     getImageData(x, y, width, height) {
       if (width === 512) return frame();
       const data = new Uint8ClampedArray(width * height * 4).fill(255);
@@ -97,7 +104,7 @@ function setup() {
   };
   const pending = new Map(); let index = 0;
   const timers = { setTimeout(fn) { pending.set(++index, fn); return index; }, clearTimeout(id) { pending.delete(id); } };
-  const controller = createPrivacyLayer({ video, canvas, config, document: doc, timers });
+  const controller = createPrivacyLayer({ video, canvas, config: configuration, document: doc, timers });
   return { doc, video, canvas, state, pending, controller };
 }
 const loadAssets = s => s.state.images.forEach(image => image.onload());
@@ -131,6 +138,24 @@ test('hidden tabs suspend sampling and visible tabs restart it', () => {
   assert.equal(s.canvas.hidden, true); assert.equal(s.pending.size, 0);
   s.doc.hidden = false; s.doc.dispatchEvent(new Event('visibilitychange'));
   assert.equal(s.canvas.hidden, false); assert.equal(s.pending.size, 1);
+  s.controller.destroy();
+});
+
+test('failure of local wall sampling preserves the photographic layer and subsequent playback', () => {
+  const calibrated = { ...config, regions: [{ ...config.regions[0], edgeBlend: {
+    aperture: [[30,16],[38,16],[38,32],[30,32]], innerWidth: 5,
+    samples: [{ x: 9, y: 4, width: 6, height: 6, reference: [100,100,100], nightReference: [100,100,100], referenceSigma: 1, nightReferenceSigma: 1 }],
+  } }] };
+  const s = setup(calibrated); s.state.detailDenied = true;
+  loadAssets(s); s.controller.setActive(true);
+  assert.equal(s.state.detailReads, 1);
+  assert.equal(s.canvas.hidden, false);
+  assert.equal(s.canvas.dataset.coverage, 'photographic');
+  assert.equal(s.pending.size, 1);
+  s.state.detailDenied = false; s.video.dispatchEvent(new Event('playing'));
+  assert.equal(s.state.detailReads, 2);
+  assert.equal(s.state.writes, 2);
+  assert.equal(s.canvas.hidden, false);
   s.controller.destroy();
 });
 
