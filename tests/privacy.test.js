@@ -108,6 +108,19 @@ function setup(configuration = config) {
   return { doc, video, canvas, state, pending, controller };
 }
 const loadAssets = s => s.state.images.forEach(image => image.onload());
+test('optional roof flare sampling failure does not stop the photographic cover or playback', () => {
+  const calibrated = { ...config, regions: [{ ...config.regions[0],
+    roofGlare: { polygon: [[24,12],[40,12],[40,30],[24,30]], feather: 2 },
+  }] };
+  const s = setup(calibrated); s.state.detailDenied = true;
+  loadAssets(s); s.controller.setActive(true);
+  assert.equal(s.state.detailReads, 1); assert.equal(s.state.writes, 1);
+  assert.equal(s.canvas.hidden, false); assert.equal(s.pending.size, 1);
+  s.state.detailDenied = false; s.video.dispatchEvent(new Event('playing'));
+  assert.equal(s.state.detailReads, 2); assert.equal(s.state.writes, 2);
+  assert.equal(s.canvas.dataset.coverage, 'photographic');
+  s.controller.destroy(); assert.equal(s.pending.size, 0);
+});
 test('continuous facade and live roof keep playing when local roof reads fail and recover on resume', () => {
   const calibrated = { ...config, requireAllMasks: true, regions: [{ ...config.regions[0],
     maskChecks: [{ x: 25, y: 13, width: 17, height: 20 }],

@@ -1,6 +1,7 @@
 // Cosmetic layer only. The camera must deliver the permanently masked picture.
-import { prepareEdgeBlend, measureEdgeDeltas, updateEdgeDeltas, applyEdgeBlend } from './privacy-edge.js?v=2.20';
-import { estimateSampleGain, prepareMaterials, advanceMaterialGain, applyMaterialGains, prepareRoofTexture, applyRoofTexture } from './privacy-materials.js?v=2.20';
+import { prepareEdgeBlend, measureEdgeDeltas, updateEdgeDeltas, applyEdgeBlend } from './privacy-edge.js?v=2.21';
+import { estimateSampleGain, prepareMaterials, advanceMaterialGain, applyMaterialGains, prepareRoofTexture, applyRoofTexture } from './privacy-materials.js?v=2.21';
+import { prepareRoofGlare, applyRoofGlare } from './privacy-glare.js?v=2.21';
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 const luminance = rgb => .2126 * rgb[0] + .7152 * rgb[1] + .0722 * rgb[2];
 
@@ -199,6 +200,19 @@ export function createPrivacyLayer({ video, canvas, config, document: doc = docu
               detailContext.getImageData(0, 0, s.width, s.height), mix);
           } catch { /* The aligned photographic roof remains if the local read fails. */ }
         }
+        if (patch.roofGlare) {
+          let live = null;
+          try {
+            const s = patch.roofGlare.source;
+            if (detail.width !== s.width) detail.width = s.width;
+            if (detail.height !== s.height) detail.height = s.height;
+            const sx = video.videoWidth / config.width, sy = video.videoHeight / config.height;
+            detailContext.drawImage(video, s.x * sx, s.y * sy, s.width * sx, s.height * sy,
+              0, 0, s.width, s.height);
+            live = detailContext.getImageData(0, 0, s.width, s.height);
+          } catch { /* Still correct opaque photo pixels if the optional live read fails. */ }
+          applyRoofGlare(patch.pixels.data, patch.roofGlare, live);
+        }
         output.putImageData(patch.pixels, patch.x, patch.y);
         visible++;
       });
@@ -245,6 +259,7 @@ export function createPrivacyLayer({ video, canvas, config, document: doc = docu
             day: day.data, night: night.data, edge: prepareEdgeBlend(config.regions[i], day, day.data, night.data), edgeState: [],
             materials: prepareMaterials(config.regions[i], day, day.data), materialStates: [], baseState: {},
             roofTexture: prepareRoofTexture(config.regions[i], day, day.data),
+            roofGlare: prepareRoofGlare(config.regions[i], day),
             pixels: output.createImageData(day.width, day.height), brightness: null };
         });
         ready = true; refresh();
