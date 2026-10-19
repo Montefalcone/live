@@ -1,0 +1,1 @@
+{"name":"montefalcone-webcam","private":true,"type":"module","scripts":{"test":"node --test tests/*.test.js","check":"node --check js/app.js && node --check js/player.js && node --check js/config.js && node --check js/interface.js && node --check js/privacy.js && node --check js/privacy-calibration.js && node --check js/privacy-edge.js && node --check js/privacy-materials.js"}}
