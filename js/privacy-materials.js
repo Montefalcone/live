@@ -91,13 +91,16 @@ export function applyMaterialGains(destination, day, night, mix, baseGain, mater
 export function prepareRoofTexture(region, patch, alpha) {
   const spec = region.roofTexture;
   if (!spec) return null;
-  const { x, y, width, height, dx, dy, line } = spec;
+  const { x, y, width, height, dx, dy } = spec;
+  const lines = spec.lines ?? [spec.line];
   const offsets = [], sources = [], weights = [];
   for (let row = 0; row < height; row++) for (let col = 0; col < width; col++) {
     const gx = x + col, gy = y + row, px = gx - patch.x, py = gy - patch.y;
     if (px < 0 || py < 0 || px >= patch.width || py >= patch.height) continue;
     const p = (py * patch.width + px) * 4;
     if (!alpha[p + 3]) continue;
+    const line = lines.find(edge => edge && gx >= edge.x0 && gx <= edge.x1);
+    if (!line) continue;
     const edge = line.y0 + (line.y1 - line.y0) * (gx - line.x0) / (line.x1 - line.x0);
     const w = smooth((edge - gy - spec.inset) / spec.transition);
     if (w > .001) { offsets.push(p); sources.push((row * width + col) * 4); weights.push(w); }

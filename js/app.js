@@ -1,7 +1,7 @@
-import { createLandscapeController } from './interface.js?v=2.19';
-import { CAMERA, SHARE_URL } from './config.js?v=2.19';
-import { createPrivacyLayer } from './privacy.js?v=2.19';
-import { PRIVACY_CALIBRATION } from './privacy-calibration.js?v=2.19';
+import { createLandscapeController } from './interface.js?v=2.20';
+import { CAMERA, SHARE_URL } from './config.js?v=2.20';
+import { createPrivacyLayer } from './privacy.js?v=2.20';
+import { PRIVACY_CALIBRATION } from './privacy-calibration.js?v=2.20';
 import { LivePlayer } from './player.js?v=2.1';
 
 const $ = id => document.getElementById(id);
@@ -27,6 +27,9 @@ const messages = {
 function render(state, details = {}) {
   const [badge, title, text, action] = messages[state] || messages.offline;
   $('playerStage').dataset.state = state;
+  // Decoded HLS frames can show source masks before the cosmetic layer starts.
+  // Keep the corrected poster above them until playback is actually advancing.
+  $('playerStage').dataset.preview = String(state !== 'playing');
   $('statusBadge').dataset.state = state;
   $('statusLabel').textContent = `${badge} - MEDAGLIA D'ORO`;
   $('messageTitle').textContent = title;
@@ -52,6 +55,7 @@ function render(state, details = {}) {
 const player = new LivePlayer({ video, url: CAMERA.streamUrl, Hls: window.Hls, onState: render });
 video.controls = false;
 video.poster = CAMERA.poster;
+$('playerPreview').src = CAMERA.poster;
 video.muted = true;
 if (CAMERA.privacyAdaptive) {
   try { privacy = createPrivacyLayer({ video, canvas: $('privacyArtwork'), config: PRIVACY_CALIBRATION }); }

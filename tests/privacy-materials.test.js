@@ -102,7 +102,44 @@ test('production live roof source is inside the public roof and outside every ca
   assert.ok(source.x>=0&&source.y>=0&&source.x+source.width<=cfg.width&&source.y+source.height<=cfg.height);
   for(const c of r.maskChecks) assert.ok(source.x+source.width<=c.x||source.x>=c.x+c.width||source.y+source.height<=c.y||source.y>=c.y+c.height);
   for(const x of [source.x,source.x+source.width]){
-    const e=s.line.y0+(s.line.y1-s.line.y0)*x/(s.line.x1-s.line.x0);
+    const line=s.lines.find(l=>x>=l.x0&&x<=l.x1);
+    const e=line.y0+(line.y1-line.y0)*(x-line.x0)/(line.x1-line.x0);
     assert.ok(source.y+source.height<e-8,'source must remain above the gutter');
   }
+});
+
+test('production gutter rim stays photographic across every segment and receives no roof gain', () => {
+  const r=PRIVACY_CALIBRATION.regions[0],patch={x:0,y:634,width:884,height:518};
+  const source=new Uint8ClampedArray(patch.width*patch.height*4).fill(150);
+  const texture=prepareRoofTexture(r,patch,source),roof=prepareMaterials(r,patch,source);
+  const textureOffsets=new Set(texture.offsets),roofOffsets=new Set(roof.flatMap(m=>[...m.offsets]));
+  const output=new Uint8ClampedArray(source);
+  applyMaterialGains(output,source,source,0,1,roof,[2.2]);
+  const live={width:texture.source.width,height:texture.source.height,
+    data:new Uint8ClampedArray(texture.source.width*texture.source.height*4).fill(220)};
+  applyRoofTexture(output,texture,live,0);
+  for(const line of r.roofTexture.lines) for(let x=line.x0;x<=line.x1;x++){
+    const edge=line.y0+(line.y1-line.y0)*(x-line.x0)/(line.x1-line.x0);
+    for(let y=Math.floor(edge)-1;y<=Math.ceil(edge)+8;y++){
+      const p=((y-patch.y)*patch.width+x)*4;
+      assert.equal(textureOffsets.has(p),false,`live tile overwrite at ${x},${y}`);
+      assert.equal(roofOffsets.has(p),false,`roof exposure on gutter at ${x},${y}`);
+      assert.deepEqual(output.subarray(p,p+4),source.subarray(p,p+4));
+    }
+  }
+  // The small roof junction must not inherit exposure from the main roof.
+  for(let y=800;y<840;y++)for(let x=722;x<760;x++){
+    const p=((y-patch.y)*patch.width+x)*4;
+    assert.deepEqual(output.subarray(p,p+4),source.subarray(p,p+4));
+  }
+});
+
+test('roof texture uses the local gutter segment and skips gaps instead of extrapolating', () => {
+  const source=new Uint8ClampedArray(8*4*4).fill(150),patch={x:0,y:0,width:8,height:4};
+  const r={roofTexture:{x:0,y:0,width:8,height:4,dx:0,dy:0,inset:0,transition:1,
+    lines:[{x0:0,y0:1,x1:2,y1:1},{x0:4,y0:3,x1:6,y1:2}]}};
+  const t=prepareRoofTexture(r,patch,source),selected=new Set(t.offsets);
+  assert.equal(selected.has((1*8+4)*4),true);
+  assert.equal(selected.has((1*8+1)*4),false);
+  for(let y=0;y<4;y++)for(const x of [3,7])assert.equal(selected.has((y*8+x)*4),false);
 });
