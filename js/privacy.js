@@ -1,5 +1,6 @@
 // Cosmetic layer only. The camera must deliver the permanently masked picture.
-import { prepareEdgeBlend, measureEdgeDeltas, updateEdgeDeltas, applyEdgeBlend } from './privacy-edge.js?v=2.18';
+import { prepareEdgeBlend, measureEdgeDeltas, updateEdgeDeltas, applyEdgeBlend } from './privacy-edge.js?v=2.19';
+import { estimateSampleGain, prepareMaterials, advanceMaterialGain, applyMaterialGains, prepareRoofTexture, applyRoofTexture } from './privacy-materials.js?v=2.19';
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 const luminance = rgb => .2126 * rgb[0] + .7152 * rgb[1] + .0722 * rgb[2];
 
@@ -9,6 +10,7 @@ export const PHOTO_CORRECTION = Object.freeze({ gain: Object.freeze([1, 1, 1]), 
 
 export function estimateBrightness(frame, region, config, mix = 0) {
   if (!region.samples?.length) return 1;
+  if (region.materials) return estimateSampleGain(frame, region.samples, config, mix, region);
   const ratios = [];
   for (const sample of region.samples) {
     const current = sampleMean(frame, sample, config.width, config.height);
@@ -66,9 +68,11 @@ export function advanceScene(state, target) {
 // Blend RGB in one opaque layer, never two partially transparent overlays.
 export function mixPatches(day, night, mix, gain, destination = new Uint8ClampedArray(day.length)) {
   for (let i = 0; i < day.length; i += 4) {
-    const rgb = [0, 1, 2].map(c => day[i + c] * (1 - mix) + night[i + c] * mix);
-    const safeGain = Math.min(gain, 255 / Math.max(1, ...rgb));
-    for (let c = 0; c < 3; c++) destination[i + c] = rgb[c] * safeGain;
+    const r = day[i] * (1 - mix) + night[i] * mix;
+    const g = day[i + 1] * (1 - mix) + night[i + 1] * mix;
+    const b = day[i + 2] * (1 - mix) + night[i + 2] * mix;
+    const safeGain = Math.min(gain, 255 / Math.max(1, r, g, b));
+    destination[i] = r * safeGain; destination[i + 1] = g * safeGain; destination[i + 2] = b * safeGain;
     destination[i + 3] = day[i + 3];
   }
   return destination;
@@ -102,11 +106,14 @@ export function sampleMean(frame, rect, sourceWidth, sourceHeight) {
 }
 
 export function analyzeFrame(frame, config) {
-  return config.regions.map(region => {
+  const result = config.regions.map(region => {
     const core = { x: region.x + 5, y: region.y + 5, width: region.width - 10, height: region.height - 10 };
-    if (sampleMean(frame, core, config.width, config.height).black < .95) return null;
+    const checks = region.maskChecks ?? [core];
+    if (!checks.length || checks.some(check => sampleMean(frame, check, config.width, config.height).black < .95)) return null;
     return PHOTO_CORRECTION;
   });
+  if (config.requireAllMasks && result.some(value => !value)) return result.map(() => null);
+  return result;
 }
 
 export function createPrivacyLayer({ video, canvas, config, document: doc = document, timers = globalThis }) {
@@ -129,7 +136,7 @@ export function createPrivacyLayer({ video, canvas, config, document: doc = docu
     canvas.hidden = true;
     canvas.dataset.coverage = reason;
     scene.mix = null; scene.count = 0;
-    for (const patch of patches) { patch.brightness = null; patch.edgeState = []; }
+    for (const patch of patches) { patch.brightness = null; patch.edgeState = []; patch.materialStates = []; patch.baseState = {}; }
   }
   function tick() {
     timer = null;
@@ -148,12 +155,21 @@ export function createPrivacyLayer({ video, canvas, config, document: doc = docu
       let visible = 0;
       next.forEach((value, i) => {
         const patch = patches[i];
-        if (!value) { patch.brightness = null; patch.edgeState = []; return; }
+        if (!value) { patch.brightness = null; patch.edgeState = []; patch.materialStates = []; patch.baseState = {}; return; }
         const target = estimateBrightness(frame, config.regions[i], config, mix);
-        if (target !== null) {
+        if (patch.materials.length) {
+          patch.brightness = advanceMaterialGain(patch.baseState, target);
+        } else if (target !== null) {
           patch.brightness = patch.brightness === null ? target : patch.brightness + .15 * (target - patch.brightness);
         }
         mixPatches(patch.day, patch.night, mix, patch.brightness ?? 1, patch.pixels.data);
+        if (patch.materials.length) {
+          const gains = patch.materials.map((material, j) => {
+            const desired = estimateSampleGain(frame, material.samples, config, mix, { ...material, minLight: 4 });
+            return advanceMaterialGain(patch.materialStates[j] ??= {}, desired);
+          });
+          applyMaterialGains(patch.pixels.data, patch.day, patch.night, mix, patch.brightness ?? 1, patch.materials, gains);
+        }
         if (patch.edge && detailContext) {
           let targets;
           try {
@@ -170,6 +186,18 @@ export function createPrivacyLayer({ video, canvas, config, document: doc = docu
             targets = patch.edge.samples.map(() => null);
           }
           applyEdgeBlend(patch.pixels.data, patch.edge, updateEdgeDeltas(patch.edgeState, targets));
+        }
+        if (patch.roofTexture && detailContext) {
+          try {
+            const s = patch.roofTexture.source;
+            if (detail.width !== s.width) detail.width = s.width;
+            if (detail.height !== s.height) detail.height = s.height;
+            const sx = video.videoWidth / config.width, sy = video.videoHeight / config.height;
+            detailContext.drawImage(video, s.x * sx, s.y * sy, s.width * sx, s.height * sy,
+              0, 0, s.width, s.height);
+            applyRoofTexture(patch.pixels.data, patch.roofTexture,
+              detailContext.getImageData(0, 0, s.width, s.height), mix);
+          } catch { /* The aligned photographic roof remains if the local read fails. */ }
         }
         output.putImageData(patch.pixels, patch.x, patch.y);
         visible++;
@@ -215,6 +243,8 @@ export function createPrivacyLayer({ video, canvas, config, document: doc = docu
           }
           return { x: day.x, y: day.y, width: day.width, height: day.height,
             day: day.data, night: night.data, edge: prepareEdgeBlend(config.regions[i], day, day.data, night.data), edgeState: [],
+            materials: prepareMaterials(config.regions[i], day, day.data), materialStates: [], baseState: {},
+            roofTexture: prepareRoofTexture(config.regions[i], day, day.data),
             pixels: output.createImageData(day.width, day.height), brightness: null };
         });
         ready = true; refresh();

@@ -108,6 +108,25 @@ function setup(configuration = config) {
   return { doc, video, canvas, state, pending, controller };
 }
 const loadAssets = s => s.state.images.forEach(image => image.onload());
+test('continuous facade and live roof keep playing when local roof reads fail and recover on resume', () => {
+  const calibrated = { ...config, requireAllMasks: true, regions: [{ ...config.regions[0],
+    maskChecks: [{ x: 25, y: 13, width: 17, height: 20 }],
+    materials: [{ lines: [{ x0: 24, y0: 15, x1: 44, y1: 15 }], samples: [] }],
+    roofTexture: { x: 24, y: 12, width: 6, height: 2, dx: -8, dy: -4,
+      line: { x0: 24, y0: 15, x1: 44, y1: 15 }, inset: 1, transition: 1 },
+  }] };
+  const s = setup(calibrated); s.state.detailDenied = true;
+  loadAssets(s); s.controller.setActive(true);
+  assert.equal(s.state.detailReads, 1);
+  assert.equal(s.state.writes, 1);
+  assert.equal(s.canvas.dataset.coverage, 'photographic');
+  assert.equal(s.canvas.hidden, false);
+  s.controller.setActive(false); assert.equal(s.pending.size, 0);
+  s.state.detailDenied = false; s.controller.setActive(true);
+  assert.equal(s.state.detailReads, 2);
+  assert.equal(s.state.writes, 2); assert.equal(s.pending.size, 1);
+  s.controller.destroy();
+});
 test('layer waits for both assets, stops on pause, and resumes without duplicate timers', () => {
   const s = setup();
   s.controller.setActive(true); assert.equal(s.canvas.hidden, true);
