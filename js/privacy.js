@@ -1,7 +1,7 @@
 // Cosmetic layer only. The camera must deliver the permanently masked picture.
-import { prepareEdgeBlend, measureEdgeDeltas, updateEdgeDeltas, applyEdgeBlend } from './privacy-edge.js?v=2.21';
-import { estimateSampleGain, prepareMaterials, advanceMaterialGain, applyMaterialGains, prepareRoofTexture, applyRoofTexture } from './privacy-materials.js?v=2.21';
-import { prepareRoofGlare, applyRoofGlare } from './privacy-glare.js?v=2.21';
+import { prepareEdgeBlend, measureEdgeDeltas, updateEdgeDeltas, applyEdgeBlend } from './privacy-edge.js?v=2.22';
+import { estimateSampleGain, prepareMaterials, advanceMaterialGain, applyMaterialGains, prepareRoofTexture, applyRoofTexture } from './privacy-materials.js?v=2.22';
+import { prepareRoofGlare, applyRoofGlare } from './privacy-glare.js?v=2.22';
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 const luminance = rgb => .2126 * rgb[0] + .7152 * rgb[1] + .0722 * rgb[2];
 

@@ -1,3 +1,4 @@
+import { playbackPresentation } from '../js/interface.js';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createLandscapeController, enhanceDisclosure, typeTitle, limitPlayerZoom, preventPictureInPicture } from '../js/interface.js';
@@ -260,4 +261,18 @@ test('PiP exit rejection and unavailable APIs do not break playback handling', a
   video.dispatchEvent(new Event('enterpictureinpicture'));
   await Promise.resolve(); await Promise.resolve();
   assert.equal(video.disablePictureInPicture, true);
+});
+
+
+test('brief buffering retains the current protected frame while prolonged buffering shows a warning', () => {
+  assert.deepEqual(playbackPresentation('buffering', {phase:'brief'}),
+    {showPreview:false,showMessage:false,keepPrivacy:true,showSpinner:false});
+  assert.deepEqual(playbackPresentation('buffering', {phase:'extended'}),
+    {showPreview:false,showMessage:true,keepPrivacy:true,showSpinner:true});
+  for(const state of ['loading','offline','paused']) {
+    const p=playbackPresentation(state);
+    assert.equal(p.showPreview,true);assert.equal(p.showMessage,true);assert.equal(p.keepPrivacy,false);
+  }
+  assert.deepEqual(playbackPresentation('playing'),
+    {showPreview:false,showMessage:false,keepPrivacy:true,showSpinner:false});
 });

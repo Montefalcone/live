@@ -1,9 +1,10 @@
-// Five fixed camera masks; local roof flare correction in v2.21.
+// Calibration of the five fixed camera masks from 2026-10-19.
+// Continuous facade artwork; the roof uses a separate luminance measurement.
 export const PRIVACY_CALIBRATION = {
   "width": 2048,
   "height": 1152,
-  "artwork": "./assets/images/privacy-facades-day-v2.20.png",
-  "nightArtwork": "./assets/images/privacy-facades-night-v2.20.png",
+  "artwork": "./assets/images/privacy-facades-day-v2.22.png",
+  "nightArtwork": "./assets/images/privacy-facades-night-v2.22.png",
   "requireAllMasks": true,
   "regions": [
     {

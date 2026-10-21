@@ -216,3 +216,15 @@ if (typeof document !== 'undefined') {
   const details = document.getElementById('aboutVillage');
   if (details) enhanceDisclosure(details, reducedMotion);
 }
+// Preserve the current protected picture through a brief stall. Longer stalls
+// get an explicit message; initial loading still uses the corrected poster.
+export function playbackPresentation(state, details = {}) {
+  const buffering = state === 'buffering';
+  const livePicture = state === 'playing' || buffering;
+  return {
+    showPreview: !livePicture,
+    showMessage: state !== 'playing' && !(buffering && details.phase === 'brief'),
+    keepPrivacy: livePicture,
+    showSpinner: state === 'loading' || (buffering && details.phase !== 'brief'),
+  };
+}

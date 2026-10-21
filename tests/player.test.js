@@ -176,7 +176,53 @@ for (const native of [false, true]) {
     assert.equal(s.instances.length, native ? 0 : 1);
     s.clock.tick(12000); assert.equal(s.player.state, 'offline');
   });
+
+  test(`${mode}: brief stalls keep a quiet status; only sustained stalls request an overlay`, () => {
+    const s = setup({ native }); play(s);
+    for (let repeat = 0; repeat < 4; repeat++) {
+      s.clock.tick(3000);
+      assert.equal(s.player.state, 'buffering');
+      assert.equal(s.states.at(-1).details.phase, 'brief');
+      s.video.progress(repeat + 2);
+      assert.equal(s.player.state, 'playing');
+    }
+    assert.equal(s.states.filter(e => e.details.phase === 'extended').length, 0);
+    s.clock.tick(6000);
+    assert.equal(s.states.at(-1).details.phase, 'extended');
+    const count = s.states.length;
+    s.clock.tick(1000); assert.equal(s.states.length, count, 'no repeating UI changes each second');
+    assert.equal(s.instances.length, native ? 0 : 1, 'a brief stall must not recreate the session');
+    s.video.progress(10); assert.equal(s.player.state, 'playing');
+  });
 }
+
+test('diagnostics distinguish buffering, HLS errors and watchdog reconnections without storing URLs', () => {
+  const s = setup(); play(s);
+  s.video.buffered = { length: 1, start: () => 0, end: () => 4 };
+  s.instances[0].emit('error', { fatal: false, type: 'networkError', details: 'fragLoadError',
+    response: { code: 503, url: 'https://private.invalid/secret' } });
+  assert.equal(s.player.state, 'playing');
+  let log = s.player.getDiagnostics();
+  assert.equal(log.bufferAhead, 3);
+  assert.ok(log.events.some(e => e.event === 'hls-error' && e.status === 503 && !e.fatal));
+  assert.equal(JSON.stringify(log).includes('private.invalid'), false);
+  s.clock.tick(12000);
+  log = s.player.getDiagnostics();
+  assert.ok(log.events.some(e => e.state === 'buffering' && e.phase === 'brief'));
+  assert.ok(log.events.some(e => e.event === 'reconnect' && e.reason === 'stalled-12s'));
+});
+
+test('diagnostic history is bounded, detached from callers and ignores stale-session errors', () => {
+  const s = setup(); play(s); const old = s.instances[0];
+  for (let i=0;i<100;i++) old.emit('error', { fatal:false,type:'networkError',details:'https://private.invalid/path' });
+  const log = s.player.getDiagnostics(); assert.equal(log.events.length, 80);
+  assert.equal(JSON.stringify(log).includes('private.invalid'), false);
+  log.events[0].event = 'changed'; assert.notEqual(s.player.getDiagnostics().events[0].event, 'changed');
+  s.player.reconnect(); const count = s.player.getDiagnostics().events.length;
+  old.emit('error', { fatal:true,type:'networkError' });
+  assert.equal(s.player.getDiagnostics().events.length, count);
+  assert.equal(s.player.state, 'loading');
+});
 
 test('stalled network events cannot cover advancing video without timeupdate events', () => {
   const s = setup(); play(s);

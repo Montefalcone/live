@@ -1,8 +1,8 @@
-import { createLandscapeController } from './interface.js?v=2.21';
-import { CAMERA, SHARE_URL } from './config.js?v=2.21';
-import { createPrivacyLayer } from './privacy.js?v=2.21';
-import { PRIVACY_CALIBRATION } from './privacy-calibration.js?v=2.21';
-import { LivePlayer } from './player.js?v=2.1';
+import { createLandscapeController, playbackPresentation } from './interface.js?v=2.22';
+import { CAMERA, SHARE_URL } from './config.js?v=2.22';
+import { createPrivacyLayer } from './privacy.js?v=2.22';
+import { PRIVACY_CALIBRATION } from './privacy-calibration.js?v=2.22';
+import { LivePlayer } from './player.js?v=2.22';
 
 const $ = id => document.getElementById(id);
 const video = $('liveVideo');
@@ -26,10 +26,11 @@ const messages = {
 
 function render(state, details = {}) {
   const [badge, title, text, action] = messages[state] || messages.offline;
+  const presentation = playbackPresentation(state, details);
   $('playerStage').dataset.state = state;
   // Decoded HLS frames can show source masks before the cosmetic layer starts.
   // Keep the corrected poster above them until playback is actually advancing.
-  $('playerStage').dataset.preview = String(state !== 'playing');
+  $('playerStage').dataset.preview = String(presentation.showPreview);
   $('statusBadge').dataset.state = state;
   $('statusLabel').textContent = `${badge} - MEDAGLIA D'ORO`;
   $('messageTitle').textContent = title;
@@ -40,19 +41,21 @@ function render(state, details = {}) {
   $('mainActionText').textContent = action || 'Riprova';
   const actionHadFocus = document.activeElement === $('mainAction');
   $('mainAction').hidden = !action;
-  $('playerMessage').hidden = state === 'playing';
-  $('loadingRing').hidden = !['loading', 'buffering'].includes(state);
+  $('playerMessage').hidden = !presentation.showMessage;
+  $('loadingRing').hidden = !presentation.showSpinner;
   const active = ['loading', 'playing', 'buffering', 'suspended', 'offline'].includes(state);
   $('playIcon').setAttribute('href', active ? '#i-pause' : '#i-play');
   $('playButton').setAttribute('aria-label', active ? 'Metti in pausa' : 'Avvia la diretta');
   $('playButton').title = active ? 'Metti in pausa' : 'Avvia la diretta';
   $('liveButton').dataset.live = String(state === 'playing');
   $('playerAnnouncement').textContent = state === 'playing' ? 'Webcam in diretta.' : `${title} ${$('messageText').textContent}`;
-  privacy?.setActive(state === 'playing');
+  privacy?.setActive(presentation.keepPrivacy);
   if (actionHadFocus && !action) $('playButton').focus({ preventScroll: true });
 }
 
 const player = new LivePlayer({ video, url: CAMERA.streamUrl, Hls: window.Hls, onState: render });
+// Local, bounded diagnostic snapshot: nothing is uploaded automatically.
+window.webcamDiagnostics = () => player.getDiagnostics();
 video.controls = false;
 video.poster = CAMERA.poster;
 $('playerPreview').src = CAMERA.poster;
@@ -153,7 +156,9 @@ $('fullscreenButton').addEventListener('click', async () => {
 });
 document.addEventListener('fullscreenchange', fullState);
 video.addEventListener('webkitbeginfullscreen', () => { nativeFullscreen = true; video.controls = true; syncVisibility(); fullState(); void landscape.enter(); });
-video.addEventListener('webkitendfullscreen', () => { nativeFullscreen = false; video.controls = false; syncVisibility(); fullState(); });
+video.addEventListener('webkitendfullscreen', () => { nativeFullscreen = false; // Local, bounded diagnostic snapshot: nothing is uploaded automatically.
+window.webcamDiagnostics = () => player.getDiagnostics();
+video.controls = false; syncVisibility(); fullState(); });
 document.addEventListener('keydown', event => {
   if (event.key === 'Escape') exitFallback();
   if (event.key === 'Tab' && viewer.classList.contains('is-fullscreen-fallback')) {

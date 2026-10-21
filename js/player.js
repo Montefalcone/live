@@ -7,6 +7,7 @@ const realClock = {
 };
 
 const BUFFERING_DELAY_MS = 2000;
+const BUFFERING_OVERLAY_MS = 6000;
 
 /** Owns one playback session. Every async callback is tied to its generation. */
 export class LivePlayer {
@@ -27,6 +28,32 @@ export class LivePlayer {
     this.retryTimer = null;
     this.watchTimer = null;
     this.cleanups = [];
+    this.diagnosticsStartedAt = new Date().toISOString();
+    this.diagnostics = [];
+    this.bufferPhase = null;
+  }
+
+  _bufferAhead() {
+    try {
+      for (let i = 0; i < this.video.buffered.length; i++) {
+        if (this.video.currentTime >= this.video.buffered.start(i) && this.video.currentTime <= this.video.buffered.end(i)) {
+          return Math.round((this.video.buffered.end(i) - this.video.currentTime) * 1000) / 1000;
+        }
+      }
+    } catch { /* Some native players expose no readable ranges during teardown. */ }
+    return 0;
+  }
+
+  _record(event, details = {}) {
+    this.diagnostics.push({ atMs: Math.round(this.clock.now()), event,
+      videoTime: Math.round((this.video.currentTime || 0) * 1000) / 1000,
+      bufferAhead: this._bufferAhead(), readyState: this.video.readyState, ...details });
+    if (this.diagnostics.length > 80) this.diagnostics.shift();
+  }
+
+  getDiagnostics() {
+    return { startedAt: this.diagnosticsStartedAt, state: this.state,
+      online: this.online, bufferAhead: this._bufferAhead(), events: this.diagnostics.map(entry => ({ ...entry })) };
   }
 
   start() {
@@ -78,7 +105,10 @@ export class LivePlayer {
 
   _state(state, details = {}) {
     const changed = this.state !== state;
+    const phaseChanged = state === 'buffering' && this.bufferPhase !== details.phase;
+    this.bufferPhase = state === 'buffering' ? details.phase : null;
     this.state = state;
+    if (changed || phaseChanged) this._record('state', { state, ...details });
     if (changed || Object.keys(details).length) this.onState(state, details);
   }
 
@@ -136,9 +166,10 @@ export class LivePlayer {
       progress();
       if (!hasProgress || this.clock.now() - lastProgress < BUFFERING_DELAY_MS) return;
       stableSince = null;
-      this._state('buffering');
+      const phase = this.clock.now() - lastProgress < BUFFERING_OVERLAY_MS ? 'brief' : 'extended';
+      if (this.state !== 'buffering' || this.bufferPhase !== phase) this._state('buffering', { phase });
     };
-    const fail = () => { if (active()) this._fail(); };
+    const fail = reason => { if (active()) this._fail(typeof reason === 'string' ? reason : 'media-event'); };
     const play = () => {
       if (!active()) return;
       let result;
@@ -166,8 +197,8 @@ export class LivePlayer {
       if (!active()) return;
       progress();
       const elapsed = this.clock.now() - lastProgress;
-      if (!hasProgress && this.clock.now() - started >= 20000) { fail(); return; }
-      if (hasProgress && elapsed >= 12000) { fail(); return; }
+      if (!hasProgress && this.clock.now() - started >= 20000) { fail('startup-timeout'); return; }
+      if (hasProgress && elapsed >= 12000) { fail('stalled-12s'); return; }
       if (hasProgress && elapsed >= BUFFERING_DELAY_MS) buffer();
     }, 1000);
 
@@ -193,12 +224,16 @@ export class LivePlayer {
         instance.on(Hls.Events.MEDIA_ATTACHED, () => { if (active()) instance.loadSource(this.url); });
         instance.on(Hls.Events.MANIFEST_PARSED, play);
         instance.on(Hls.Events.ERROR, (_event, data) => {
-          if (!active() || !data?.fatal) return;
+          if (!active() || !data) return;
+          const code = value => /^[a-zA-Z0-9_-]{1,80}$/.test(value ?? '') ? value : 'other';
+          this._record('hls-error', { fatal: Boolean(data.fatal), type: code(data.type), detail: code(data.details),
+            status: Number.isFinite(data.response?.code) ? data.response.code : null });
+          if (!data.fatal) return;
           if (data.type === Hls.ErrorTypes.MEDIA_ERROR && mediaRecoveries < 1) {
             mediaRecoveries++;
             buffer();
             try { instance.recoverMediaError(); } catch { fail(); }
-          } else fail();
+          } else fail('hls-fatal');
         });
         instance.attachMedia(this.video);
       } else {
@@ -209,7 +244,8 @@ export class LivePlayer {
     } catch { fail(); }
   }
 
-  _fail() {
+  _fail(reason = 'playback-error') {
+    this._record('reconnect', { reason });
     this._teardown();
     if (!this.wanted || this.disposed) return;
     this.attempts++;
