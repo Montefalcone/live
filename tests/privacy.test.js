@@ -91,7 +91,7 @@ function setup(configuration = config) {
     getImageData(x, y, width, height) {
       if (width === 512) return frame();
       const data = new Uint8ClampedArray(width * height * 4).fill(255);
-      if (state.wrongAlpha && state.source === './night.png') data[3] = 254;
+      if (state.wrongAlpha && state.source === './night.png' || state.wrongWeatherAlpha && state.source === './weather.png') data[3] = 254;
       return { data, width, height };
     },
     createImageData(width, height) { return { data: new Uint8ClampedArray(width * height * 4) }; },
@@ -108,6 +108,32 @@ function setup(configuration = config) {
   return { doc, video, canvas, state, pending, controller };
 }
 const loadAssets = s => s.state.images.forEach(image => image.onload());
+const weatherConfig = () => ({...config,weather:{samples:[],profiles:[
+  {id:'day',label:'Original',signature:[],regions:[{samples:[],materials:[]}]},
+  {id:'fog',label:'Fog',artwork:'./weather.png',signature:[],regions:[{samples:[],materials:[]}]},
+]}});
+test('optional weather image failure preserves the base cover and records the missing profile',()=>{
+  const s=setup(weatherConfig());s.controller.setActive(true);
+  s.state.images[0].onload();s.state.images[1].onload();s.state.images[2].onerror();
+  assert.equal(s.canvas.hidden,false);assert.equal(s.canvas.dataset.coverage,'photographic');
+  assert.deepEqual(s.controller.getDiagnostics().unavailableProfiles,['fog']);
+  assert.equal(s.pending.size,1);s.controller.destroy();assert.equal(s.pending.size,0);
+});
+test('optional weather coverage mismatch is excluded, including when it loads before base images',()=>{
+  for(const order of [[0,1,2],[2,0,1]]) {
+    const s=setup(weatherConfig());s.state.wrongWeatherAlpha=true;s.controller.setActive(true);
+    order.forEach(i=>s.state.images[i].onload());
+    assert.equal(s.canvas.hidden,false);assert.deepEqual(s.controller.getDiagnostics().unavailableProfiles,['fog']);
+    assert.equal(s.controller.getDiagnostics().availableProfiles.length,1);s.controller.destroy();
+  }
+});
+test('optional asset timeout leaves the live cover intact, ignores late results and releases timers',()=>{
+  const s=setup(weatherConfig());s.controller.setActive(true);
+  const timeout=[...s.pending.values()][0];s.state.images[0].onload();s.state.images[1].onload();timeout();
+  assert.equal(s.canvas.hidden,false);assert.deepEqual(s.controller.getDiagnostics().unavailableProfiles,['fog']);
+  s.state.images[2].onload();assert.equal(s.controller.getDiagnostics().availableProfiles.length,1);
+  s.controller.destroy();assert.equal(s.pending.size,0);
+});
 test('optional roof flare sampling failure does not stop the photographic cover or playback', () => {
   const calibrated = { ...config, regions: [{ ...config.regions[0],
     roofGlare: { polygon: [[24,12],[40,12],[40,30],[24,30]], feather: 2 },

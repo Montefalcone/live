@@ -1,8 +1,8 @@
-import { createLandscapeController, playbackPresentation } from './interface.js?v=2.22';
-import { CAMERA, SHARE_URL } from './config.js?v=2.22';
-import { createPrivacyLayer } from './privacy.js?v=2.22';
-import { PRIVACY_CALIBRATION } from './privacy-calibration.js?v=2.22';
-import { LivePlayer } from './player.js?v=2.22';
+import { createLandscapeController, playbackPresentation } from './interface.js?v=2.23';
+import { CAMERA, SHARE_URL } from './config.js?v=2.23';
+import { createPrivacyLayer } from './privacy.js?v=2.23';
+import { PRIVACY_CALIBRATION } from './privacy-calibration.js?v=2.23';
+import { LivePlayer } from './player.js?v=2.23';
 
 const $ = id => document.getElementById(id);
 const video = $('liveVideo');
@@ -55,7 +55,7 @@ function render(state, details = {}) {
 
 const player = new LivePlayer({ video, url: CAMERA.streamUrl, Hls: window.Hls, onState: render });
 // Local, bounded diagnostic snapshot: nothing is uploaded automatically.
-window.webcamDiagnostics = () => player.getDiagnostics();
+window.webcamDiagnostics = () => ({...player.getDiagnostics(), privacy:privacy?.getDiagnostics()??null});
 video.controls = false;
 video.poster = CAMERA.poster;
 $('playerPreview').src = CAMERA.poster;
@@ -156,9 +156,7 @@ $('fullscreenButton').addEventListener('click', async () => {
 });
 document.addEventListener('fullscreenchange', fullState);
 video.addEventListener('webkitbeginfullscreen', () => { nativeFullscreen = true; video.controls = true; syncVisibility(); fullState(); void landscape.enter(); });
-video.addEventListener('webkitendfullscreen', () => { nativeFullscreen = false; // Local, bounded diagnostic snapshot: nothing is uploaded automatically.
-window.webcamDiagnostics = () => player.getDiagnostics();
-video.controls = false; syncVisibility(); fullState(); });
+video.addEventListener('webkitendfullscreen', () => { nativeFullscreen = false; video.controls = false; syncVisibility(); fullState(); });
 document.addEventListener('keydown', event => {
   if (event.key === 'Escape') exitFallback();
   if (event.key === 'Tab' && viewer.classList.contains('is-fullscreen-fallback')) {

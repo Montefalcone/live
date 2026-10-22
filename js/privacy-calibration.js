@@ -1,3 +1,4 @@
+import { PRIVACY_WEATHER } from './privacy-weather-catalog.js?v=2.23';
 // Calibration of the five fixed camera masks from 2026-10-19.
 // Continuous facade artwork; the roof uses a separate luminance measurement.
 export const PRIVACY_CALIBRATION = {
@@ -519,3 +520,5 @@ export const PRIVACY_CALIBRATION = {
     }
   ]
 };
+
+PRIVACY_CALIBRATION.weather = PRIVACY_WEATHER;
