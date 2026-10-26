@@ -1,8 +1,8 @@
 // Cosmetic layer only. The camera must deliver the permanently masked picture.
-import { prepareEdgeBlend, measureEdgeDeltas, updateEdgeDeltas, applyEdgeBlend } from './privacy-edge.js?v=2.23';
-import { estimateSampleGain, prepareMaterials, advanceMaterialGain, applyMaterialGains, prepareRoofTexture, applyRoofTexture } from './privacy-materials.js?v=2.23';
-import { prepareRoofGlare, applyRoofGlare } from './privacy-glare.js?v=2.23';
-import { describeWeather, createWeatherSelector, blendWeatherPixels, weatherSamples } from './privacy-weather.js?v=2.23';
+import { prepareEdgeBlend, measureEdgeDeltas, updateEdgeDeltas, applyEdgeBlend } from './privacy-edge.js?v=2.24';
+import { estimateSampleGain, prepareMaterials, advanceMaterialGain, applyMaterialGains, prepareRoofTexture, applyRoofTexture } from './privacy-materials.js?v=2.24';
+import { prepareRoofGlare, applyRoofGlare } from './privacy-glare.js?v=2.24';
+import { describeWeather, createWeatherSelector, blendWeatherPixels, weatherSamples } from './privacy-weather.js?v=2.24';
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 const luminance = rgb => .2126 * rgb[0] + .7152 * rgb[1] + .0722 * rgb[2];
 
@@ -118,11 +118,11 @@ export function analyzeFrame(frame, config) {
   return result;
 }
 
-export function createPrivacyLayer({ video, canvas, config, document: doc = document, timers = globalThis, now = () => Date.now() }) {
+export function createPrivacyLayer({ video, canvas, config, document: doc = document, timers = globalThis, now = () => globalThis.performance?.now() ?? Date.now() }) {
   let active = false, ready = false, timer = null, destroyed = false;
   let patches = [];
   let failed = false;
-  let weather = null, weatherRead = -Infinity, weatherTime = null;
+  let weather = null, weatherTime = null;
   let availableProfiles = [], weatherWeights = {}, weatherKey = '';
   const optionalFailures = [], assetTimers = new Set();
   const scene = { mix: null, count: 0 };
@@ -141,7 +141,7 @@ export function createPrivacyLayer({ video, canvas, config, document: doc = docu
     canvas.hidden = true;
     canvas.dataset.coverage = reason;
     scene.mix = null; scene.count = 0;
-    weather?.interrupt(); weatherRead = -Infinity; weatherTime = null;
+    weather?.interrupt(); weatherTime = null;
     for (const patch of patches) { patch.brightness = null; patch.edgeState = []; patch.materialStates = []; patch.baseState = {}; }
   }
   function tick() {
@@ -160,10 +160,10 @@ export function createPrivacyLayer({ video, canvas, config, document: doc = docu
       const clock = now();
       if(!next.every(Boolean)) weather?.interrupt();
       // Only advancing, correctly masked frames can contribute weather evidence.
-      if (weather && next.every(Boolean) && clock-weatherRead>=5000 &&
+      if (weather && next.every(Boolean) && weather.isDue(clock) &&
           (weatherTime===null || Math.abs(video.currentTime-weatherTime)>.2)) {
         weather.observe(describeWeather(frame, config.weather.samples, config.width, config.height),clock,mix);
-        weatherRead=clock; weatherTime=video.currentTime;
+        weatherTime=video.currentTime;
       }
       weatherWeights = weather?.weights(clock) ?? {};
       const key=JSON.stringify(weatherWeights);
@@ -277,18 +277,22 @@ export function createPrivacyLayer({ video, canvas, config, document: doc = docu
     // Optional downloads settling must not change the displayed photograph by
     // themselves. Start matching once all optional requests have settled.
     const pending=profiles.some(([id])=>!loaded[id] && !optionalFailures.includes(id));
-    if(!pending && valid.length && !weather) {
-      weather=createWeatherSelector(valid,config.weather.samples,config.weather.settings);
-      weatherRead=-Infinity;weatherTime=null;weatherKey='';
+    if(!pending && valid.length) {
+      if(weather) weather.updateProfiles(valid);
+      else {
+        weather=createWeatherSelector(valid,config.weather.samples,config.weather.settings);
+        weatherTime=null;weatherKey='';
+      }
     }
   }
   function fail(reason) { failed = true; ready = false; stop(reason); }
   for (const [name, url] of profiles) {
     const optional = name!=='day' && name!=='night';
-    let settled=false, assetTimer=null;
+    let settled=false, assetTimer=null, retryTimer=null, attempts=0, accepted=false;
+    function clearAssetTimer(id) {timers.clearTimeout(id);assetTimers.delete(id);}
     function settle() {
       if(settled) return false;
-      settled=true;timers.clearTimeout(assetTimer);assetTimers.delete(assetTimer);return true;
+      settled=true;clearAssetTimer(assetTimer);return true;
     }
     function reject(reason) {
       if(!optional) {fail(reason);return;}
@@ -299,7 +303,9 @@ export function createPrivacyLayer({ video, canvas, config, document: doc = docu
     const image = doc.createElement('img');
     images.push(image);
     image.onload = () => {
-      if (destroyed || failed || !settle()) return;
+      if (destroyed || failed || accepted) return;
+      // A slow successful response must still be admitted after the timeout.
+      settle(); clearAssetTimer(retryTimer);
       try {
         if (image.naturalWidth !== config.width || image.naturalHeight !== config.height) { reject('asset-mismatch'); return; }
         const source = doc.createElement('canvas');
@@ -312,6 +318,9 @@ export function createPrivacyLayer({ video, canvas, config, document: doc = docu
           const height = Math.min(config.height - y, region.height + 32);
           return { x, y, width, height, data: tintPatch(context.getImageData(x, y, width, height).data, PHOTO_CORRECTION) };
         });
+        accepted=true;
+        const failure=optionalFailures.indexOf(name);
+        if(failure!==-1) optionalFailures.splice(failure,1);
         if (!loaded.day || !loaded.night) return;
         if(optional && loaded[name].some((part,i)=>part.data.some((v,p)=>p%4===3 && v!==loaded.day[i].data[p]))) {
           reject('profile-alpha-mismatch');return;
@@ -334,14 +343,34 @@ export function createPrivacyLayer({ video, canvas, config, document: doc = docu
         ready = true; addWeatherProfiles(); refresh();
       } catch { reject('asset-unavailable'); }
     };
-    image.onerror = () => {if(!destroyed && settle()) reject('asset-unavailable');};
-    if(optional) {assetTimer=timers.setTimeout(()=>{if(!destroyed && settle()) reject('asset-timeout');},10000);assetTimers.add(assetTimer);}
-    image.src = url;
+    function scheduleRetry() {
+      if(!optional || destroyed || accepted || retryTimer!==null) return;
+      retryTimer=timers.setTimeout(()=> {
+        assetTimers.delete(retryTimer);retryTimer=null;
+        if(!destroyed && !accepted) request();
+      },attempts<2?30000:300000);
+      assetTimers.add(retryTimer);
+    }
+    image.onerror = () => {
+      if(destroyed || accepted) return;
+      settle();reject('asset-unavailable');scheduleRetry();
+    };
+    function request() {
+      settled=false;attempts++;
+      if(optional) {
+        assetTimer=timers.setTimeout(()=> {
+          if(!destroyed && !accepted && settle()) {reject('asset-timeout');scheduleRetry();}
+        },30000);
+        assetTimers.add(assetTimer);
+      }
+      image.src = attempts===1?url:`${url}${url.includes('?')?'&':'?'}retry=${attempts}`;
+    }
+    request();
   }
   for (const event of ['loadeddata', 'resize', 'playing']) video.addEventListener(event, refresh);
   doc.addEventListener('visibilitychange', refresh);
   return {
-    getDiagnostics() { return {coverage:canvas.dataset.coverage,dayNightMix:scene.mix,
+    getDiagnostics() { return {version:'2.24',coverage:canvas.dataset.coverage,dayNightMix:scene.mix,
       weather:weather?.diagnostics()??null,availableProfiles:availableProfiles.map(p=>({id:p.id,label:p.label})),unavailableProfiles:[...optionalFailures]}; },
     setActive(value) {
       const changed = active !== value; active = value;

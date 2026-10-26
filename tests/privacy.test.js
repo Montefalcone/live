@@ -77,8 +77,8 @@ test('missing or moved black masks reject the cosmetic patch', () => {
 
 function setup(configuration = config) {
   const doc = new EventTarget(); doc.hidden = false;
-  const video = new EventTarget(); Object.assign(video, { videoWidth: 64, videoHeight: 36, readyState: 2 });
-  const state = { denied: false, detailDenied: false, detailReads: 0, writes: 0, images: [], contexts: 0, wrongAlpha: false };
+  const video = new EventTarget(); Object.assign(video, { videoWidth: 64, videoHeight: 36, readyState: 2, currentTime:0 });
+  const state = { now:0, denied: false, detailDenied: false, detailReads: 0, writes: 0, images: [], contexts: 0, wrongAlpha: false };
   const context = {
     drawImage(image, ...coordinates) {
       if (state.denied) throw new Error('SecurityError');
@@ -104,7 +104,7 @@ function setup(configuration = config) {
   };
   const pending = new Map(); let index = 0;
   const timers = { setTimeout(fn) { pending.set(++index, fn); return index; }, clearTimeout(id) { pending.delete(id); } };
-  const controller = createPrivacyLayer({ video, canvas, config: configuration, document: doc, timers });
+  const controller = createPrivacyLayer({ video, canvas, config: configuration, document: doc, timers, now:()=>state.now });
   return { doc, video, canvas, state, pending, controller };
 }
 const loadAssets = s => s.state.images.forEach(image => image.onload());
@@ -112,12 +112,24 @@ const weatherConfig = () => ({...config,weather:{samples:[],profiles:[
   {id:'day',label:'Original',signature:[],regions:[{samples:[],materials:[]}]},
   {id:'fog',label:'Fog',artwork:'./weather.png',signature:[],regions:[{samples:[],materials:[]}]},
 ]}});
+test('renderer evaluates weather at startup and 300 seconds, not every tick or resume',()=>{
+  const s=setup(weatherConfig());loadAssets(s);s.controller.setActive(true);
+  assert.equal(s.controller.getDiagnostics().weather.checks,1);
+  function tickAt(ms) {s.state.now=ms;s.video.currentTime=ms/1000;const fn=[...s.pending.values()][0];s.pending.clear();fn();}
+  for(const ms of [500,5000,15000,60000,120000,299999]) tickAt(ms);
+  assert.equal(s.controller.getDiagnostics().weather.checks,1);
+  tickAt(300000);assert.equal(s.controller.getDiagnostics().weather.checks,2);
+  s.controller.setActive(false);s.state.now=310000;s.controller.setActive(true);
+  assert.equal(s.controller.getDiagnostics().weather.checks,2);
+  tickAt(600000);assert.equal(s.controller.getDiagnostics().weather.checks,3);
+  s.controller.destroy();
+});
 test('optional weather image failure preserves the base cover and records the missing profile',()=>{
   const s=setup(weatherConfig());s.controller.setActive(true);
   s.state.images[0].onload();s.state.images[1].onload();s.state.images[2].onerror();
   assert.equal(s.canvas.hidden,false);assert.equal(s.canvas.dataset.coverage,'photographic');
   assert.deepEqual(s.controller.getDiagnostics().unavailableProfiles,['fog']);
-  assert.equal(s.pending.size,1);s.controller.destroy();assert.equal(s.pending.size,0);
+  assert.equal(s.pending.size,2);s.controller.destroy();assert.equal(s.pending.size,0);
 });
 test('optional weather coverage mismatch is excluded, including when it loads before base images',()=>{
   for(const order of [[0,1,2],[2,0,1]]) {
@@ -127,12 +139,23 @@ test('optional weather coverage mismatch is excluded, including when it loads be
     assert.equal(s.controller.getDiagnostics().availableProfiles.length,1);s.controller.destroy();
   }
 });
-test('optional asset timeout leaves the live cover intact, ignores late results and releases timers',()=>{
+test('slow optional assets are admitted after timeout and cancel their retry',()=>{
   const s=setup(weatherConfig());s.controller.setActive(true);
   const timeout=[...s.pending.values()][0];s.state.images[0].onload();s.state.images[1].onload();timeout();
   assert.equal(s.canvas.hidden,false);assert.deepEqual(s.controller.getDiagnostics().unavailableProfiles,['fog']);
-  s.state.images[2].onload();assert.equal(s.controller.getDiagnostics().availableProfiles.length,1);
+  s.state.images[2].onload();assert.equal(s.controller.getDiagnostics().availableProfiles.length,2);
+  assert.deepEqual(s.controller.getDiagnostics().unavailableProfiles,[]);assert.equal(s.pending.size,1);
   s.controller.destroy();assert.equal(s.pending.size,0);
+});
+test('a transient optional image error is retried and the recovered profile becomes selectable',()=>{
+  const s=setup(weatherConfig());s.controller.setActive(true);
+  s.state.images[0].onload();s.state.images[1].onload();s.state.images[2].onerror();
+  const [id,retry]=[...s.pending.entries()][1];s.pending.delete(id);retry();
+  assert.equal(s.state.images[2].src,'./weather.png?retry=2');
+  s.state.images[2].onload();
+  assert.deepEqual(s.controller.getDiagnostics().unavailableProfiles,[]);
+  assert.equal(s.controller.getDiagnostics().availableProfiles.length,2);
+  assert.equal(s.canvas.hidden,false);s.controller.destroy();assert.equal(s.pending.size,0);
 });
 test('optional roof flare sampling failure does not stop the photographic cover or playback', () => {
   const calibrated = { ...config, regions: [{ ...config.regions[0],

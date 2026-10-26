@@ -46,11 +46,13 @@ export function rankWeather(observed, profiles, samples, settings={}) {
   results.sort((a,b)=>a.score-b.score);
   const first=results[0],second=results[1];
   const matched=Boolean(first && first.score<=(settings.maxScore??.42) && (!second || second.score-first.score>=(settings.margin??.035)));
-  return {matched, best:matched?first.id:null, scores:results};
+  return {matched, best:matched?first.id:null,
+    nearest:first && first.score<=(settings.maxScore??.42)?first.id:null, scores:results};
 }
 
 export function createWeatherSelector(profiles, samples, options={}) {
-  let current=null, candidate=null, since=0, hits=0, changedAt=-Infinity, lastRead=-Infinity;
+  let current=null, candidate=null, lastRead=null, checks=0;
+  const intervalMs=options.intervalMs??300000;
   let weights={}, startWeights={}, fadeAt=null, report={matched:false,best:null,scores:[]};
   function blend(now) {
     if(fadeAt!==null) {
@@ -62,28 +64,36 @@ export function createWeatherSelector(profiles, samples, options={}) {
     return {...weights};
   }
   return {
+    isDue(now) {return profiles.length>1 && (lastRead===null || now-lastRead>=intervalMs);},
+    updateProfiles(next) {profiles=next;},
     observe(signature, now, nightMix=0) {
       blend(now);
-      if(now-lastRead>15000) {candidate=null;hits=0;}
-      lastRead=now;
-      if(nightMix>.25) {candidate=null;hits=0;report={matched:false,best:null,scores:[]};return;}
+      if(lastRead!==null && now-lastRead<intervalMs) return;
+      if(lastRead!==null && now-lastRead>intervalMs*1.5) candidate=null;
+      lastRead=now;checks++;
+      if(nightMix>.25) {candidate=null;report={matched:false,best:null,scores:[]};return;}
       report=rankWeather(signature,profiles,samples,options);
+      // An ambiguous weather label must not force the unrelated original photo.
+      // Prefer the nearest credible photo; keep the classification uncertain.
+      const preferred=report.best??report.nearest;
       if(current===null) {
-        current=report.best??profiles[0]?.id; weights=current?{[current]:1}:{}; changedAt=now;
+        current=preferred??profiles[0]?.id; weights=current?{[current]:1}:{};
         return;
       }
-      if(!report.best || report.best===current) {candidate=null;hits=0;return;}
+      if(!preferred || preferred===current) {candidate=null;return;}
       // Require a meaningful improvement over the currently selected reference.
       const old=report.scores.find(p=>p.id===current),best=report.scores[0];
-      if(old && old.score-best.score<(options.switchMargin??.06)) {candidate=null;hits=0;return;}
-      if(candidate!==report.best) {candidate=report.best;since=now;hits=1;return;}
-      hits++;
-      if(hits<6 || now-since<(options.holdMs??30000) || now-changedAt<(options.dwellMs??120000)) return;
-      startWeights={...weights};current=candidate;fadeAt=now;changedAt=now;candidate=null;hits=0;
+      const improvement=old?old.score-best.score:Infinity;
+      if(improvement<(options.switchMargin??.06)) {candidate=null;return;}
+      // Five-minute cadence already prevents rapid toggles. A clear winner can
+      // correct the cover now; borderline changes need two consecutive checks.
+      const strong=best.score<=(options.strongMaxScore??.25) && improvement>=(options.strongMargin??.10);
+      if(!strong && candidate!==preferred) {candidate=preferred;return;}
+      startWeights={...weights};current=preferred;fadeAt=now;candidate=null;
     },
     weights(now) { return blend(now); },
-    interrupt() {candidate=null;hits=0;lastRead=-Infinity;},
-    diagnostics() {return {profile:current,candidate,matched:report.matched,classification:report.matched?profiles.find(p=>p.id===report.best)?.condition:null,scores:report.scores.map(p=>({...p})),weights:{...weights},transition:fadeAt!==null};},
+    interrupt() {candidate=null;},
+    diagnostics() {return {profile:current,candidate,matched:report.matched,classification:report.matched?profiles.find(p=>p.id===report.best)?.condition:null,scores:report.scores.map(p=>({...p})),weights:{...weights},transition:fadeAt!==null,intervalMs,checks,lastCheckMs:lastRead,nextCheckMs:lastRead===null?null:lastRead+intervalMs};},
   };
 }
 
