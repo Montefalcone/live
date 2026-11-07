@@ -25,9 +25,11 @@ export function rankWeather(observed, profiles, samples, settings={}) {
   const results=[];
   for(const profile of profiles) {
     if(!profile.signature || profile.signature.length!==samples.length) continue;
-    const usable=samples.map((s,i)=>i).filter(i=>observed[i] && profile.signature[i] && observed[i].black<.5 && observed[i].clipped<.8 && light(profile.signature[i].rgb)>15);
+    const usable=samples.map((s,i)=>i).filter(i=>observed[i] && profile.signature[i] && observed[i].clipped<.8 &&
+      ((observed[i].black<.5 && light(profile.signature[i].rgb)>15) ||
+       (profile.period==='notte' && ['sky','hills'].includes(samples[i].group))));
     if(usable.length<Math.ceil(samples.length*.7)) continue;
-    const anchors=usable.filter(i=>samples[i].group==='walls');
+    const anchors=usable.filter(i=>samples[i].group==='walls' && light(observed[i].rgb)>15 && light(profile.signature[i].rgb)>15);
     if(anchors.length<2) continue;
     const gain=clamp(median(anchors.map(i=>light(observed[i].rgb)/light(profile.signature[i].rgb))),.65,1.5);
     const groups={};
@@ -71,11 +73,12 @@ export function createWeatherSelector(profiles, samples, options={}) {
       if(lastRead!==null && now-lastRead<intervalMs) return;
       if(lastRead!==null && now-lastRead>intervalMs*1.5) candidate=null;
       lastRead=now;checks++;
-      if(nightMix>.25) {candidate=null;report={matched:false,best:null,scores:[]};return;}
+      if(nightMix>.25 && !options.allowNight) {candidate=null;report={matched:false,best:null,scores:[]};return;}
       report=rankWeather(signature,profiles,samples,options);
       // An ambiguous weather label must not force the unrelated original photo.
       // Prefer the nearest credible photo; keep the classification uncertain.
-      const preferred=report.best??report.nearest;
+      const fallback=options.allowNight && nightMix>.75 && profiles.some(p=>p.id==='night')?'night':null;
+      const preferred=report.best??report.nearest??fallback;
       if(current===null) {
         current=preferred??profiles[0]?.id; weights=current?{[current]:1}:{};
         return;
@@ -83,11 +86,11 @@ export function createWeatherSelector(profiles, samples, options={}) {
       if(!preferred || preferred===current) {candidate=null;return;}
       // Require a meaningful improvement over the currently selected reference.
       const old=report.scores.find(p=>p.id===current),best=report.scores[0];
-      const improvement=old?old.score-best.score:Infinity;
+      const improvement=old && best?old.score-best.score:Infinity;
       if(improvement<(options.switchMargin??.06)) {candidate=null;return;}
       // Five-minute cadence already prevents rapid toggles. A clear winner can
       // correct the cover now; borderline changes need two consecutive checks.
-      const strong=best.score<=(options.strongMaxScore??.25) && improvement>=(options.strongMargin??.10);
+      const strong=best && best.score<=(options.strongMaxScore??.25) && improvement>=(options.strongMargin??.10);
       if(!strong && candidate!==preferred) {candidate=preferred;return;}
       startWeights={...weights};current=preferred;fadeAt=now;candidate=null;
     },
@@ -95,6 +98,16 @@ export function createWeatherSelector(profiles, samples, options={}) {
     interrupt() {candidate=null;},
     diagnostics() {return {profile:current,candidate,matched:report.matched,classification:report.matched?profiles.find(p=>p.id===report.best)?.condition:null,scores:report.scores.map(p=>({...p})),weights:{...weights},transition:fadeAt!==null,intervalMs,checks,lastCheckMs:lastRead,nextCheckMs:lastRead===null?null:lastRead+intervalMs};},
   };
+}
+
+// Night photographs already include their own fog and illumination. Applying the
+// clear-night blend again would wash out that reference (a bright foggy sky can
+// also fool the old day/night ratio). RGB and exposure use this same mix.
+export function weatherNightMix(baseMix, weights, profiles) {
+  const total=Object.values(weights).reduce((sum,w)=>sum+w,0);
+  if(!total) return baseMix;
+  const night=profiles.filter(p=>p.period==='notte').reduce((sum,p)=>sum+(weights[p.id]??0),0);
+  return baseMix*(1-clamp(night/total,0,1));
 }
 
 // RGB crossfade with immutable coverage; never crossfade DOM/canvas opacity.

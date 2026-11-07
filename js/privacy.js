@@ -1,8 +1,8 @@
 // Cosmetic layer only. The camera must deliver the permanently masked picture.
-import { prepareEdgeBlend, measureEdgeDeltas, updateEdgeDeltas, applyEdgeBlend } from './privacy-edge.js?v=2.24';
-import { estimateSampleGain, prepareMaterials, advanceMaterialGain, applyMaterialGains, prepareRoofTexture, applyRoofTexture } from './privacy-materials.js?v=2.24';
-import { prepareRoofGlare, applyRoofGlare } from './privacy-glare.js?v=2.24';
-import { describeWeather, createWeatherSelector, blendWeatherPixels, weatherSamples } from './privacy-weather.js?v=2.24';
+import { prepareEdgeBlend, measureEdgeDeltas, updateEdgeDeltas, applyEdgeBlend } from './privacy-edge.js?v=2.25';
+import { estimateSampleGain, prepareMaterials, advanceMaterialGain, applyMaterialGains, prepareRoofTexture, applyRoofTexture } from './privacy-materials.js?v=2.25';
+import { prepareRoofGlare, applyRoofGlare } from './privacy-glare.js?v=2.25';
+import { describeWeather, createWeatherSelector, blendWeatherPixels, weatherSamples, weatherNightMix } from './privacy-weather.js?v=2.25';
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 const luminance = rgb => .2126 * rgb[0] + .7152 * rgb[1] + .0722 * rgb[2];
 
@@ -155,7 +155,7 @@ export function createPrivacyLayer({ video, canvas, config, document: doc = docu
       probeContext.drawImage(video, 0, 0, probe.width, probe.height);
       const frame = probeContext.getImageData(0, 0, probe.width, probe.height);
       const next = analyzeFrame(frame, config);
-      const mix = advanceScene(scene, estimateNightMix(frame, config));
+      let mix = advanceScene(scene, estimateNightMix(frame, config));
       if (mix === null) { canvas.hidden = true; timer = timers.setTimeout(tick, 500); return; }
       const clock = now();
       if(!next.every(Boolean)) weather?.interrupt();
@@ -166,6 +166,7 @@ export function createPrivacyLayer({ video, canvas, config, document: doc = docu
         weatherTime=video.currentTime;
       }
       weatherWeights = weather?.weights(clock) ?? {};
+      mix = weatherNightMix(mix, weatherWeights, availableProfiles);
       const key=JSON.stringify(weatherWeights);
       if(key!==weatherKey) {
         for(const patch of patches) blendWeatherPixels(patch.weatherSources,weatherWeights,patch.day);
@@ -240,7 +241,7 @@ export function createPrivacyLayer({ video, canvas, config, document: doc = docu
       });
       canvas.hidden = visible === 0;
       canvas.dataset.coverage = visible === config.regions.length ? 'photographic' : 'partial-or-unmatched';
-      canvas.dataset.profile = mix < .01 ? 'day' : mix > .99 ? 'night' : 'transition';
+      canvas.dataset.profile = weatherNightMix(1, weatherWeights, availableProfiles) < .01 ? 'night' : mix < .01 ? 'day' : mix > .99 ? 'night' : 'transition';
       canvas.dataset.weatherProfile = weather?.diagnostics().profile ?? 'day';
     } catch {
       // Tainted canvas/CORS, device limitations or decode failures must not break playback.
@@ -254,7 +255,7 @@ export function createPrivacyLayer({ video, canvas, config, document: doc = docu
   }
   const images = [], loaded = {};
   const profiles = [['day', config.artwork], ['night', config.nightArtwork ?? config.artwork],
-    ...(config.weather?.profiles ?? []).filter(p=>p.id!=='day').map(p=>[p.id,p.artwork])];
+    ...(config.weather?.profiles ?? []).filter(p=>p.id!=='day' && p.id!=='night').map(p=>[p.id,p.artwork])];
   function addWeatherProfiles() {
     const candidates=(config.weather?.profiles ?? []).filter(p=>loaded[p.id]);
     const valid=candidates.filter(profile=> {
@@ -370,7 +371,7 @@ export function createPrivacyLayer({ video, canvas, config, document: doc = docu
   for (const event of ['loadeddata', 'resize', 'playing']) video.addEventListener(event, refresh);
   doc.addEventListener('visibilitychange', refresh);
   return {
-    getDiagnostics() { return {version:'2.24',coverage:canvas.dataset.coverage,dayNightMix:scene.mix,
+    getDiagnostics() { return {version:'2.25',coverage:canvas.dataset.coverage,dayNightMix:scene.mix,
       weather:weather?.diagnostics()??null,availableProfiles:availableProfiles.map(p=>({id:p.id,label:p.label})),unavailableProfiles:[...optionalFailures]}; },
     setActive(value) {
       const changed = active !== value; active = value;

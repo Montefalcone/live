@@ -93,3 +93,38 @@ test('a late downloaded profile joins an existing selector without resetting the
   s.observe(fog.signature,0);assert.equal(s.diagnostics().profile,fog.id);
   s.updateProfiles(catalog.profiles);assert.equal(s.isDue(5000),false);
 });
+
+test('foggy night is eligible even when illuminated fog makes the day/night ratio look like daytime',()=>{
+ const fogNight=catalog.profiles.find(p=>p.id==='fog-night');
+ for(const mix of [0,.5,1]) {
+  const s=createWeatherSelector(catalog.profiles,catalog.samples,catalog.settings);
+  s.observe(fogNight.signature,0,mix);
+  assert.equal(s.diagnostics().profile,'fog-night');
+ }
+});
+test('clear night and foggy night can switch both ways on the existing five-minute cadence',()=>{
+ const fogNight=catalog.profiles.find(p=>p.id==='fog-night');
+ const night=catalog.profiles.find(p=>p.id==='night');
+ const s=createWeatherSelector(catalog.profiles,catalog.samples,catalog.settings);
+ s.observe(night.signature,0,1);assert.equal(s.diagnostics().profile,'night');
+ s.observe(fogNight.signature,300000,0);assert.equal(s.diagnostics().profile,'fog-night');
+ s.weights(308000);
+ s.observe(night.signature,600000,1);assert.equal(s.diagnostics().profile,'night');
+ s.weights(608000);
+ s.observe(sun.signature,900000,0);assert.equal(s.diagnostics().profile,'day');
+});
+test('a full blackout cannot be classified as the clear-night reference',()=>{
+ const blank=catalog.samples.map(()=>({rgb:[0,0,0],contrast:0,black:1,clipped:0}));
+ assert.equal(rank(blank).matched,false);
+});
+test('night-specific photography is not mixed back with the old clear-night artwork',async()=>{
+ const {weatherNightMix}=await import('../js/privacy-weather.js');
+ assert.equal(weatherNightMix(1,{'fog-night':1},catalog.profiles),0);
+ assert.equal(weatherNightMix(.8,{'fog-night':.5,day:.5},catalog.profiles),.4);
+ assert.equal(weatherNightMix(.8,{day:1},catalog.profiles),.8);
+ assert.equal(weatherNightMix(.8,{},catalog.profiles),.8);
+});
+test('independent November 7 player screenshot selects fog-night with existing covers masked out',()=>{
+ const observed=JSON.parse(fs.readFileSync(new URL('./fixtures/weather-scene-20261107.json',import.meta.url)));
+ assert.equal(rank(observed).best,'fog-night');
+});

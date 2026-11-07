@@ -1,8 +1,8 @@
-import { createLandscapeController, playbackPresentation } from './interface.js?v=2.24';
-import { CAMERA, SHARE_URL } from './config.js?v=2.24';
-import { createPrivacyLayer } from './privacy.js?v=2.24';
-import { PRIVACY_CALIBRATION } from './privacy-calibration.js?v=2.24';
-import { LivePlayer } from './player.js?v=2.24';
+import { createLandscapeController, playbackPresentation } from './interface.js?v=2.25';
+import { CAMERA, SHARE_URL } from './config.js?v=2.25';
+import { createPrivacyLayer } from './privacy.js?v=2.25';
+import { PRIVACY_CALIBRATION } from './privacy-calibration.js?v=2.25';
+import { LivePlayer } from './player.js?v=2.25';
 
 const $ = id => document.getElementById(id);
 const video = $('liveVideo');
