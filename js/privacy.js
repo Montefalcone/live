@@ -1,8 +1,8 @@
 // Cosmetic layer only. The camera must deliver the permanently masked picture.
-import { prepareEdgeBlend, measureEdgeDeltas, updateEdgeDeltas, applyEdgeBlend } from './privacy-edge.js?v=2.25';
-import { estimateSampleGain, prepareMaterials, advanceMaterialGain, applyMaterialGains, prepareRoofTexture, applyRoofTexture } from './privacy-materials.js?v=2.25';
-import { prepareRoofGlare, applyRoofGlare } from './privacy-glare.js?v=2.25';
-import { describeWeather, createWeatherSelector, blendWeatherPixels, weatherSamples, weatherNightMix } from './privacy-weather.js?v=2.25';
+import { prepareEdgeBlend, measureEdgeDeltas, updateEdgeDeltas, applyEdgeBlend } from './privacy-edge.js?v=2.26';
+import { estimateSampleGain, prepareMaterials, advanceMaterialGain, applyMaterialGains, prepareRoofTexture, applyRoofTexture } from './privacy-materials.js?v=2.26';
+import { prepareRoofGlare, applyRoofGlare } from './privacy-glare.js?v=2.26';
+import { describeWeather, createWeatherSelector, blendWeatherPixels, weatherSamples, weatherNightMix } from './privacy-weather.js?v=2.26';
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 const luminance = rgb => .2126 * rgb[0] + .7152 * rgb[1] + .0722 * rgb[2];
 
@@ -371,7 +371,7 @@ export function createPrivacyLayer({ video, canvas, config, document: doc = docu
   for (const event of ['loadeddata', 'resize', 'playing']) video.addEventListener(event, refresh);
   doc.addEventListener('visibilitychange', refresh);
   return {
-    getDiagnostics() { return {version:'2.25',coverage:canvas.dataset.coverage,dayNightMix:scene.mix,
+    getDiagnostics() { return {version:'2.26',coverage:canvas.dataset.coverage,dayNightMix:scene.mix,
       weather:weather?.diagnostics()??null,availableProfiles:availableProfiles.map(p=>({id:p.id,label:p.label})),unavailableProfiles:[...optionalFailures]}; },
     setActive(value) {
       const changed = active !== value; active = value;

@@ -128,3 +128,29 @@ test('independent November 7 player screenshot selects fog-night with existing c
  const observed=JSON.parse(fs.readFileSync(new URL('./fixtures/weather-scene-20261107.json',import.meta.url)));
  assert.equal(rank(observed).best,'fog-night');
 });
+
+test('shop light switches between the two fog photographs at the next five-minute check',()=>{
+ const on=catalog.profiles.find(p=>p.id==='fog-night'),off=catalog.profiles.find(p=>p.id==='fog-night-shop-off');
+ const s=createWeatherSelector(catalog.profiles,catalog.samples,catalog.settings);
+ s.observe(on.signature,0,.15);
+ s.observe(off.signature,299999,.15);assert.equal(s.diagnostics().profile,on.id);
+ s.observe(off.signature,300000,.15);assert.equal(s.diagnostics().profile,off.id);
+ assert.equal(s.weights(308000)[off.id],1);
+ s.observe(on.signature,600000,.15);assert.equal(s.diagnostics().profile,on.id);
+});
+test('shop-light classification uses the live surroundings, not the old painted glow in the screenshot',()=>{
+ const observed=JSON.parse(fs.readFileSync(new URL('./fixtures/weather-scene-20261107-shop-off.json',import.meta.url)));
+ assert.equal(rank(observed).best,'fog-night-shop-off');
+ const s=createWeatherSelector(catalog.profiles,catalog.samples,catalog.settings);
+ s.observe(catalog.profiles.find(p=>p.id==='fog-night').signature,0,.15);
+ s.observe(observed,300000,.15);
+ assert.equal(s.diagnostics().profile,'fog-night-shop-off');
+});
+test('one bright headlight or dark occluder in a lighting sample cannot select the wrong shop state',()=>{
+ const indices=catalog.samples.map((s,i)=>s.group==='shop-light'?i:-1).filter(i=>i>=0);
+ for(const id of ['fog-night','fog-night-shop-off'])for(const index of indices)for(const rgb of [[240,240,240],[25,25,25]]){
+  const observed=structuredClone(catalog.profiles.find(p=>p.id===id).signature);
+  observed[index]={rgb,contrast:30,black:0,clipped:0};
+  assert.equal(rank(observed).best,id);
+ }
+});

@@ -25,10 +25,11 @@ export function rankWeather(observed, profiles, samples, settings={}) {
   const results=[];
   for(const profile of profiles) {
     if(!profile.signature || profile.signature.length!==samples.length) continue;
-    const usable=samples.map((s,i)=>i).filter(i=>observed[i] && profile.signature[i] && observed[i].clipped<.8 &&
+    const relevant=samples.map((s,i)=>i).filter(i=>samples[i].group!=='shop-light' || profile.lighting);
+    const usable=relevant.filter(i=>observed[i] && profile.signature[i] && observed[i].clipped<.8 &&
       ((observed[i].black<.5 && light(profile.signature[i].rgb)>15) ||
        (profile.period==='notte' && ['sky','hills'].includes(samples[i].group))));
-    if(usable.length<Math.ceil(samples.length*.7)) continue;
+    if(usable.length<Math.ceil(relevant.length*.7)) continue;
     const anchors=usable.filter(i=>samples[i].group==='walls' && light(observed[i].rgb)>15 && light(profile.signature[i].rgb)>15);
     if(anchors.length<2) continue;
     const gain=clamp(median(anchors.map(i=>light(observed[i].rgb)/light(profile.signature[i].rgb))),.65,1.5);
@@ -41,8 +42,13 @@ export function rankWeather(observed, profiles, samples, settings={}) {
       (groups[samples[i].group]??=[]).push(.5*exposure+.9*color+.25*contrast);
     }
     if(Object.keys(groups).length<3) continue;
-    const weights={sky:.15,hills:.25,roof:.2,walls:.4}; let sum=0,total=0;
-    for(const [group,values] of Object.entries(groups)) { const w=weights[group]??.1; sum+=median(values)*w; total+=w; }
+    // Three separate pavement patches beside the shop distinguish local lighting
+    // from the fog itself. Their median limits a single vehicle/headlight sample.
+    const weights={sky:.15,hills:.25,roof:.2,walls:.4,'shop-light':1}; let sum=0,total=0;
+    for(const [group,values] of Object.entries(groups)) {
+      if(group==='shop-light' && !profile.lighting) continue;
+      const w=weights[group]??.1; sum+=median(values)*w; total+=w;
+    }
     results.push({id:profile.id,label:profile.label,condition:profile.condition,score:sum/total});
   }
   results.sort((a,b)=>a.score-b.score);
