@@ -30,13 +30,13 @@ test('unreliable wall readings do not request a new brightness correction', () =
   assert.equal(estimateBrightness(frame(), { samples: [sample, { ...sample, reference: [50, 50, 50] }] }, config), null);
 });
 
-test('photographic cover keeps its warm color and opacity with only a subtle fixed desaturation', () => {
+test('photographic cover keeps its warm color and opacity without desaturation', () => {
   const source = new Uint8ClampedArray([120, 100, 80, 255, 80, 70, 60, 128, 0, 0, 0, 0]);
   const result = tintPatch(source, PHOTO_CORRECTION);
   assert.ok(result[0] > result[1] && result[1] > result[2], 'wood must stay warm, not gray');
   for (let i = 0; i < source.length; i++) {
     if (i % 4 === 3) assert.equal(result[i], source[i], 'alpha must never change');
-    else assert.ok(Math.abs(result[i] - source[i]) <= 1, 'correction must remain subtle');
+    else assert.equal(result[i], source[i], 'preserve original RGB exactly');
   }
   assert.equal(source[0], 120);
 });
@@ -46,7 +46,7 @@ test('gray, dark and brightly lit surroundings never trigger RGB shifts or monoc
   for (const background of [[100, 100, 100], [0, 0, 0], [255, 255, 255], [190, 120, 20]]) {
     const correction = analyzeFrame(frame(true, background), config)[0];
     assert.deepEqual(tintPatch(original, correction), expected);
-    assert.equal(correction.saturation, .97);
+    assert.equal(correction.saturation, 1);
     assert.deepEqual(correction.gain, [1, 1, 1]);
   }
 });
@@ -112,16 +112,16 @@ const weatherConfig = () => ({...config,weather:{samples:[],profiles:[
   {id:'day',label:'Original',signature:[],regions:[{samples:[],materials:[]}]},
   {id:'fog',label:'Fog',artwork:'./weather.png',signature:[],regions:[{samples:[],materials:[]}]},
 ]}});
-test('renderer evaluates weather at startup and 300 seconds, not every tick or resume',()=>{
+test('renderer evaluates weather at startup and 30 seconds, not every tick or resume',()=>{
   const s=setup(weatherConfig());loadAssets(s);s.controller.setActive(true);
   assert.equal(s.controller.getDiagnostics().weather.checks,1);
   function tickAt(ms) {s.state.now=ms;s.video.currentTime=ms/1000;const fn=[...s.pending.values()][0];s.pending.clear();fn();}
-  for(const ms of [500,5000,15000,60000,120000,299999]) tickAt(ms);
+  for(const ms of [500,5000,15000,29999]) tickAt(ms);
   assert.equal(s.controller.getDiagnostics().weather.checks,1);
-  tickAt(300000);assert.equal(s.controller.getDiagnostics().weather.checks,2);
-  s.controller.setActive(false);s.state.now=310000;s.controller.setActive(true);
+  tickAt(30000);assert.equal(s.controller.getDiagnostics().weather.checks,2);
+  s.controller.setActive(false);s.state.now=31000;s.controller.setActive(true);
   assert.equal(s.controller.getDiagnostics().weather.checks,2);
-  tickAt(600000);assert.equal(s.controller.getDiagnostics().weather.checks,3);
+  tickAt(60000);assert.equal(s.controller.getDiagnostics().weather.checks,3);
   s.controller.destroy();
 });
 test('optional weather image failure preserves the base cover and records the missing profile',()=>{

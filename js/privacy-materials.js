@@ -70,7 +70,46 @@ export function advanceMaterialGain(state, target) {
   return state.gain;
 }
 
-export function applyMaterialGains(destination, day, night, mix, baseGain, materials, gains) {
+// A gain cannot match haze over a nearly black reference roof. Measure the
+// remaining neutral light from the same unmasked roof samples after that gain.
+export function estimateMaterialOffset(frame, samples, config, mix, gain) {
+  const deltas=[];
+  for(const sample of samples??[]) {
+    const x0=Math.ceil(sample.x*frame.width/config.width),x1=Math.floor((sample.x+sample.width)*frame.width/config.width);
+    const y0=Math.ceil(sample.y*frame.height/config.height),y1=Math.floor((sample.y+sample.height)*frame.height/config.height);
+    let sum=0,count=0,clipped=0;
+    for(let y=Math.max(0,y0);y<Math.min(frame.height,y1);y++)for(let x=Math.max(0,x0);x<Math.min(frame.width,x1);x++){
+      const p=(y*frame.width+x)*4,rgb=frame.data.subarray(p,p+3);
+      sum+=light(rgb);count++;if(Math.max(...rgb)>245)clipped++;
+    }
+    const actual=sum/count;
+    const expected=light(sample.reference.map((v,c)=>v*(1-mix)+(sample.nightReference??sample.reference)[c]*mix))*gain;
+    if(!count || !Number.isFinite(actual+expected) || actual<3 || actual>220 || clipped/count>.05)continue;
+    deltas.push(actual-expected);
+  }
+  if(deltas.length<2)return null;
+  const center=median(deltas),consistent=deltas.filter(d=>Math.abs(d-center)<8);
+  return consistent.length>=Math.max(2,Math.ceil(deltas.length/2)) ? clamp(median(consistent),-24,24) : null;
+}
+
+export function advanceMaterialOffset(state,target) {
+  state.value??=0;
+  if(target===null || !Number.isFinite(target)) {
+    state.count=0;state.misses=(state.misses??0)+1;
+    if(state.misses>4)state.value*=.85;
+    return state.value;
+  }
+  state.misses=0;
+  if(Math.abs(target-state.value)>6) {
+    if(state.candidate===undefined || Math.abs(target-state.candidate)>4)state.count=0;
+    state.candidate=target;state.count=(state.count??0)+1;
+    if(state.count<3)return state.value;
+  } else state.count=0;
+  state.value+=.15*(target-state.value);
+  return state.value;
+}
+
+export function applyMaterialGains(destination, day, night, mix, baseGain, materials, gains, offsets=[]) {
   // Recompute from immutable originals: no repeated multiplication or color drift.
   for(let m=0;m<materials.length;m++) {
     const material=materials[m], gain=gains[m]??1;
@@ -80,7 +119,8 @@ export function applyMaterialGains(destination, day, night, mix, baseGain, mater
       const g=day[p+1]*(1-mix)+night[p+1]*mix;
       const b=day[p+2]*(1-mix)+night[p+2]*mix;
       const safe=Math.min(baseGain*(1-w)+gain*w,255/Math.max(1,r,g,b));
-      destination[p]=r*safe;destination[p+1]=g*safe;destination[p+2]=b*safe;
+      const offset=(offsets[m]??0)*w;
+      destination[p]=r*safe+offset;destination[p+1]=g*safe+offset;destination[p+2]=b*safe+offset;
     }
   }
   return destination;

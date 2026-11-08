@@ -63,19 +63,57 @@ export function rankWeather(observed, profiles, samples, settings={}) {
     nearest:first && first.score<=(settings.maxScore??.42)?first.id:null, scores:results};
 }
 
+// Match partial clearance on the nearby, unmasked roof. Distant illuminated fog
+// still chooses the lighting reference, but no longer dictates all foreground haze.
+// This interpolates existing photographs, not a physical visibility estimate.
+export function foregroundWeatherWeights(signature, profile, profiles, samples) {
+  const fallback = {[profile.id]:1};
+  const clear = profiles.find(p=>p.id==='night');
+  if(profile.period!=='notte' || profile.condition!=='nebbia' || !clear) return fallback;
+  const usable = (s) => s && s.rgb?.every(Number.isFinite) && s.clipped<.1;
+  const anchors = samples.flatMap((s,i)=>{
+    const a=signature[i],b=profile.signature?.[i];
+    return s.group==='walls' && usable(a) && usable(b) && a.black<.5 && light(a.rgb)>15 && light(b.rgb)>15
+      ? [light(a.rgb)/light(b.rgb)] : [];
+  });
+  if(anchors.length<3) return fallback;
+  const gain=clamp(median(anchors),.65,1.5);
+  const fractions=samples.flatMap((s,i)=>{
+    const a=signature[i],b=profile.signature?.[i],c=clear.signature?.[i];
+    if(s.group!=='roof' || !usable(a) || !usable(b) || !usable(c)) return [];
+    const low=light(c.rgb),high=light(b.rgb);
+    if(high-low<12) return [];
+    const t=(light(a.rgb)/gain-low)/(high-low);
+    return t>=-.25 && t<=1.3 ? [t] : [];
+  });
+  if(fractions.length<2) return fallback;
+  const center=median(fractions), consistent=fractions.filter(t=>Math.abs(t-center)<=.2);
+  if(consistent.length<2) return fallback;
+  const fog=clamp(median(consistent),0,1);
+  return fog>=.98 ? fallback : {night:1-fog,[profile.id]:fog};
+}
+
 export function createWeatherSelector(profiles, samples, options={}) {
   let current=null, candidate=null, lastRead=null, checks=0;
   let clearanceStart=null, clearanceRead=null, clearanceChecks=0, clearanceChanges=0;
-  const intervalMs=options.intervalMs??300000;
-  let weights={}, startWeights={}, fadeAt=null, report={matched:false,best:null,scores:[]};
+  const intervalMs=options.intervalMs??30000;
+  let weights={}, startWeights={}, targetWeights={}, fadeAt=null, report={matched:false,best:null,scores:[]};
   function blend(now) {
     if(fadeAt!==null) {
       const t=clamp((now-fadeAt)/(options.fadeMs??8000),0,1), k=t*t*(3-2*t);
       weights={};
-      for(const p of profiles) weights[p.id]=(startWeights[p.id]??0)*(1-k)+(p.id===current?k:0);
+      for(const p of profiles) weights[p.id]=(startWeights[p.id]??0)*(1-k)+(targetWeights[p.id]??0)*k;
       if(t===1) fadeAt=null;
     }
     return {...weights};
+  }
+  function target(signature,id) {
+    const profile=profiles.find(p=>p.id===id);
+    return options.foregroundBlend && profile ? foregroundWeatherWeights(signature,profile,profiles,samples) : {[id]:1};
+  }
+  function transition(next,now) {
+    if(profiles.every(p=>Math.abs((targetWeights[p.id]??0)-(next[p.id]??0))<.02)) return;
+    startWeights=blend(now);targetWeights=next;fadeAt=now;
   }
   return {
     isDue(now) {return profiles.length>1 && (lastRead===null || now-lastRead>=intervalMs);},
@@ -97,7 +135,7 @@ export function createWeatherSelector(profiles, samples, options={}) {
           old.score-winner.score<(options.clearanceMargin??.12)) {clearanceStart=null;return;}
       clearanceStart??=now;
       if(now-clearanceStart<(options.clearanceHoldMs??10000)) return;
-      startWeights=blend(now);current='night';fadeAt=now;candidate=null;report=local;
+      transition({night:1},now);current='night';candidate=null;report=local;
       clearanceStart=null;clearanceChanges++;
     },
     updateProfiles(next) {profiles=next;},
@@ -113,23 +151,27 @@ export function createWeatherSelector(profiles, samples, options={}) {
       const fallback=options.allowNight && nightMix>.75 && profiles.some(p=>p.id==='night')?'night':null;
       const preferred=report.best??report.nearest??fallback;
       if(current===null) {
-        current=preferred??profiles[0]?.id; weights=current?{[current]:1}:{};
+        current=preferred??profiles[0]?.id; weights=current?target(signature,current):{};targetWeights={...weights};
         return;
       }
-      if(!preferred || preferred===current) {candidate=null;return;}
+      if(!preferred || preferred===current) {
+        candidate=null;
+        if(preferred===current) transition(target(signature,current),now);
+        return;
+      }
       // Require a meaningful improvement over the currently selected reference.
       const old=report.scores.find(p=>p.id===current),best=report.scores[0];
       const improvement=old && best?old.score-best.score:Infinity;
       if(improvement<(options.switchMargin??.06)) {candidate=null;return;}
-      // Five-minute cadence already prevents rapid toggles. A clear winner can
+      // The thirty-second cadence prevents rapid toggles. A clear winner can
       // correct the cover now; borderline changes need two consecutive checks.
       const strong=best && best.score<=(options.strongMaxScore??.25) && improvement>=(options.strongMargin??.10);
       if(!strong && candidate!==preferred) {candidate=preferred;return;}
-      startWeights={...weights};current=preferred;fadeAt=now;candidate=null;
+      transition(target(signature,preferred),now);current=preferred;candidate=null;
     },
     weights(now) { return blend(now); },
     interrupt() {candidate=null;clearanceStart=null;},
-    diagnostics() {return {profile:current,candidate,matched:report.matched,classification:report.matched?profiles.find(p=>p.id===report.best)?.condition:null,scores:report.scores.map(p=>({...p})),weights:{...weights},transition:fadeAt!==null,intervalMs,checks,lastCheckMs:lastRead,nextCheckMs:lastRead===null?null:lastRead+intervalMs,clearanceChecks,clearanceChanges};},
+    diagnostics() {return {profile:current,candidate,matched:report.matched,classification:report.matched?profiles.find(p=>p.id===report.best)?.condition:null,scores:report.scores.map(p=>({...p})),weights:{...weights},targetWeights:{...targetWeights},transition:fadeAt!==null,intervalMs,checks,lastCheckMs:lastRead,nextCheckMs:lastRead===null?null:lastRead+intervalMs,clearanceChecks,clearanceChanges};},
   };
 }
 

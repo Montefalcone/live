@@ -1,14 +1,14 @@
 // Cosmetic layer only. The camera must deliver the permanently masked picture.
-import { prepareEdgeBlend, measureEdgeDeltas, updateEdgeDeltas, applyEdgeBlend } from './privacy-edge.js?v=2.27';
-import { estimateSampleGain, prepareMaterials, advanceMaterialGain, applyMaterialGains, prepareRoofTexture, applyRoofTexture } from './privacy-materials.js?v=2.27';
-import { prepareRoofGlare, applyRoofGlare } from './privacy-glare.js?v=2.27';
-import { describeWeather, createWeatherSelector, blendWeatherPixels, weatherSamples, weatherNightMix } from './privacy-weather.js?v=2.27';
+import { prepareEdgeBlend, measureEdgeDeltas, updateEdgeDeltas, applyEdgeBlend } from './privacy-edge.js?v=2.28';
+import { estimateSampleGain, prepareMaterials, advanceMaterialGain, applyMaterialGains, estimateMaterialOffset, advanceMaterialOffset, prepareRoofTexture, applyRoofTexture } from './privacy-materials.js?v=2.28';
+import { prepareRoofGlare, applyRoofGlare } from './privacy-glare.js?v=2.28';
+import { describeWeather, createWeatherSelector, blendWeatherPixels, weatherSamples, weatherNightMix } from './privacy-weather.js?v=2.28';
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 const luminance = rgb => .2126 * rgb[0] + .7152 * rgb[1] + .0722 * rgb[2];
 
 // Preserve the approved apertures' hue. No global RGB white balance,
 // no automatic monochrome/IR inference, and no light-dependent desaturation.
-export const PHOTO_CORRECTION = Object.freeze({ gain: Object.freeze([1, 1, 1]), saturation: .97 });
+export const PHOTO_CORRECTION = Object.freeze({ gain: Object.freeze([1, 1, 1]), saturation: 1 });
 
 export function estimateBrightness(frame, region, config, mix = 0) {
   if (!region.samples?.length) return 1;
@@ -194,7 +194,13 @@ export function createPrivacyLayer({ video, canvas, config, document: doc = docu
             const desired = estimateSampleGain(frame, samples, config, mix, { ...material, minLight: 4 });
             return advanceMaterialGain(patch.materialStates[j] ??= {}, desired);
           });
-          applyMaterialGains(patch.pixels.data, patch.day, patch.night, mix, patch.brightness ?? 1, patch.materials, gains);
+          const offsets=patch.materials.map((material,j)=>{
+            if(!material.adaptHaze)return 0;
+            const samples=weatherSamples(material.samples,patch.weatherMaterials[j],weatherWeights);
+            const target=estimateMaterialOffset(frame,samples,config,mix,gains[j]);
+            return advanceMaterialOffset(patch.materialStates[j].offset??={},target);
+          });
+          applyMaterialGains(patch.pixels.data, patch.day, patch.night, mix, patch.brightness ?? 1, patch.materials, gains, offsets);
         }
         if (patch.edge && detailContext) {
           let targets;
@@ -373,7 +379,7 @@ export function createPrivacyLayer({ video, canvas, config, document: doc = docu
   for (const event of ['loadeddata', 'resize', 'playing']) video.addEventListener(event, refresh);
   doc.addEventListener('visibilitychange', refresh);
   return {
-    getDiagnostics() { return {version:'2.27',coverage:canvas.dataset.coverage,dayNightMix:scene.mix,
+    getDiagnostics() { return {version:'2.28',coverage:canvas.dataset.coverage,dayNightMix:scene.mix,
       weather:weather?.diagnostics()??null,availableProfiles:availableProfiles.map(p=>({id:p.id,label:p.label})),unavailableProfiles:[...optionalFailures]}; },
     setActive(value) {
       const changed = active !== value; active = value;

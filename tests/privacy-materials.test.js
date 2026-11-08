@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { estimateSampleGain, prepareMaterials, advanceMaterialGain, applyMaterialGains,
-  prepareRoofTexture, applyRoofTexture } from '../js/privacy-materials.js';
+  prepareRoofTexture, applyRoofTexture, estimateMaterialOffset, advanceMaterialOffset } from '../js/privacy-materials.js';
 import { analyzeFrame, mixPatches } from '../js/privacy.js';
 import { PRIVACY_CALIBRATION } from '../js/privacy-calibration.js';
 
@@ -110,7 +110,7 @@ test('production gutter rim stays photographic across every segment and receives
   assert.equal(texture,null);
   const roofOffsets=new Set(roof.flatMap(m=>[...m.offsets]));
   const output=new Uint8ClampedArray(source);
-  applyMaterialGains(output,source,source,0,1,roof,[2.2]);
+  applyMaterialGains(output,source,source,0,1,roof,[2.2],[24]);
   for(const line of r.materials[0].lines.map(l=>({...l,y0:l.y0+5,y1:l.y1+5}))) for(let x=line.x0;x<=line.x1;x++){
     const edge=line.y0+(line.y1-line.y0)*(x-line.x0)/(line.x1-line.x0);
     for(let y=Math.floor(edge)-1;y<=Math.ceil(edge)+8;y++){
@@ -134,4 +134,28 @@ test('roof texture uses the local gutter segment and skips gaps instead of extra
   assert.equal(selected.has((1*8+4)*4),true);
   assert.equal(selected.has((1*8+1)*4),false);
   for(let y=0;y<4;y++)for(const x of [3,7])assert.equal(selected.has((y*8+x)*4),false);
+});
+
+test('roof haze offset fits residual light, rejecting occluders and clipped samples',()=>{
+ const refs=samples.map(s=>({...s,reference:[5,5,5],nightReference:[2,2,2]}));
+ assert.ok(Math.abs(estimateMaterialOffset(frame([18,18,18,18,150]),refs,config,0,2)-8)<1e-9);
+ assert.equal(estimateMaterialOffset(frame([32,32,32,32,32]),refs,config,1,2),24);
+ assert.equal(estimateMaterialOffset(frame([0,0,255,255,18]),refs,config,0,2),null);
+ assert.equal(estimateMaterialOffset(frame([4,20,40,80,200]),refs,config,0,2),null);
+});
+test('roof offset rejects flashes and fades back after missing observations',()=>{
+ const s={};
+ assert.equal(advanceMaterialOffset(s,16),0);assert.equal(advanceMaterialOffset(s,16),0);
+ advanceMaterialOffset(s,null);assert.equal(advanceMaterialOffset(s,16),0);
+ assert.equal(advanceMaterialOffset(s,16),0);assert.equal(advanceMaterialOffset(s,16),2.4);
+ for(let i=0;i<30;i++)advanceMaterialOffset(s,16);
+ assert.ok(s.value>15 && s.value<16);
+ const before=s.value;for(let i=0;i<5;i++)advanceMaterialOffset(s,null);
+ assert.ok(s.value<before);
+});
+test('neutral roof lift preserves color differences, alpha and all excluded facade pixels without drift',()=>{
+ const source=Uint8ClampedArray.from([20,15,10,255,80,70,60,128]);
+ const material=[{offsets:[0],weights:[1]}],dest=new Uint8ClampedArray(source);
+ for(let i=0;i<10;i++)applyMaterialGains(dest,source,source,0,1,material,[1],[8]);
+ assert.deepEqual([...dest],[28,23,18,255,80,70,60,128]);
 });
