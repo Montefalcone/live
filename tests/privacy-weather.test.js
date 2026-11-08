@@ -154,3 +154,35 @@ test('one bright headlight or dark occluder in a lighting sample cannot select t
   assert.equal(rank(observed).best,id);
  }
 });
+
+test('fog confined to sky/hills cannot retain fog on clear foreground buildings',()=>{
+ const fogNight=catalog.profiles.find(p=>p.id==='fog-night-shop-off'),clear=catalog.profiles.find(p=>p.id==='night');
+ const lifted=catalog.samples.map((s,i)=>['sky','hills'].includes(s.group)?fogNight.signature[i]:clear.signature[i]);
+ assert.equal(rank(lifted).best,'night');
+ const onlySkyClear=catalog.samples.map((s,i)=>['sky','hills'].includes(s.group)?clear.signature[i]:fogNight.signature[i]);
+ assert.equal(rank(onlySkyClear).best,'fog-night-shop-off');
+});
+test('confirmed foreground clearance escapes the fog cover before the five-minute weather check',()=>{
+ const fog=catalog.profiles.find(p=>p.id==='fog-night-shop-off'),clear=catalog.profiles.find(p=>p.id==='night');
+ const lifted=catalog.samples.map((s,i)=>['sky','hills'].includes(s.group)?fog.signature[i]:clear.signature[i]);
+ const s=createWeatherSelector(catalog.profiles,catalog.samples,catalog.settings);
+ s.observe(fog.signature,0,.1);
+ for(let t=2000;t<=10000;t+=2000)s.observeClearance(lifted,t);
+ assert.equal(s.diagnostics().profile,fog.id);
+ s.observeClearance(lifted,12000);assert.equal(s.diagnostics().profile,'night');
+ assert.equal(s.diagnostics().clearanceChanges,1);assert.equal(s.diagnostics().checks,1);
+ assert.equal(s.diagnostics().nextCheckMs,300000);
+ assert.equal(s.weights(16000).night,.5);assert.equal(s.weights(20000).night,1);
+});
+test('a transient clear-looking frame, blackout, interruption or long frame gap cannot clear fog',()=>{
+ const fog=catalog.profiles.find(p=>p.id==='fog-night-shop-off'),clear=catalog.profiles.find(p=>p.id==='night');
+ for(const disturbance of ['fog','black','pause','gap']){
+  const s=createWeatherSelector(catalog.profiles,catalog.samples,catalog.settings);s.observe(fog.signature,0,.1);
+  s.observeClearance(clear.signature,2000);s.observeClearance(clear.signature,4000);
+  if(disturbance==='pause')s.interrupt();
+  if(disturbance==='fog')s.observeClearance(fog.signature,6000);
+  if(disturbance==='black')s.observeClearance(catalog.samples.map(()=>null),6000);
+  s.observeClearance(clear.signature,16000);
+  assert.equal(s.diagnostics().profile,fog.id,disturbance);
+ }
+});

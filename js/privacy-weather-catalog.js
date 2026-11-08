@@ -130,7 +130,10 @@ export const PRIVACY_WEATHER = {
     "strongMargin": 0.1,
     "strongMaxScore": 0.25,
     "fadeMs": 8000,
-    "allowNight": true
+    "allowNight": true,
+    "foregroundClearance": true,
+    "clearanceIntervalMs": 2000,
+    "clearanceHoldMs": 10000
   },
   "profiles": [
     {

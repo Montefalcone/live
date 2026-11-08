@@ -1,8 +1,8 @@
 // Cosmetic layer only. The camera must deliver the permanently masked picture.
-import { prepareEdgeBlend, measureEdgeDeltas, updateEdgeDeltas, applyEdgeBlend } from './privacy-edge.js?v=2.26';
-import { estimateSampleGain, prepareMaterials, advanceMaterialGain, applyMaterialGains, prepareRoofTexture, applyRoofTexture } from './privacy-materials.js?v=2.26';
-import { prepareRoofGlare, applyRoofGlare } from './privacy-glare.js?v=2.26';
-import { describeWeather, createWeatherSelector, blendWeatherPixels, weatherSamples, weatherNightMix } from './privacy-weather.js?v=2.26';
+import { prepareEdgeBlend, measureEdgeDeltas, updateEdgeDeltas, applyEdgeBlend } from './privacy-edge.js?v=2.27';
+import { estimateSampleGain, prepareMaterials, advanceMaterialGain, applyMaterialGains, prepareRoofTexture, applyRoofTexture } from './privacy-materials.js?v=2.27';
+import { prepareRoofGlare, applyRoofGlare } from './privacy-glare.js?v=2.27';
+import { describeWeather, createWeatherSelector, blendWeatherPixels, weatherSamples, weatherNightMix } from './privacy-weather.js?v=2.27';
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 const luminance = rgb => .2126 * rgb[0] + .7152 * rgb[1] + .0722 * rgb[2];
 
@@ -160,9 +160,11 @@ export function createPrivacyLayer({ video, canvas, config, document: doc = docu
       const clock = now();
       if(!next.every(Boolean)) weather?.interrupt();
       // Only advancing, correctly masked frames can contribute weather evidence.
-      if (weather && next.every(Boolean) && weather.isDue(clock) &&
+      if (weather && next.every(Boolean) && (weather.isDue(clock) || weather.isClearanceDue(clock)) &&
           (weatherTime===null || Math.abs(video.currentTime-weatherTime)>.2)) {
-        weather.observe(describeWeather(frame, config.weather.samples, config.width, config.height),clock,mix);
+        const signature=describeWeather(frame, config.weather.samples, config.width, config.height);
+        if(weather.isDue(clock)) weather.observe(signature,clock,mix);
+        else weather.observeClearance(signature,clock);
         weatherTime=video.currentTime;
       }
       weatherWeights = weather?.weights(clock) ?? {};
@@ -371,7 +373,7 @@ export function createPrivacyLayer({ video, canvas, config, document: doc = docu
   for (const event of ['loadeddata', 'resize', 'playing']) video.addEventListener(event, refresh);
   doc.addEventListener('visibilitychange', refresh);
   return {
-    getDiagnostics() { return {version:'2.26',coverage:canvas.dataset.coverage,dayNightMix:scene.mix,
+    getDiagnostics() { return {version:'2.27',coverage:canvas.dataset.coverage,dayNightMix:scene.mix,
       weather:weather?.diagnostics()??null,availableProfiles:availableProfiles.map(p=>({id:p.id,label:p.label})),unavailableProfiles:[...optionalFailures]}; },
     setActive(value) {
       const changed = active !== value; active = value;

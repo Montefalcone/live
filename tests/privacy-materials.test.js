@@ -95,34 +95,26 @@ test('a failed region invalidates other regions when all masks are required', ()
   ]};
   assert.deepEqual(analyzeFrame(frame([0,100,0,0,0]),cfg),[null,null]);
 });
-test('production live roof source is inside the public roof and outside every camera mask check', () => {
-  const cfg=PRIVACY_CALIBRATION,r=cfg.regions[0],s=r.roofTexture;
-  const source={x:s.x+s.dx,y:s.y+s.dy,width:s.width,height:s.height};
+test('production retains the aligned photographic roof instead of transplanting neighbouring tiles', () => {
+  const cfg=PRIVACY_CALIBRATION,r=cfg.regions[0];
+  const patch={x:0,y:634,width:884,height:518};
+  const source=new Uint8ClampedArray(patch.width*patch.height*4).fill(150);
   assert.equal(cfg.requireAllMasks,true);assert.equal(r.maskChecks.length,5);
-  assert.ok(source.x>=0&&source.y>=0&&source.x+source.width<=cfg.width&&source.y+source.height<=cfg.height);
-  for(const c of r.maskChecks) assert.ok(source.x+source.width<=c.x||source.x>=c.x+c.width||source.y+source.height<=c.y||source.y>=c.y+c.height);
-  for(const x of [source.x,source.x+source.width]){
-    const line=s.lines.find(l=>x>=l.x0&&x<=l.x1);
-    const e=line.y0+(line.y1-line.y0)*(x-line.x0)/(line.x1-line.x0);
-    assert.ok(source.y+source.height<e-8,'source must remain above the gutter');
-  }
+  assert.equal(prepareRoofTexture(r,patch,source),null);
 });
 
 test('production gutter rim stays photographic across every segment and receives no roof gain', () => {
   const r=PRIVACY_CALIBRATION.regions[0],patch={x:0,y:634,width:884,height:518};
   const source=new Uint8ClampedArray(patch.width*patch.height*4).fill(150);
   const texture=prepareRoofTexture(r,patch,source),roof=prepareMaterials(r,patch,source);
-  const textureOffsets=new Set(texture.offsets),roofOffsets=new Set(roof.flatMap(m=>[...m.offsets]));
+  assert.equal(texture,null);
+  const roofOffsets=new Set(roof.flatMap(m=>[...m.offsets]));
   const output=new Uint8ClampedArray(source);
   applyMaterialGains(output,source,source,0,1,roof,[2.2]);
-  const live={width:texture.source.width,height:texture.source.height,
-    data:new Uint8ClampedArray(texture.source.width*texture.source.height*4).fill(220)};
-  applyRoofTexture(output,texture,live,0);
-  for(const line of r.roofTexture.lines) for(let x=line.x0;x<=line.x1;x++){
+  for(const line of r.materials[0].lines.map(l=>({...l,y0:l.y0+5,y1:l.y1+5}))) for(let x=line.x0;x<=line.x1;x++){
     const edge=line.y0+(line.y1-line.y0)*(x-line.x0)/(line.x1-line.x0);
     for(let y=Math.floor(edge)-1;y<=Math.ceil(edge)+8;y++){
       const p=((y-patch.y)*patch.width+x)*4;
-      assert.equal(textureOffsets.has(p),false,`live tile overwrite at ${x},${y}`);
       assert.equal(roofOffsets.has(p),false,`roof exposure on gutter at ${x},${y}`);
       assert.deepEqual(output.subarray(p,p+4),source.subarray(p,p+4));
     }

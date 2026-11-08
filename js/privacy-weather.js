@@ -25,10 +25,15 @@ export function rankWeather(observed, profiles, samples, settings={}) {
   const results=[];
   for(const profile of profiles) {
     if(!profile.signature || profile.signature.length!==samples.length) continue;
-    const relevant=samples.map((s,i)=>i).filter(i=>samples[i].group!=='shop-light' || profile.lighting);
+    // The cover belongs to the foreground facades. At night, a foggy/cloudy sky
+    // must not keep fog on already clear houses. Use nearby roof and wall evidence.
+    const night=profile.period==='notte';
+    const relevant=samples.map((s,i)=>i).filter(i=>
+      (samples[i].group!=='shop-light' || profile.lighting) &&
+      (!night || !['sky','hills'].includes(samples[i].group)));
     const usable=relevant.filter(i=>observed[i] && profile.signature[i] && observed[i].clipped<.8 &&
       ((observed[i].black<.5 && light(profile.signature[i].rgb)>15) ||
-       (profile.period==='notte' && ['sky','hills'].includes(samples[i].group))));
+       (night && samples[i].group==='roof' && light(profile.signature[i].rgb)<15 && observed[i].black>.5)));
     if(usable.length<Math.ceil(relevant.length*.7)) continue;
     const anchors=usable.filter(i=>samples[i].group==='walls' && light(observed[i].rgb)>15 && light(profile.signature[i].rgb)>15);
     if(anchors.length<2) continue;
@@ -41,10 +46,10 @@ export function rankWeather(observed, profiles, samples, settings={}) {
       const contrast=Math.abs(Math.log((a.contrast/la+.06)/(b.contrast/lb+.06)));
       (groups[samples[i].group]??=[]).push(.5*exposure+.9*color+.25*contrast);
     }
-    if(Object.keys(groups).length<3) continue;
+    if(Object.keys(groups).length<(night?2:3)) continue;
     // Three separate pavement patches beside the shop distinguish local lighting
     // from the fog itself. Their median limits a single vehicle/headlight sample.
-    const weights={sky:.15,hills:.25,roof:.2,walls:.4,'shop-light':1}; let sum=0,total=0;
+    const weights=night?{roof:.35,walls:.65,'shop-light':1}:{sky:.15,hills:.25,roof:.2,walls:.4}; let sum=0,total=0;
     for(const [group,values] of Object.entries(groups)) {
       if(group==='shop-light' && !profile.lighting) continue;
       const w=weights[group]??.1; sum+=median(values)*w; total+=w;
@@ -60,6 +65,7 @@ export function rankWeather(observed, profiles, samples, settings={}) {
 
 export function createWeatherSelector(profiles, samples, options={}) {
   let current=null, candidate=null, lastRead=null, checks=0;
+  let clearanceStart=null, clearanceRead=null, clearanceChecks=0, clearanceChanges=0;
   const intervalMs=options.intervalMs??300000;
   let weights={}, startWeights={}, fadeAt=null, report={matched:false,best:null,scores:[]};
   function blend(now) {
@@ -73,6 +79,27 @@ export function createWeatherSelector(profiles, samples, options={}) {
   }
   return {
     isDue(now) {return profiles.length>1 && (lastRead===null || now-lastRead>=intervalMs);},
+    isClearanceDue(now) {
+      const p=profiles.find(p=>p.id===current);
+      return Boolean(options.foregroundClearance && p?.period==='notte' && p.condition==='nebbia' &&
+        (clearanceRead===null || now-clearanceRead>=(options.clearanceIntervalMs??2000)));
+    },
+    observeClearance(signature,now) {
+      if(!this.isClearanceDue(now)) return;
+      if(clearanceRead!==null && now-clearanceRead>(options.clearanceIntervalMs??2000)*2.25) clearanceStart=null;
+      clearanceRead=now;clearanceChecks++;
+      const local=rankWeather(signature,profiles.filter(p=>p.period==='notte'),samples,options);
+      const winner=local.scores[0],old=local.scores.find(p=>p.id===current);
+      // Only a sustained, credible clear-foreground reading can shorten the
+      // normal weather cadence. Darkness, missing frames and lifted sky alone
+      // cannot trigger this escape from a stale fog photograph.
+      if(local.best!=='night' || !old || winner.score>(options.clearanceMaxScore??.25) ||
+          old.score-winner.score<(options.clearanceMargin??.12)) {clearanceStart=null;return;}
+      clearanceStart??=now;
+      if(now-clearanceStart<(options.clearanceHoldMs??10000)) return;
+      startWeights=blend(now);current='night';fadeAt=now;candidate=null;report=local;
+      clearanceStart=null;clearanceChanges++;
+    },
     updateProfiles(next) {profiles=next;},
     observe(signature, now, nightMix=0) {
       blend(now);
@@ -101,8 +128,8 @@ export function createWeatherSelector(profiles, samples, options={}) {
       startWeights={...weights};current=preferred;fadeAt=now;candidate=null;
     },
     weights(now) { return blend(now); },
-    interrupt() {candidate=null;},
-    diagnostics() {return {profile:current,candidate,matched:report.matched,classification:report.matched?profiles.find(p=>p.id===report.best)?.condition:null,scores:report.scores.map(p=>({...p})),weights:{...weights},transition:fadeAt!==null,intervalMs,checks,lastCheckMs:lastRead,nextCheckMs:lastRead===null?null:lastRead+intervalMs};},
+    interrupt() {candidate=null;clearanceStart=null;},
+    diagnostics() {return {profile:current,candidate,matched:report.matched,classification:report.matched?profiles.find(p=>p.id===report.best)?.condition:null,scores:report.scores.map(p=>({...p})),weights:{...weights},transition:fadeAt!==null,intervalMs,checks,lastCheckMs:lastRead,nextCheckMs:lastRead===null?null:lastRead+intervalMs,clearanceChecks,clearanceChanges};},
   };
 }
 
